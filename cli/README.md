@@ -9,7 +9,7 @@
 
 ## Install
 ```
-npm i g @rpose/cli
+npm i -g @rpose/cli
 ```
 
 
@@ -17,5 +17,7 @@ npm i g @rpose/cli
 <br>
 
 ## `Links`
+* `gotoeasy` https://gotoeasy.github.io
+* `rpose` https://github.com/gotoeasy/rpose
 * `npm-packages` https://github.com/gotoeasy/npm-packages
 
