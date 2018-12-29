@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+
+const rpose = require('@gotoeasy/rpose');
+const cmmd = require('commander');
+
+cmmd.usage('[options] [path]')
+	.option('--debug', 'print debug log')
+	.parse(process.argv);
+
+let opts = {
+	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd(),
+	debug: !!cmmd.debug
+};
+
+!opts.debug && (console.debug = x=>x);
+
+opts.mode = 'publish';
+rpose.publish(opts);
+

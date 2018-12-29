@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+
+const rpose = require('@gotoeasy/rpose');
+const cmmd = require('commander');
+
+cmmd.usage('[options] [path]')
+	.option('-c --clean', 'clean before build')
+	.option('-r --release', 'build release')
+	.option('-d --debug', 'print debug log')
+	.parse(process.argv);
+
+let opts = {
+	clean: !!cmmd.clean,
+	release: !!cmmd.release,
+	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd(),
+	debug: !!cmmd.debug
+};
+
+!opts.debug && (console.debug = x=>x);
+
+opts.mode = 'watch';
+rpose.watch(opts);
+
+
+
+
+process.on('exit', e => {
+	if (e) {
+		console.log();
+		console.log('------------------------------');
+		console.log('       NG! exit code:', e);
+		!opts.debug && console.log('use --debug to output more information');
+		console.log('------------------------------');
+	}
+})

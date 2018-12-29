@@ -1,0 +1,37 @@
+{
+  "name": "@rpose/cli",
+  "version": "0.0.1",
+  "main": "index.js",
+  "dependencies": {
+    "@gotoeasy/rpose": "*",
+    "commander": "*",
+    "chalk": "*",
+    "inquirer": "*"
+  },
+  "bin": {
+    "rpose": "bin/rpose",
+    "rp": "bin/rpose"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "description": "rpose命令行工具",
+  "keywords": [
+    "gotoeasy",
+    "rpose",
+    "rpose-cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/cli/README.md",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "Apache-2.0"
+}

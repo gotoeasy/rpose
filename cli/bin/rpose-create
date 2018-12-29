@@ -1,0 +1,148 @@
+#!/usr/bin/env node
+
+const rpose = require('@gotoeasy/rpose');
+const os = require('@gotoeasy/os');
+const fs = require('fs');
+const cmmd = require('commander');
+const chalk = require('chalk');
+const inquirer = require('inquirer')
+
+// 初始化消息
+initMessages();
+
+// 取命令行参数中的项目名
+cmmd.parse(process.argv);
+let name = cmmd.args.length ? cmmd.args[0] : '';
+
+if (name){
+	// 已输入项目名时，按模板创建项目
+	createProject(process.cwd(), name);
+}else{
+	// 没有输入项目名时提示输入
+	inquirer.prompt([{
+		type: 'input',
+		message: i18n('msg_110', 'input project name:'),
+		name: 'name'
+	}]).then(answers => {
+		name = answers.name.trim();
+		if ( !name ){
+			// 仍旧空白输入时打印帮助信息后结束
+			help();
+		}else{
+			// 有输入项目名时，按模板创建项目
+			createProject(process.cwd(), name);
+		}
+	});
+}
+
+
+/**
+ * 打印帮助信息
+ */
+function help() {
+	console.log();
+	console.log(i18n('msg_120', '  Usage:'));
+	console.log();
+	console.log(chalk.gray(i18n('msg_130', '      # create a new project in current directory with official template')));
+	console.log('      $ rpose create my-project-name');
+	console.log();
+}
+
+/**
+ * 按模板创建项目
+ */
+function createProject(workDir, project) {
+
+	let cwd = workDir.replace(/\\/g, '/');
+	let name = project.trim();
+
+	// 不能有非法目录字符
+	if ( /[:\/\\\?]/.test(name) ) {
+		console.error(`${i18n('msg_150', '  Invalid project name')}: [${name}]`);
+		help();
+		return;
+	}
+
+	// 简单化，目录已存在也不行
+	let pathProject = `${cwd}/${name}`;
+	if ( fs.existsSync(pathProject) && fs.statSync(pathProject).isDirectory() ) {
+		console.log();
+		console.error(`${i18n('msg_160', '  Target directory exists')}: [${pathProject}]`);
+		console.error(i18n('msg_170', '  Failed to create project, change the project name or directory to continue'));
+		help();
+		return;
+	}
+
+
+	let rs = rpose.create({workDir: workDir, name: name});
+	if (rs) {
+		console.log();
+		console.log(`${i18n('msg_180', 'project created')}: [${name}] `);
+		console.log();
+		console.log(i18n('msg_120', 'Usage:'));
+		console.log();
+		console.log(chalk.gray(i18n('msg_190', '      # change to project directory')));
+		console.log(`      $ cd ${name}`);
+		console.log();
+		console.log(chalk.gray(i18n('msg_200', '      # install devDependencies')));
+		console.log(`      $ npm i`);
+		console.log();
+		console.log(chalk.gray(i18n('msg_140', '      # run test')));
+		console.log(`      $ npm test`);
+		console.log();
+	}else{
+		help();
+	}
+}
+
+
+function i18n(key, defaultMessage=''){
+	return initMessages.msg[key] || defaultMessage;
+}
+
+function initMessages(){
+
+	let locales = ['zh_CN', 'ja_JP', 'en_US'];
+	const msgLocale = locales.includes(os.locale()) ? os.locale() : 'en_US';
+
+	let msgs = {
+			zh_CN: {
+					msg_110: '输入项目名:',
+					msg_120: '  使用方法:',
+					msg_130: '      # 按官方模板在当前目录创建一个新项目',
+					msg_140: '      $ 运行测试用例',
+					msg_150: '  无效的项目名',
+					msg_160: '  目标目录已存在',
+					msg_170: '  项目创建失败，修改项目名或目录后再继续',
+					msg_180: '  项目已创建',
+					msg_190: '      # 进入项目目录',
+					msg_200: '      # 安装开发依赖包',
+				},
+			ja_JP: {
+					msg_110: 'プロジェクト名を入力する:',
+					msg_120: '  使用方法:',
+					msg_130: '      # オフィシャルテンプレートで現在のディレクトリに新しいプロジェクトを作成する',
+					msg_140: '      $ テストケースの実施を行う',
+					msg_150: '  無効なプロジェクト名',
+					msg_160: '  ターゲットディレクトリが存在している',
+					msg_170: '  プロジェクトの作成に失敗した、プロジェクト名またはディレクトリを変更してから続ける',
+					msg_180: '  プロジェクトを作成した',
+					msg_190: '      # プロジェクトのディレクトリに入る',
+					msg_200: '      # 開発依存パッケージをインストールする',
+				},
+			en_US: {
+					msg_110: '  input project name:',
+					msg_120: '  Usage:',
+					msg_130: '      # create a new project in current directory with official template',
+					msg_140: '      $ run test',
+					msg_150: '  Invalid project name',
+					msg_160: '  Target directory exists',
+					msg_170: '  Failed to create project, change the project name or directory to continue',
+					msg_180: '  project created',
+					msg_190: '      # change to project directory',
+					msg_200: '      # install devDependencies',
+				}
+			};
+
+	initMessages.msg = msgs[msgLocale];
+}

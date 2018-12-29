@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+
+const commander = require('commander')
+
+commander
+  .version(require('../package').version)
+  .usage('<command> [options]')
+  .command('create', 'create a new project from a template')
+  .command('build', 'build project')
+  .command('watch', 'watch and build project')
+  .command('clean', 'clean project')
+  .command('publish', 'publish project')
+  .parse(process.argv);
