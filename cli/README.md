@@ -12,6 +12,43 @@
 npm i -g @rpose/cli
 ```
 
+## Create
+```
+rpose create my-project
+```
+
+## Watch
+```
+cd my-project
+rpose watch
+```
+
+## Build
+```
+cd my-project
+rpose build -c -r
+```
+
+## Setting
+use file `.browserslistrc` to config target browsers
+```
+>= 2%
+>= 1% in cn
+not dead
+ie 11
+```
+
+use file `rpose.config.btf` to config rpose project
+```
+[path] // config project path info
+src                 : src
+src_components      : src/components
+build               : build
+
+[theme] // theme npm package
+@gotoeasy/theme
+
+```
 
 
 <br>
