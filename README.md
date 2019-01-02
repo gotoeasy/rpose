@@ -2,13 +2,12 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
-一个耐人寻味的前端框架，了解请看 https://gotoeasy.github.io
+这是一个前端框架，了解请看 https://gotoeasy.github.io
 
 
 有好姿势欢迎提Issuse
 
 
-<br>
 <br>
 
 
@@ -16,7 +15,6 @@
 - [ ] 改进、重构
 - [ ] 添加新姿势
 
-<br>
 <br>
 <br>
 
