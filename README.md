@@ -2,6 +2,7 @@
 
 [![NPM version](https://img.shields.io/npm/v/@rpose/cli.svg)](https://www.npmjs.com/package/@rpose/cli)
 [![License](https://img.shields.io/badge/License-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+<br>
 
 > 《RPOSE从入门到精通》在哪里
 
@@ -18,17 +19,19 @@
 了解请看 https://gotoeasy.github.io
 
 <br>
+<br>
 有好姿势欢迎提Issuse
 
-
+<br>
 <br>
 
 
 ## `TODO`
-- [ ] 改进、重构
-- [ ] 添加新特性
+- [ ] 改BUG ...
+- [ ] 重构及测试
+- [ ] 你提的好姿势
+- [ ] 重要新特性
 
-<br>
 <br>
 
 
@@ -47,7 +50,7 @@
 - [x] 严格控制接口概念，保持简易性，杜绝过度开发<br>
 - [x] 数据驱动、组件式、响应式、半声明式的开发过程<br>
 - [x] 虚拟DOM及局部差异渲染<br>
-- [x] CSS支持LESS、SCSS等预处理，集成添加后缀、自动调整URL、去重复优化等后处理<br>
+- [x] CSS支持LESS、SCSS等预处理，集成添加前缀、自动调整URL、去重复优化等后处理<br>
 - [x] 组件单位哈希化CSS类名，组件内类名无重复则不会有冲突，样式命名舒坦了<br>
 - [x] 提供组件样式风格统一性方案<br>
 - [x] 命令行提供监视功能，源文件修改时自动编译，热更新浏览器<br>
