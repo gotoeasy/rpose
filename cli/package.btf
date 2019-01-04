@@ -2,7 +2,7 @@
 @rpose/cli
 
 [version] // 版本号 （必填）
-0.1.1
+0.1.2
 
 
 
@@ -14,7 +14,7 @@ rpose = bin/rpose
 rp = bin/rpose
 
 [dependencies] // 依赖库
-@gotoeasy/rpose = 0.0.41
+@gotoeasy/rpose = *
 commander = *
 chalk = *
 inquirer = *

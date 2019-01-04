@@ -3,16 +3,13 @@
 [![NPM version](https://img.shields.io/npm/v/@rpose/cli.svg)](https://www.npmjs.com/package/@rpose/cli)
 [![License](https://img.shields.io/badge/License-Apache%202-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 <br>
+<br>
 
-> 《RPOSE从入门到精通》在哪里
+> 《RPOSE从入门到精通》在哪里？
 
 没有的事，这是一个前端框架，简单到没法聊<br>
 <br>
 
-> BUG多不怕，怕的是自己写的，怕的是要自己修改
-
-非常正确，这是一个前端框架，你写错了框架修，框架错了框架改<br>
-<br>
 
 
 <br>
@@ -37,13 +34,19 @@
 
 ## `变更列表`
 <details>
+<summary><strong>Ver 0.1.2</strong></summary>
+
+- [x] 预渲染(负责生成html页面源码的函数)部分模块化，可配置化，以便于灵活应付Loader或骨架屏等需求<br>
+</details>
+
+<details>
 <summary><strong>Ver 0.1.1</strong></summary>
 
 - [x] 统一哈希算法，自动调整img标签src属性的相对路径，确保不同目录页面都正常显示<br>
 </details>
 
 <details>
-<summary><strong>Ver 0.1.0 概念版</strong></summary>
+<summary><strong>Ver 0.1.0 概念版</strong></summary> 
 
 - [x] 人性化的BTF格式源文件，舒适的开发体验<br>
 - [x] 回归自然，三驾马车HTML/JS/CSS，写业务，完成<br>
