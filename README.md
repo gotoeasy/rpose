@@ -22,21 +22,46 @@
 <br>
 <br>
 
+## `青松的姿势`
+<details>
+<summary><strong>hello world</strong></summary>
+```
+// hello-world.rpose
+[api]
+statekeys = name   // 声明本组件的状态仅接受‘name’的修改
+
+[view]
+<span>hello {name}!</span>
+```
+</details>
+
+<br>
+<br>
+
 
 ## `TODO`
-- [ ] 改BUG ...
-- [ ] 重构及测试
+- [ ] 改进及完善
 - [ ] 你提的好姿势
 - [ ] 重要新特性
 
 <br>
 
 
+
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.1.3</strong></summary>
+
+- [x] 提供简便易用的前端路由方案<br>
+- [x] 改进class属性写法体验，支持混合表达式写法<br>如 class="xxx {aaa:$options.aaa, hide:!$state.show} yyy zzz {'js-active': $state.active}"<br>等同 class={xxx：1, aaa:$options.aaa, hide:!$state.show, yyy:1, zzz:1, 'js-active': $state.active}
+- [x] 改善体验，自动安装`rpose.config.btf`中配置的依赖模块<br>
+- [x] 细节改进及BUG修改<br>
+</details>
+
 <details>
 <summary><strong>Ver 0.1.2</strong></summary>
 
-- [x] 预渲染(负责生成html页面源码的函数)部分模块化，可配置化，以便于灵活应付Loader或骨架屏等需求<br>
+- [x] 提供预渲染(html页面源码的生成)方案，模块化可配置化，以灵活应付Loader或骨架屏等需求<br>
 </details>
 
 <details>
