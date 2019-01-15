@@ -54,7 +54,7 @@ statekeys = name   // 声明本组件的状态仅接受‘name’的修改
 <summary><strong>Ver 0.1.3</strong></summary>
 
 - [x] 提供简便易用的前端路由方案<br>
-- [x] 改进class属性写法体验，支持混合表达式写法<br>如 class="xxx {aaa:$options.aaa, hide:!$state.show} yyy zzz {'js-active': $state.active}"<br>等同 class={xxx：1, aaa:$options.aaa, hide:!$state.show, yyy:1, zzz:1, 'js-active': $state.active}
+- [x] 改进class属性写法体验，支持混合表达式写法<br>如 class="foo {bar:$options.bar, hide:!$state.show} foobar"<br>等同 class={foo：1, bar:$options.bar, hide:!$state.show, foobar:1}
 - [x] 改善体验，自动安装`rpose.config.btf`中配置的依赖模块<br>
 - [x] 细节改进及BUG修改<br>
 </details>
