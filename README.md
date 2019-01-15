@@ -34,6 +34,9 @@ statekeys = name   // 声明本组件的状态仅接受‘name’的修改
 [view]
 <span>hello {name}!</span>
 
+[state] // 默认的name值为'world'
+{name: 'world'}
+
 [mount] // 挂载到body中显示
 body
 ```
