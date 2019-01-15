@@ -33,6 +33,9 @@ statekeys = name   // 声明本组件的状态仅接受‘name’的修改
 
 [view]
 <span>hello {name}!</span>
+
+[mount] // 挂载到body中显示
+body
 ```
 </details>
 
