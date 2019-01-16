@@ -80,7 +80,7 @@ body
     }
 }
 
-[less]
+[css]
 .title {
     font-size: 18px;
 }
@@ -89,6 +89,69 @@ body
 body
 ```
 [live demo](https://gotoeasy.github.io/build/dist/live-demo/todo-list.html)
+</details>
+
+
+<details>
+<summary><strong>layout</strong></summary>
+
+```
+// layout-foo.rpose
+[view]
+<div class='layout'>
+    <div class='layout-header'><slot name="header"/></div> 
+    <div class='layout-body'><slot name="body"/></div> 
+    <div class='layout-footer'><slot name="footer"/></div> 
+</div> 
+
+[less]
+body{
+    margin: 0;
+}
+
+.layout {
+    height: 100vh;
+    .display(flex);
+    .flex-direction(column);
+    overflow: hidden;
+}
+
+.layout-header {
+    height: 50px;
+    color: #fff;
+    background-color: #385691;
+}
+
+.layout-body {
+    .calc(height, ~'100% - '80px);
+    background-color: #F8F8F8;
+}
+
+.layout-footer {
+    height: 30px;
+    background-color: #F2F2F2;
+}
+```
+
+```
+// page-foo.rpose
+[view]
+<layout-foo>
+    <div slot="header">
+        <div style="text-align:center;padding-top:13px">Welcome</div>
+    </div> 
+    <div slot="body">
+        <div style="margin-top:150px;text-align:center;font-size:3rem">FOO</div>
+    </div>
+    <div slot="footer">
+        <div style="text-align:center;padding-top:3px">footer</div>
+    </div> 
+</layout-foo> 
+
+[mount]
+body
+```
+[live demo](https://gotoeasy.github.io/build/dist/live-demo/page-foo.html)
 </details>
 
 <br>
