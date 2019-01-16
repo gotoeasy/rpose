@@ -13,7 +13,7 @@
 
 
 <br>
-了解请看 [https://gotoeasy.github.io](https://gotoeasy.github.io)
+了解请看 https://gotoeasy.github.io
 
 <br>
 <br>
