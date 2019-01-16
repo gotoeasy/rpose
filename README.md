@@ -28,18 +28,67 @@
 
 ```
 // hello-world.rpose
-[api]
-statekeys = name   // 声明本组件的状态仅接受‘name’的修改
-
 [view]
 <span>hello {name}!</span>
 
-[state] // 默认的name值为'world'
+[state]
 {name: 'world'}
 
-[mount] // 挂载到body中显示
+[mount]
 body
 ```
+[live demo](https://gotoeasy.github.io/build/dist/live-demo/hello-world.html)
+</details>
+
+<details>
+<summary><strong>todo-list</strong></summary>
+
+```
+// todo-list.rpose
+[view]
+<div>
+    <div class="title">TODO LIST</div>
+    <ul>
+        {% for ( let i=0; i<$state.items.length; i++ ) { %}
+        <li><button style="margin-right:20px" index={i} onclick="del">Del</button> { $state.items[i] }</li>
+        {% } %}
+    </ul>
+
+    <form onsubmit="add">
+        <input type="text" ref="input">
+        <button>Add #{ $state.items.length + 1 }</button>
+    </form>
+</div>
+
+[state]
+{
+    items: []
+}
+
+[actions]
+{
+    add: e => {
+        e.preventDefault();
+        let el = this.getRefElement('input');
+        el.value && this.$state.items.push(el.value) && (el.value = '');
+        this.render();
+    },
+    del: e => {
+        let index = e.target.getAttribute('index');
+        this.$state.items.splice(index, 1);
+        this.render();
+    }
+}
+
+[less]
+.title {
+    font-size: 18px;
+}
+
+[mount]
+body
+```
+[live demo](https://gotoeasy.github.io/build/dist/live-demo/todo-list.html)
 </details>
 
 <br>
