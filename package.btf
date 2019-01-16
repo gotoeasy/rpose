@@ -1,0 +1,42 @@
+[name] // 项目名 （必填）
+rpose
+
+[version] // 版本号 （必填）
+0.0.8
+
+
+
+[main] // 入口文件
+index.js
+
+[bin] // cli命令
+
+[dependencies] // 依赖库
+
+[devDependencies] // 开发依赖库
+
+[description] // 描述
+“写业务，完成”——本框架的目标。人性化的源文件格式，数据驱动、组件式、响应式、半声明式的开发过程，舒适的开发体验，从源码到打包成品，一条龙式解决常见开发需求，让你集中精力关注业务实现
+
+[keywords] // 检索关键字，多个关键字用半角逗号分隔
+gotoeasy, rpose, 前端框架
+
+[scripts] // 脚本命令
+test = echo "Error: no test specified" && exit 1
+
+[repository] // 仓库
+type= git
+url = git+https://github.com/gotoeasy/rpose.git
+
+[homepage] // 主页
+https://github.com/gotoeasy/rpose#readme
+
+[bugs] // BUG提交地址
+url = https://github.com/gotoeasy/rpose/issues
+
+[author] // 作者信息
+name = 青松
+email= gotoeasy@163.com
+
+[license] // 协议
+Apache-2.0

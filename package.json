@@ -1,0 +1,27 @@
+{
+  "name": "rpose",
+  "version": "0.0.8",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "description": "“写业务，完成”——本框架的目标。人性化的源文件格式，数据驱动、组件式、响应式、半声明式的开发过程，舒适的开发体验，从源码到打包成品，一条龙式解决常见开发需求，让你集中精力关注业务实现",
+  "keywords": [
+    "gotoeasy",
+    "rpose",
+    "前端框架"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose#readme",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "Apache-2.0"
+}

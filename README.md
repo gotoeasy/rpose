@@ -13,7 +13,7 @@
 
 
 <br>
-了解请看 https://gotoeasy.github.io
+了解请看 [https://gotoeasy.github.io](https://gotoeasy.github.io)
 
 <br>
 <br>
@@ -153,6 +153,13 @@ body
 ```
 [live demo](https://gotoeasy.github.io/build/dist/live-demo/page-foo.html)
 </details>
+
+<br>
+<br>
+
+## `安装使用`
+
+* `@rpose/cli`: [README.md](https://github.com/gotoeasy/rpose/blob/master/cli/README.md)
 
 <br>
 <br>

@@ -42,12 +42,13 @@ use file `rpose.config.btf` to config rpose project
 ```
 [path] // config project path info
 src                 : src
-src_components      : src/components
 build               : build
 
 [theme] // theme npm package
 @gotoeasy/theme
 
+[prerender] // prerender npm package
+@gotoeasy/pre-render
 ```
 
 
