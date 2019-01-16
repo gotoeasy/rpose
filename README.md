@@ -37,7 +37,7 @@
 [mount]
 body
 ```
-[live demo](https://gotoeasy.github.io/build/dist/live-demo/hello-world.html)
+<a href="https://gotoeasy.github.io/build/dist/live-demo/hello-world.html" target="live-demo">live demo</a>
 </details>
 
 <details>
@@ -88,7 +88,7 @@ body
 [mount]
 body
 ```
-[live demo](https://gotoeasy.github.io/build/dist/live-demo/todo-list.html)
+<a href="https://gotoeasy.github.io/build/dist/live-demo/todo-list.html" target="live-demo">live demo</a>
 </details>
 
 <br>
