@@ -19,14 +19,3 @@ opts.mode = 'clean';
 rpose.clean(opts);
 
 
-
-
-process.on('exit', e => {
-	if (e) {
-		console.log();
-		console.log('------------------------------');
-		console.log('       NG! exit code:', e);
-		!opts.debug && console.log('use --debug to print more information');
-		console.log('------------------------------');
-	}
-})

@@ -8,6 +8,7 @@ cmmd.usage('[options] [path]')
 	.option('-r, --release', 'build release')
 	.option('-p, --publish', 'build publish')
 	.option('-d, --debug', 'print debug log')
+	.option('--nocache', 'disable disk cache')
 	.parse(process.argv);
 
 let opts = {
@@ -15,6 +16,7 @@ let opts = {
 	release: !!cmmd.release,
 	publish: !!cmmd.publish,
 	debug: !!cmmd.debug,
+	disableDiskCache: !!cmmd.nocache,
 
 	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd()
 };
@@ -24,15 +26,3 @@ let opts = {
 opts.mode = 'build';
 rpose.build(opts);
 
-
-
-
-process.on('exit', e => {
-	if (e) {
-		console.log();
-		console.log('------------------------------');
-		console.log('       NG! exit code:', e);
-		!opts.debug && console.log('use --debug to output more information');
-		console.log('------------------------------');
-	}
-})

@@ -1,16 +1,15 @@
 {
   "name": "@rpose/cli",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "index.js",
   "dependencies": {
-    "@gotoeasy/rpose": "0.0.53",
+    "@gotoeasy/rpose": "*",
     "commander": "*",
     "chalk": "*",
     "inquirer": "*"
   },
   "bin": {
-    "rpose": "bin/rpose",
-    "rp": "bin/rpose"
+    "rpose": "bin/rpose"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

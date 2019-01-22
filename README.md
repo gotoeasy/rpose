@@ -176,6 +176,13 @@ body
 
 ## `变更列表`
 <details>
+<summary><strong>Ver 0.1.4</strong></summary>
+
+- [x] 增量编译支持，大幅提高编译性能<br>基于磁盘缓存实现，若要禁止磁盘缓存，使用参数`--nocache`<br>
+- [x] 其他细节改进<br>
+</details>
+
+<details>
 <summary><strong>Ver 0.1.3</strong></summary>
 
 - [x] 提供简便易用的前端路由方案<br>
