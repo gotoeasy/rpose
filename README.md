@@ -167,7 +167,7 @@ body
 
 ## `TODO`
 - [ ] 改进及完善
-- [ ] 你提的好姿势
+- [ ] 其他好姿势
 - [ ] 重要新特性
 
 <br>
@@ -175,6 +175,14 @@ body
 
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.1.5</strong></summary>
+
+- [x] 新增逻辑判断指令`@if`<br>
+- [x] 针对LESS、SCSS，自动添加node_modules所在目录为关联目录<br>以方便使用 `@import "node_modules/..."；`导入相关文件<br>
+- [x] 缓存目录放到当前工作路径的`.cache`目录下，方便确认或删除<br>
+</details>
+
 <details>
 <summary><strong>Ver 0.1.4</strong></summary>
 
