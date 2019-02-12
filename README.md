@@ -176,6 +176,13 @@ body
 
 ## `变更列表`
 <details>
+<summary><strong>Ver 0.2.1</strong></summary>
+
+- [x] 指令统一前缀为`@`，以方便阅读识别<br>新增`@ref`替代原有ref指令，原ref指令将废弃
+- [x] 新增指令`@import`<br>自动安装导入npm上指定包的组件，声明式引用的体验
+</details>
+
+<details>
 <summary><strong>Ver 0.1.5</strong></summary>
 
 - [x] 新增逻辑判断指令`@if`<br>
@@ -217,7 +224,7 @@ body
 - [x] 人性化的BTF格式源文件，舒适的开发体验<br>
 - [x] 回归自然，三驾马车HTML/JS/CSS，写业务，完成<br>
 - [x] 严格控制接口概念，保持简易性，杜绝过度开发<br>
-- [x] 数据驱动、组件式、响应式、半声明式的开发过程<br>
+- [x] 数据驱动、组件式、响应式、声明式的开发过程<br>
 - [x] 虚拟DOM及局部差异渲染<br>
 - [x] CSS支持LESS、SCSS等预处理，集成添加前缀、自动调整URL、去重复优化等后处理<br>
 - [x] 组件单位哈希化CSS类名，组件内类名无重复则不会有冲突，样式命名舒坦了<br>
