@@ -179,7 +179,7 @@ body
 <summary><strong>Ver 0.2.1</strong></summary>
 
 - [x] 指令统一前缀为`@`，以方便阅读识别<br>新增`@ref`替代原有ref指令，原ref指令将废弃
-- [x] 新增指令`@import`<br>自动安装导入npm上指定包的组件，声明式引用的体验<br>如<ui-button @import="@gotoeasy/bootstrap">按钮</ui-button><br>意思上如同import ui-button from @gotoeasy/bootstrap<br>也可以写成<c-btn @import="@gotoeasy/bootstrap:ui-button">按钮</c-btn><br>意思上如同import ui-button from @gotoeasy/bootstrap as c-btn
+- [x] 新增指令`@import`<br>自动安装导入npm上指定包的组件，声明式引用的体验<br><br>如&lt;ui-button @import="@gotoeasy/bootstrap"&gt;按钮&lt;/ui-button&gt;<br>意思上如同import ui-button from @gotoeasy/bootstrap<br>也可以写成&lt;c-btn @import="@gotoeasy/bootstrap:ui-button"&gt;按钮&lt;/c-btn&gt;<br>意思上如同import ui-button from @gotoeasy/bootstrap as c-btn
 </details>
 
 <details>
