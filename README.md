@@ -166,15 +166,22 @@ body
 
 
 ## `TODO`
-- [ ] 改进及完善
-- [ ] 其他好姿势
-- [ ] 重要新特性
+- [ ] 改进重构完善
+- [ ] 例子以及文档
+- [ ] 新特性好姿势
 
 <br>
 
 
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.2.2</strong></summary>
+
+- [x] 配置文件`rpose.config.btf`添加`[import]`设定<br>该配置是`@import`指令的全局性表达，用于统一配置组件引用，省略逐个书写`@import`<br>如<br>[import]<br>ui-button : @gotoeasy/bootstrap<br>c-btn : @gotoeasy/bootstrap:ui-button<br>
+- [x] 新增指令`@show`<br>相应标签将添加或删除样式类`hidden`控制是否显示
+</details>
+
 <details>
 <summary><strong>Ver 0.2.1</strong></summary>
 
