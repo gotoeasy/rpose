@@ -11,10 +11,10 @@ statekeys = header-fixed, header-bgcolor, footer-bgcolor
     </header>
     <div class="main {scroll: $state['header-fixed']}">
         <div class="main-content">
-            <slot name="content"/>
+            <slot name="main"/>
         </div>
         <footer class="main-footer" style={= $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
-            <ui-line @import="@rpose/ui-line" margin="0 auto 5px auto"/>
+            <ui-line @import="@rpose/ui-line" margin="0 auto 10px auto"/>
             <slot name="footer"/>
         </footer>
     </div>
@@ -80,6 +80,6 @@ body{
     text-align: center;
 
     min-height: @footer-height;
-    padding: 0;
+    padding: 10px;
     background-color: @footer-bgcolor;
 }
