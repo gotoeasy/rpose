@@ -1,15 +1,15 @@
 {
-  "name": "@rpose/ui-layout",
-  "version": "0.0.4",
+  "name": "@rpose/ui-line",
+  "version": "0.0.1",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "description": "rpose base component: layout",
+  "description": "rpose base component: line",
   "keywords": [
     "rpose",
     "rpose-ui",
-    "ui-layout",
-    "layout",
+    "ui-line",
+    "line",
     "ui",
     "components"
   ],
@@ -17,7 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/gotoeasy/rpose.git"
   },
-  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/ui-layout/README.md",
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/ui-line/README.md",
   "bugs": {
     "url": "https://github.com/gotoeasy/rpose/issues"
   },

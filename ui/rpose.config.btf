@@ -3,5 +3,7 @@
 ui-layout                       : @rpose/ui-layout:ui-layout-header-main-footer
 ui-layout-header-main-footer    : @rpose/ui-layout
 
+ui-line                         : @rpose/ui-line
+
 ui-button                       : @rpose/ui-button
 

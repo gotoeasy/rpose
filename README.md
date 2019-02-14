@@ -111,8 +111,8 @@ body{
 
 .layout {
     height: 100vh;
-    .display(flex);
-    .flex-direction(column);
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
@@ -123,7 +123,7 @@ body{
 }
 
 .layout-body {
-    .calc(height, ~'100% - '80px);
+    height: calc(100vh - 80px);
     background-color: #F8F8F8;
 }
 

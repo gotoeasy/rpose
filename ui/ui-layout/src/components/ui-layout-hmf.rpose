@@ -1,4 +1,4 @@
-// 布局header-main-footer，header可固定，footer不传则不显示
+// 布局header-main-footer，header可固定
 [api]
 statekeys = header-fixed, header-bgcolor, footer-bgcolor
 
@@ -10,8 +10,11 @@ statekeys = header-fixed, header-bgcolor, footer-bgcolor
         </div>
     </header>
     <div class="main {scroll: $state['header-fixed']}">
-        <slot name="content"/>
-        <footer class="footer" style={= $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
+        <div class="main-content">
+            <slot name="content"/>
+        </div>
+        <footer class="main-footer" style={= $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
+            <ui-line @import="@rpose/ui-line" margin="0 auto 5px auto"/>
             <slot name="footer"/>
         </footer>
     </div>
@@ -56,20 +59,27 @@ body{
 }
 
 .main {
-	height: calc(100vh - @header-height);
+	min-height: calc(100vh - @header-height);
 }
 
 .scroll {
     overflow: auto;
 }
 
-.footer {
+.main-content{
+    display: block;
+    padding: 10px;
+}
+
+.main-footer {
     position: sticky;
     top: calc(100vh - @footer-height);
 
-    min-height: @footer-height;
-    background-color: @footer-bgcolor;
     .flex-direction-column();
     justify-content: center;
-    align-items: center;
+    text-align: center;
+
+    min-height: @footer-height;
+    padding: 0;
+    background-color: @footer-bgcolor;
 }
