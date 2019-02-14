@@ -1,0 +1,31 @@
+{
+  "name": "@rpose/ui",
+  "version": "0.0.4",
+  "dependencies": {
+    "@rpose/ui-button": "*",
+    "@rpose/ui-layout": "*"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "description": "rpose-ui",
+  "keywords": [
+    "rpose",
+    "rpose-ui",
+    "ui",
+    "components"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/README.md",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "MIT"
+}

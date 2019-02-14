@@ -1,0 +1,29 @@
+{
+  "name": "@rpose/ui-button",
+  "version": "0.0.1",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "description": "rpose base component: button",
+  "keywords": [
+    "rpose",
+    "rpose-ui",
+    "ui-button",
+    "button",
+    "ui",
+    "components"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/ui-button/README.md",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "Apache-2.0"
+}

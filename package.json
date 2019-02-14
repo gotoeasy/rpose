@@ -23,5 +23,9 @@
     "name": "青松",
     "email": "gotoeasy@163.com"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@rpose/ui": "0.0.1",
+    "flex-layout": "^1.0.1"
+  }
 }

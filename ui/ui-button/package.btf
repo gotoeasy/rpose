@@ -1,0 +1,42 @@
+[name] // 项目名 （必填）
+@rpose/ui-button
+
+[version] // 版本号 （必填）
+0.0.1
+
+
+
+[main] // 入口文件
+
+[bin] // cli命令
+
+[dependencies] // 依赖库
+
+[devDependencies] // 开发依赖库
+
+[description] // 描述
+rpose base component: button
+
+[keywords] // 检索关键字，多个关键字用半角逗号分隔
+rpose, rpose-ui, ui-button, button, ui, components
+
+[scripts] // 脚本命令
+test = echo "Error: no test specified" && exit 1
+
+[repository] // 仓库
+type= git
+url = git+https://github.com/gotoeasy/rpose.git
+
+[homepage] // 主页，github项目会自动识别设定
+https://github.com/gotoeasy/rpose/blob/master/ui/ui-button/README.md
+
+[bugs] // BUG提交地址，github项目会自动识别设定
+url = https://github.com/gotoeasy/rpose/issues
+
+[author] // 作者信息
+name = 青松
+email= gotoeasy@163.com
+
+[license] // 协议
+MIT
+

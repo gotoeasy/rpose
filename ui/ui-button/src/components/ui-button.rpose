@@ -1,0 +1,32 @@
+[api]
+optionkeys = onclick, style
+statekeys  = disabled
+
+[view]
+<button type="button" class="ui-button" style={style} onclick={onclick} disabled={disabled}><slot/></button>
+
+[less]
+.ui-button {
+    min-width: @theme-button-width;
+    height: @theme-button-height;
+    border: 1px solid #999999;
+    font-weight: bold;
+    border-radius: 3px;
+    color: #333333;
+    background: @theme-button-bg;
+}
+
+.ui-button:hover:not([disabled]),
+.ui-button:focus{
+    background: @theme-button-bg-hover;
+}
+
+.ui-button:active:not([disabled]){
+    background: @theme-button-bg-active;
+}
+
+.ui-button[disabled]{
+    background: @theme-button-bg-disabled;
+    opacity: 0.6;
+    cursor: not-allowed;
+}

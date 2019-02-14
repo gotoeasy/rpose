@@ -1,0 +1,75 @@
+// 布局header-main-footer，header可固定，footer不传则不显示
+[api]
+statekeys = header-fixed, header-bgcolor, footer-bgcolor
+
+[view]
+<div class="container">
+    <header class="header" style={= $state['header-bgcolor'] ? 'background-color:' + $state['header-bgcolor'] : '' }>
+        <div class="header-content">
+            <slot name="header"/>
+        </div>
+    </header>
+    <div class="main {scroll: $state['header-fixed']}">
+        <slot name="content"/>
+        <footer class="footer" style={= $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
+            <slot name="footer"/>
+        </footer>
+    </div>
+</div>
+
+[less]
+
+@header-height  : @theme-layout-header-height;        /* 默认50px */
+@header-bgcolor : @theme-layout-header-bgcolor;
+@footer-height  : @theme-layout-footer-height;
+@footer-bgcolor : @theme-layout-footer-bgcolor;
+
+.flex-direction-row() {
+    display: flex;
+    flex-direction: row;
+}
+.flex-direction-column() {
+    display: flex;
+    flex-direction: column;
+}
+
+body{
+    margin:0;
+}
+
+.container {
+	min-height: 100vh;
+    .flex-direction-column();
+    background-color: @theme-bgcolor;
+}
+
+.header {
+	height: @header-height;
+    background-color: @header-bgcolor;
+    .flex-direction-column();
+    justify-content: center;
+    overflow: hidden;
+}
+
+.header-content{
+    .flex-direction-row();
+}
+
+.main {
+	height: calc(100vh - @header-height);
+}
+
+.scroll {
+    overflow: auto;
+}
+
+.footer {
+    position: sticky;
+    top: calc(100vh - @footer-height);
+
+    min-height: @footer-height;
+    background-color: @footer-bgcolor;
+    .flex-direction-column();
+    justify-content: center;
+    align-items: center;
+}

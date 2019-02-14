@@ -1,0 +1,29 @@
+{
+  "name": "@rpose/ui-layout",
+  "version": "0.0.3",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "description": "rpose base component: layout",
+  "keywords": [
+    "rpose",
+    "rpose-ui",
+    "ui-layout",
+    "layout",
+    "ui",
+    "components"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/ui-layout/README.md",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "MIT"
+}
