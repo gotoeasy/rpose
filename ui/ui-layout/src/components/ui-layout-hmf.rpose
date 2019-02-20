@@ -14,7 +14,7 @@ statekeys = header-fixed, header-bgcolor, footer-bgcolor
             <slot name="main"/>
         </div>
         <footer class="main-footer" style={= $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
-            <ui-line @import="@rpose/ui-line" margin="0 auto 10px auto"/>
+            <ui-line @taglib="@rpose/ui-line" margin="0 auto 10px auto"/>
             <slot name="footer"/>
         </footer>
     </div>

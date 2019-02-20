@@ -1,5 +1,5 @@
 // 此模块仅配置组件引用
-[import]
+[taglib]
 ui-layout                       : @rpose/ui-layout:ui-layout-header-main-footer
 ui-layout-header-main-footer    : @rpose/ui-layout
 

@@ -154,6 +154,26 @@ body
 [live demo](https://gotoeasy.github.io/build/dist/live-demo/page-foo.html)
 </details>
 
+
+<details>
+<summary><strong>bootstrap-button (csslibify)</strong></summary>
+
+```
+// csslibify-bootstrap-button.rpose
+[view]
+<button type="button" class="btn@bootstrap btn-primary@bootstrap">
+    this is a bootstrap primary button
+</button>
+
+[csslib]
+bootstrap = bootstrap:**/*.min.css
+
+[mount]
+body
+```
+[live demo](https://gotoeasy.github.io/build/dist/live-demo/csslibify-bootstrap-button.html)
+</details>
+
 <br>
 <br>
 
@@ -175,6 +195,31 @@ body
 
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.3.0</strong></summary>
+
+- [x] 源文件添加`[csslib]`块，支持定义样式库，并按需引用样式规则<br>
+
+```
+[view]
+<button type="button" class="btn@bootstrap btn-primary@bootstrap">
+    bootstrap primary button
+</button>
+----------------
+// 这就是写了个bootstrap按钮
+// 样式规则是按需使用
+// 选择器类名根据别名区分确保不会冲突
+
+[csslib]
+// 这个声明的意思是，引用bootstrap的样式，把它当成样式库使用，定义别名为bootstrap，以便于区别使用
+// 具体是从bootstrap模块目录内含子目录查找*.min.css文件，然后读取合并作为一个样式库，编译时会按需引用样式规则
+bootstrap = bootstrap:**/*.min.css
+```
+- [x] 为了便于理解统一语义，新添指令`@taglib`替换原有`@import`，`@import`指令将废弃，`[import]`也将废弃
+
+</details>
+
+
 <details>
 <summary><strong>Ver 0.2.2</strong></summary>
 
