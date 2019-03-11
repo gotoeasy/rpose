@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+const rpose = require('..');
+const cmmd = require('commander');
+
+cmmd.usage('[options] [path]')
+	.option('-c, --clean', 'clean before build')
+	.option('-r, --release', 'build release')
+	.option('-p, --publish', 'build publish')
+	.option('-d, --debug', 'print debug log')
+	.option('--nocache', 'disable disk cache')
+	.parse(process.argv);
+
+let opts = {
+	clean: !!cmmd.clean,
+	release: !!cmmd.release,
+	publish: !!cmmd.publish,
+	debug: !!cmmd.debug,
+	disableDiskCache: !!cmmd.nocache,
+
+	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd()
+};
+
+!opts.debug && (console.debug = x=>x);
+
+opts.mode = 'build';
+rpose.build(opts);
+

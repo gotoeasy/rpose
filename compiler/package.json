@@ -1,0 +1,54 @@
+{
+  "name": "@rpose/compiler",
+  "version": "0.0.2",
+  "main": "index.js",
+  "dependencies": {
+    "@gotoeasy/bus": "*",
+    "@gotoeasy/npm": "*",
+    "@gotoeasy/file": "*",
+    "@gotoeasy/util": "*",
+    "@gotoeasy/btf": "*",
+    "@gotoeasy/err": "*",
+    "@gotoeasy/csjs": "*",
+    "@gotoeasy/postobject": "*",
+    "@gotoeasy/cache": "*",
+    "@gotoeasy/theme": "*",
+    "@gotoeasy/pre-render": "*",
+    "csslibify": "*",
+    "acorn-globals": "*",
+    "astring": "*",
+    "chokidar": "*",
+    "browser-sync": "*",
+    "browserify": "*"
+  },
+  "devDependencies": {
+    "ava": "*",
+    "nyc": "*",
+    "opn": "*"
+  },
+  "bin": {
+    "rpose": "bin/rpose"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "description": "rpose compiler",
+  "keywords": [
+    "gotoeasy",
+    "rpose",
+    "compiler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose#readme",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "MIT"
+}
