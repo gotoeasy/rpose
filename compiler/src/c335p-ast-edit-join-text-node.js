@@ -3,7 +3,7 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
     
-	return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(__filename, function(root, context){
 
         root.walk( /^(Text|EscapeExpression|UnescapeExpression)$/, (node, object) => {
             // 合并连续的文本节点
@@ -47,17 +47,17 @@ bus.on('编译插件', function(){
 
 
 function lineString(str, quote = '"') {
-	if ( str == null ) {
-		return str;
-	}
+    if ( str == null ) {
+        return str;
+    }
 
-	let rs = str.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n')
-//	let rs = str.replace(/\r/g, '\\r').replace(/\n/g, '\\n')
-	if ( quote == '"' ) {
-		rs = rs.replace(/"/g, '\\"');
-	}else if ( quote == "'" ) {
-		rs = rs.replace(/'/g, "\\'");
-	}
-	return rs;
+    let rs = str.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n')
+//    let rs = str.replace(/\r/g, '\\r').replace(/\n/g, '\\n')
+    if ( quote == '"' ) {
+        rs = rs.replace(/"/g, '\\"');
+    }else if ( quote == "'" ) {
+        rs = rs.replace(/'/g, "\\'");
+    }
+    return rs;
 }
 

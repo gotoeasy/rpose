@@ -4,7 +4,7 @@ const Err = require('@gotoeasy/err');
 const AryNm = '_Ary';
 
 bus.on('astgen-of-nodes', function(){
-	return nodesJsify;
+    return nodesJsify;
 }());
 
 function nodesJsify(nodes=[], context){

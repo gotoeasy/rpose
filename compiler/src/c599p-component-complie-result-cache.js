@@ -6,9 +6,9 @@ const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
-	return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(__filename, function(root, context){
 
-        bus.on('组件编译缓存', context.input.file, context);
+        bus.at('组件编译缓存', context.input.file, context);
 
     });
 

@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.0.2
+0.0.5
 
 [main]
 index.js
@@ -11,6 +11,7 @@ index.js
 rpose = bin/rpose
 
 [dependencies] // 依赖库
+@rpose/runtime = *
 @gotoeasy/bus = *
 @gotoeasy/npm = *
 @gotoeasy/file = *
@@ -23,6 +24,7 @@ rpose = bin/rpose
 @gotoeasy/theme = *
 @gotoeasy/pre-render = *
 csslibify = *
+resolve-pkg = *
 acorn-globals = *
 astring = *
 chokidar = *

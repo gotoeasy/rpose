@@ -61,15 +61,15 @@ function unescapeExpressionJsify(node, context){
 
 
 function lineString(str, quote = '"') {
-	if ( str == null ) {
-		return str;
-	}
+    if ( str == null ) {
+        return str;
+    }
 
-	let rs = str.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n')
-	if ( quote == '"' ) {
-		rs = rs.replace(/"/g, '\\"');
-	}else if ( quote == "'" ) {
-		rs = rs.replace(/'/g, "\\'");
-	}
-	return rs;
+    let rs = str.replace(/\\/g, '\\\\').replace(/\r/g, '\\r').replace(/\n/g, '\\n')
+    if ( quote == '"' ) {
+        rs = rs.replace(/"/g, '\\"');
+    }else if ( quote == "'" ) {
+        rs = rs.replace(/'/g, "\\'");
+    }
+    return rs;
 }

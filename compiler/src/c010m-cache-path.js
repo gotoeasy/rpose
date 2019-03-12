@@ -7,7 +7,7 @@ const File = require('@gotoeasy/file');
 // -------------------------------------------------------------
 module.exports = bus.on('缓存目录', function(cachepath){
 
-	return function(){
+    return function(){
         return (process.cwd() + '/.cache').replace(/\\/g, '/');
     }
 

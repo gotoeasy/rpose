@@ -1,0 +1,36 @@
+[name] // 项目名 （必填）
+@rpose/runtime
+
+[version] // 版本号 （必填）
+0.0.3
+
+[devDependencies] // 开发依赖库
+@gotoeasy/file = *
+@gotoeasy/csjs = *
+
+[description] // 描述
+rpose runtime
+
+[keywords] // 检索关键字，多个关键字用半角逗号分隔
+gotoeasy, rpose, runtime
+
+[scripts] // 脚本命令
+test = echo "Error: no test specified" && exit 1
+build = node build
+
+[repository] // 仓库
+type= git
+url = git+https://github.com/gotoeasy/rpose.git
+
+[homepage] // 主页
+https://github.com/gotoeasy/rpose/blob/master/runtime/README.md
+
+[bugs] // BUG提交地址
+url = https://github.com/gotoeasy/rpose/issues
+
+[author] // 作者信息
+name = 青松
+email= gotoeasy@163.com
+
+[license] // 协议
+MIT

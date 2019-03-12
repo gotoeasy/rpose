@@ -4,7 +4,7 @@ const postobject = require('@gotoeasy/postobject');
 bus.on('编译插件', function(){
     
     // 解析rpose源文件，替换树节点（单个源文件的单一节点），输入{file，text}
-	return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(__filename, function(root, context){
 
         let input = context.input;
         let result = context.result;
@@ -38,13 +38,13 @@ bus.on('编译插件', function(){
 // ---------------------------------------------------
 bus.on('RPOSE源文件解析', function(){
 
-	return function(text, keepLoc=true){
+    return function(text, keepLoc=true){
         let LF = text.indexOf('\r\n') >=0 ? '\r\n' : '\n';
-		let lines = text.split(LF);
-		let lineCounts = lines.map(v => v.length + LF.length);
+        let lines = text.split(LF);
+        let lineCounts = lines.map(v => v.length + LF.length);
 
         let nodes = [];
-		parse(nodes, lines, lineCounts, LF);
+        parse(nodes, lines, lineCounts, LF);
 
         nodes.forEach(block => {
             if ( block.buf.length ) {
@@ -75,21 +75,21 @@ bus.on('RPOSE源文件解析', function(){
             }
         });
         return {nodes};
-	};
+    };
 
 }());
 
 
 function parse(blocks, lines, lineCounts, lf) {
 
-	let sLine,block,oName,name,comment,value,blockStart = false;
+    let sLine,block,oName,name,comment,value,blockStart = false;
     for ( let i=0; i<lines.length; i++ ) {
         sLine = lines[i];
 
-		if ( isBlockStart(sLine) ) {
+        if ( isBlockStart(sLine) ) {
             block = {type: 'RposeBlock'};
-			oName = getBlockName(sLine);
-			comment = sLine.substring(oName.len + 2);      // 块注释
+            oName = getBlockName(sLine);
+            comment = sLine.substring(oName.len + 2);      // 块注释
             
             let line = i+1;
             let column = 1;
@@ -111,32 +111,32 @@ function parse(blocks, lines, lineCounts, lf) {
             block.buf = [];
 
             blocks.push(block);
-			blockStart = true;
+            blockStart = true;
 
-		} else if ( isBlockEnd(sLine) ) {
-			blockStart = false;
-		} else if ( isDocumentEnd(sLine) ) {
+        } else if ( isBlockEnd(sLine) ) {
+            blockStart = false;
+        } else if ( isDocumentEnd(sLine) ) {
             return;
-		} else {
-			if ( blockStart ) {
+        } else {
+            if ( blockStart ) {
                 // text line
                 let buf = blocks[blocks.length-1].buf;
                 if ( sLine.charAt(0) === '\\' && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine)) ) {
-				    buf.push( sLine.substring(1) );    // 去除转义字符，拼接当前Block内容
+                    buf.push( sLine.substring(1) );    // 去除转义字符，拼接当前Block内容
                 }else{
-				    buf.push( sLine );
+                    buf.push( sLine );
                 }
-			} else {
-				// ignore line
-			}
-		}
+            } else {
+                // ignore line
+            }
+        }
 
-	}
+    }
 
 }
 
 function isBlockStart(sLine) {
-	return sLine.startsWith('[') && sLine.indexOf(']') > 0;
+    return sLine.startsWith('[') && sLine.indexOf(']') > 0;
 }
 
 function isBlockEnd(sLine) {
@@ -149,14 +149,14 @@ function isDocumentEnd(sLine) {
 
 function getBlockName(sLine) {
     let name, len;
-	for ( let i=1; i<sLine.length; i++) {
-		if ( sLine.charAt(i-1) !== '\\' && sLine.charAt(i) === ']' ) {
+    for ( let i=1; i<sLine.length; i++) {
+        if ( sLine.charAt(i-1) !== '\\' && sLine.charAt(i) === ']' ) {
             name = sLine.substring(1, i).toLowerCase();
             len = name.length;
-            name = name.replace(/\\\]/g, ']');			 // 名称部分转义 [\]] => ]; 
-			return {name, len};
-		}
-	}
+            name = name.replace(/\\\]/g, ']');             // 名称部分转义 [\]] => ]; 
+            return {name, len};
+        }
+    }
 
     name = sLine.substring(1, sLine.lastIndexOf(']')).toLowerCase();
     len = name.length;

@@ -4,7 +4,7 @@ const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
-	return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(__filename, function(root, context){
 
         // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
         root.walk( 'AttributeName', (node, object) => {

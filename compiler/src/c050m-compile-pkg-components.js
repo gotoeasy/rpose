@@ -5,7 +5,7 @@ const File = require('@gotoeasy/file');
 
 bus.on('编译模块组件', function(){
 
-	return function(pkgname){
+    return function(pkgname){
 
         pkgname.lastIndexOf(':') > 0 && (pkgname = pkgname.substring(0, pkgname.lastIndexOf(':'))); // pkg:abc-def => pkg
         pkgname.lastIndexOf('@') > 0 && (pkgname = pkgname.substring(0, pkgname.lastIndexOf('@'))); // @scope/pkg@x.y.z => @scope/pkg
@@ -16,7 +16,7 @@ bus.on('编译模块组件', function(){
             bus.at('编译组件', file);
         }
 
-	};
+    };
 
 
 }());
@@ -29,7 +29,7 @@ bus.on('模块组件信息', function(map=new Map){
         pkgname = pkgname.toLowerCase();
 
         if ( !map.has(pkgname) ) {
-        	let nodemodules = [...require('find-node-modules')({ cwd: process.cwd(), relative: false }), ...require('find-node-modules')({ cwd: __dirname, relative: false })];
+            let nodemodules = [...require('find-node-modules')({ cwd: process.cwd(), relative: false }), ...require('find-node-modules')({ cwd: __dirname, relative: false })];
             for ( let i=0,module,path; module=nodemodules[i++]; ) {
                 path = File.resolve(module, pkgname).replace(/\\/g, '/');
                 if ( File.existsDir(path) ) {

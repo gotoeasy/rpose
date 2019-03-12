@@ -4,25 +4,23 @@ const hash = require('@gotoeasy/hash');
 
 bus.on('标签全名', function(){
 
-	return file => {
+    return file => {
 
-		if ( file.endsWith('```.rpose') ) {
-			return '$BuildIn$_' + hash(File.name(file));  // 内置的【```.rpose】特殊处理
-		}
+        if ( file.endsWith('```.rpose') ) {
+            return '$BuildIn$_' + hash(File.name(file));  // 内置的【```.rpose】特殊处理
+        }
 
         let tagpkg = '';
-        let idx = file.indexOf('/node_modules/');
+        let idx = file.lastIndexOf('/node_modules/');
         if ( idx > 0 ) {
-            let tmp = file.substring(idx + 14);                                     // xxx/node_modules/@aaa/bbb/xxxxxx => @aaa/bbb/xxxxxx
-            let npmpkg;
-            if ( tmp.startsWith('@') ) {
-                npmpkg = tmp.substring(0, tmp.indexOf('/', tmp.indexOf('/')+1));    // @aaa/bbb/xxxxxx => @aaa/bbb
+            let ary = file.substring(idx + 14).split('/');                          // xxx/node_modules/@aaa/bbb/xxxxxx => [@aaa, bbb, xxxxxx]
+            if ( ary[0].startsWith('@') ) {
+                tagpkg = ary[0] + '/' + ary[1] + ':' + File.name(file);             // xxx/node_modules/@aaa/bbb/xxxxxx/abc.rpose => @aaa/bbb:abc
             }else{
-                npmpkg = tmp.substring(0, tmp.indexOf('/'));                        // bbb/xxxxxx => bbb
+                tagpkg = ary[0] + ':' + File.name(file);                            // xxx/node_modules/aaa/xxxxxx/abc.rpose => aaa:abc
             }
-            tagpkg = npmpkg + ':' + File.name(file);
         }else{
-            tagpkg = File.name(file);
+            tagpkg = File.name(file);                                               // aaa/bbb/xxxxxx/abc.rpose => abc
         }
 
         return tagpkg;
@@ -32,7 +30,7 @@ bus.on('标签全名', function(){
 
 bus.on('标签源文件', function(){
 
-	return tag => {
+    return tag => {
         if ( tag.endsWith('.rpose') ) {
             return tag; // 已经是文件
         }
@@ -58,16 +56,16 @@ bus.on('标签源文件', function(){
                 }
             }
         }
-	};
+    };
 
 }());
 
 bus.on('组件类名', function(){
 
-	return file => {
-        let tagpkg = bus.at('标签全名', file);  // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
-        tagpkg = tagpkg.replace(/[@\/]/g, '$').replace(/\./g, '_').replace(':', '__-');     // @aaa/bbb:ui-abc => $aaa$bbb__-ui-abc
-		tagpkg = ('-'+tagpkg).split('-').map( s => s.substring(0,1).toUpperCase()+s.substring(1) ).join('');  // @abc/def-gh.xyz@1.2.3 => $abc_DefGh_xyz$1_2_3
+    return file => {
+        let tagpkg = bus.at('标签全名', file);                                                                   // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
+        tagpkg = tagpkg.replace(/[@\/]/g, '$').replace(/\./g, '_').replace(':', '$-');                          // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc
+        tagpkg = ('-'+tagpkg).split('-').map( s => s.substring(0,1).toUpperCase()+s.substring(1) ).join('');    // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
         return tagpkg;
     };
 
@@ -76,14 +74,42 @@ bus.on('组件类名', function(){
 
 bus.on('组件目标文件名', function(){
 
-	return function(srcFile){
-		let env = bus.at('编译环境');
-		if ( srcFile.startsWith(env.path.src_buildin) ) {
-			return '$buildin/' + File.name(srcFile);  // buildin
-		}
+    return function(srcFile){
+        let env = bus.at('编译环境');
+        if ( srcFile.startsWith(env.path.src_buildin) ) {
+            return '$buildin/' + File.name(srcFile);  // buildin
+        }
 
         let tagpkg = bus.at('标签全名', srcFile);   // @aaa/bbb:ui-btn
         return tagpkg.replace(':', '/');
-	};
+    };
+
+}());
+
+
+bus.on('页面目标JS文件名', function(){
+
+    return function(srcFile){
+        let env = bus.at('编译环境');
+        return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length-6) + '.js'; 
+    };
+
+}());
+
+bus.on('页面目标CSS文件名', function(){
+
+    return function(srcFile){
+        let env = bus.at('编译环境');
+        return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length-6) + '.css'; 
+    };
+
+}());
+
+bus.on('页面目标HTML文件名', function(){
+
+    return function(srcFile){
+        let env = bus.at('编译环境');
+        return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length-6) + '.html'; 
+    };
 
 }());

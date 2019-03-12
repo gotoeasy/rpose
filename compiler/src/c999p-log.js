@@ -3,7 +3,7 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
     
-	return postobject.plugin(__filename, function(root, result){
+    return postobject.plugin(__filename, function(root, result){
 
 //        console.info('[999-log]', '-----------root JSON----------');
 //        console.info(JSON.stringify(root,null,4));

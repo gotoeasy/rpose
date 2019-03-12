@@ -1,0 +1,31 @@
+{
+  "name": "@rpose/runtime",
+  "version": "0.0.3",
+  "devDependencies": {
+    "@gotoeasy/file": "*",
+    "@gotoeasy/csjs": "*"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build"
+  },
+  "description": "rpose runtime",
+  "keywords": [
+    "gotoeasy",
+    "rpose",
+    "runtime"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gotoeasy/rpose.git"
+  },
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/runtime/README.md",
+  "bugs": {
+    "url": "https://github.com/gotoeasy/rpose/issues"
+  },
+  "author": {
+    "name": "青松",
+    "email": "gotoeasy@163.com"
+  },
+  "license": "MIT"
+}

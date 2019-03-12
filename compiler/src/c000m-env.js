@@ -10,11 +10,11 @@ const path = require('path');
 // 读不到则使用默认配置
 module.exports = bus.on('编译环境', function(result){
 
-	return function(opts){
+    return function(opts){
         if ( result ) return result;
 
-		result = parseRposeConfigBtf('rpose.config.btf');   // 相对命令行目录
-		if ( !result ) {
+        result = parseRposeConfigBtf('rpose.config.btf');   // 相对命令行目录
+        if ( !result ) {
             // 没有配置文件时的默认设定
             let root = process.cwd().replace(/\\/g, '/');
             let src = root + '/src';
@@ -25,15 +25,15 @@ module.exports = bus.on('编译环境', function(result){
             let theme = '@gotoeasy/theme';
             let prerender = '@gotoeasy/pre-render';
 
-			result = { path: {root, src, src_buildin, build, build_temp, build_dist}, theme, prerender};
-		}
+            result = { path: {root, src, src_buildin, build, build_temp, build_dist}, theme, prerender};
+        }
 
         result.clean = !!opts.clean;
         result.release = !!opts.release;
         result.debug = !!opts.debug;
 
-		return result;
-	};
+        return result;
+    };
 
 }());
 
@@ -73,18 +73,18 @@ function parseRposeConfigBtf(file){
 }
 
 function getConfPath(root, map, key, defaultValue){
-	// TODO 检查配置目录的合法性
-	if ( !map.get(key) ) {
-		return root + '/' + defaultValue.split('/').filter(v => !!v).join('/');
-	}
-	return root + '/' + map.get(key).split('/').filter(v => !!v).join('/');
+    // TODO 检查配置目录的合法性
+    if ( !map.get(key) ) {
+        return root + '/' + defaultValue.split('/').filter(v => !!v).join('/');
+    }
+    return root + '/' + map.get(key).split('/').filter(v => !!v).join('/');
 }
 
 // TODO 提高性能
 function autoInstallLocalModules(...names){
     let ignores = ['@gotoeasy/theme', '@gotoeasy/pre-render'];
 
-	let node_modules = [ ...require('find-node-modules')({ cwd: __dirname, relative: false }), ...require('find-node-modules')({ cwd: process.cwd(), relative: false })];
+    let node_modules = [ ...require('find-node-modules')({ cwd: __dirname, relative: false }), ...require('find-node-modules')({ cwd: process.cwd(), relative: false })];
 
     for ( let i=0,name; name=names[i++]; ) {
         if ( ignores.includes(name) ) continue;
