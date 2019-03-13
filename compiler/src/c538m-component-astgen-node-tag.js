@@ -1,6 +1,6 @@
 const bus = require('@gotoeasy/bus');
 
-bus.on('astgen-of-tag-node', function(){
+bus.on('astgen-node-tag', function(){
     return tagJsify;
 }());
 
@@ -12,9 +12,34 @@ function tagJsify(node, context){
     let isTop = node.parent.type === 'View';                                // 是否为组件的顶部节点
     let isStatic = isStaticTagNode(node);                                   // 是否为静态不变节点，便于运行期的节点差异比较优化
     let isComponent = !node.object.standard;                                // 是否为组件标签节点
-    let childrenJs = bus.at('astgen-of-nodes', node.nodes, context);        // 子节点代码，空白或 [{...},{...},{...}]
-    let attrs = bus.at('astgen-of-attributes-node', node, context);
-    let events = bus.at('astgen-of-events-node', node, context);
+    let childrenJs = bus.at('astgen-node-tag-nodes', node.nodes, context);  // 子节点代码，空白或 [{...},{...},{...}]
+    let attrs = bus.at('astgen-node-attributes', node, context);
+    let events = bus.at('astgen-node-events', node, context);
+
+    // style和class要合并到attrs中去
+    let style = bus.at('astgen-node-style', node, context);
+    if ( style ) {
+        if ( !attrs ) {
+            attrs = `{style: ${style}}`;
+        }else{
+            attrs = attrs.replace(/\}\s*$/, `,style: ${style}}`);
+        }
+    }
+    let clasz = bus.at('astgen-node-class', node, context);
+    if ( clasz ) {
+        if ( !attrs ) {
+            attrs = `{class: ${clasz}}`;
+        }else{
+            attrs = attrs.replace(/\}\s*$/, `,class: ${clasz}}`);
+        }
+    }
+
+    // 有单纯的表达式对象属性时，转换成对象复制语句
+    let props = bus.at('astgen-node-{prop}', node, context);                // (prop1),(prop2)
+    if ( props ) {
+        attrs = `rpose.assign( ${attrs}, ${props})`;
+    }
+
 
     let ary = [];
     ary.push(                   `{ `                                    );     

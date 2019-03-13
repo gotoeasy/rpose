@@ -1,6 +1,6 @@
 const bus = require('@gotoeasy/bus');
 
-bus.on('astgen-of-text-node', function(){
+bus.on('astgen-node-text', function(){
 
     return function (node, context){
 

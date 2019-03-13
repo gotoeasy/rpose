@@ -288,8 +288,12 @@ function TokenParser(fileText, src, file, PosOffset){
                     val += reader.readChar();    // 连续可见字符就放进去
                 }
 
-                if ( !val || !/^(\d+|\d+\.?\d+)$/.test(val) ) {
-                    // 属性值漏，如<tag aaa= />； 属性值不带引号或大括号，应该是单纯数值，如果不是则报错，如<tag aaa=00xxx  />
+                if ( !val ) {
+                    // 属性值漏，如<tag aaa= />
+                    throw new Err('missing attribute value', 'file=' + file, {text: fileText, start: PosEqual, end: PosEqual+1});
+                }
+                if ( !/^(\d+|\d+\.?\d+)$/.test(val) ) {
+                    // 属性值不带引号或大括号，应该是单纯数值，如果不是则报错，如<tag aaa=00xxx  />
                     throw new Err('invalid attribute value', 'file=' + file, {text: fileText, start: PosEqual, end: reader.getPos()+PosOffset});
                 }
 

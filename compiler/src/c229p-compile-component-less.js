@@ -31,9 +31,10 @@ bus.on('编译插件', function(){
 
 
 function lessToCss(less){
+    let env  = bus.at('编译环境');
     let hashcode = hash(less);
     let cachefile = `${bus.at('缓存目录')}/less-to-css/${hashcode}.css`;
-    if ( File.existsFile(cachefile) ) return File.read(cachefile);
+    if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
 
     let css = csjs.lessToCss(less);
     File.write(cachefile, css);

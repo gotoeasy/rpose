@@ -8,7 +8,8 @@ const File = require('@gotoeasy/file');
 module.exports = bus.on('缓存目录', function(cachepath){
 
     return function(){
-        return (process.cwd() + '/.cache').replace(/\\/g, '/');
+
+        return (process.cwd() + '/.cache/' + bus.at('编译环境').compilerVersion).replace(/\\/g, '/');
     }
 
 }());

@@ -3,6 +3,7 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
     
+    // 自关闭标签统一转换为Tag类型节点
     return postobject.plugin(__filename, function(root, context){
 
         root.walk( 'TagSelfClose', (node, object) => {

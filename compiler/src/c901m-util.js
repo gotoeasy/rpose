@@ -1,6 +1,7 @@
 const File = require('@gotoeasy/file');
 const bus = require('@gotoeasy/bus');
 const hash = require('@gotoeasy/hash');
+const findNodeModules = require('find-node-modules');
 
 bus.on('标签全名', function(){
 
@@ -30,7 +31,7 @@ bus.on('标签全名', function(){
 
 bus.on('标签源文件', function(){
 
-    return tag => {
+    return (tag, pkg) => {
         if ( tag.endsWith('.rpose') ) {
             return tag; // 已经是文件
         }
@@ -38,7 +39,7 @@ bus.on('标签源文件', function(){
         if ( tag.indexOf(':') > 0 ) {
             // @taglib指定的标签
             let ary = tag.split(':');
-            let oPkg = bus.at('模块组件信息', ary[0]);
+            let oPkg = bus.at('模块组件信息', ary[0]);  //  TODO 配置文件
             let files = oPkg.files;
             let name = '/' + ary[1] + '.rpose';
             for ( let i=0,file; file=files[i++]; ) {
@@ -60,10 +61,40 @@ bus.on('标签源文件', function(){
 
 }());
 
+bus.on('模块组件信息', function(map=new Map){
+
+    return function getImportInfo(pkgname){
+        pkgname.indexOf(':') > 0 && (pkgname = pkgname.substring(0, pkgname.indexOf(':')));             // @scope/pkg@x.y.z:component => @scope/pkg@x.y.z
+        pkgname.lastIndexOf('@') > 0 && (pkgname = pkgname.substring(0, pkgname.lastIndexOf('@')));     // @scope/pkg@x.y.z => @scope/pkg
+        pkgname = pkgname.toLowerCase();
+
+        if ( !map.has(pkgname) ) {
+            let env = bus.at('编译环境');
+        	let nodemodules = [...findNodeModules({ cwd: env.path.root, relative: false }), ...findNodeModules({ cwd: __dirname, relative: false })];
+            for ( let i=0,module,path; module=nodemodules[i++]; ) {
+                path = File.resolve(module, pkgname).replace(/\\/g, '/');
+                if ( File.existsDir(path) ) {
+                    let obj = JSON.parse(File.read(File.resolve(path, 'package.json')));
+                    let version = obj.version;
+                    let name = obj.name;
+                    let pkg = name + '@' + version;
+                    let files = File.files(path, '/src/**.rpose');
+                    let config = File.resolve(path, 'rpose.config.btf');
+                    map.set(name, {path, pkg, name, version, files, config});
+                    break;
+                }
+            }
+        }
+
+        return map.get(pkgname) || {};
+    }
+
+}());
+
 bus.on('组件类名', function(){
 
     return file => {
-        let tagpkg = bus.at('标签全名', file);                                                                   // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
+        let tagpkg = bus.at('标签全名', bus.at('标签源文件', file));                                             // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
         tagpkg = tagpkg.replace(/[@\/]/g, '$').replace(/\./g, '_').replace(':', '$-');                          // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc
         tagpkg = ('-'+tagpkg).split('-').map( s => s.substring(0,1).toUpperCase()+s.substring(1) ).join('');    // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
         return tagpkg;

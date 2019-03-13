@@ -47,9 +47,9 @@ function topNodesWithScriptJsify(nodes=[], context){
     for ( let i=0,node; node=nodes[i++]; ) {
         if ( node.type === 'JsCode' ) {
             ary.push( node.object.value );                                  // 代码块，直接添加
-        }else if ( src = bus.at('astgen-of-tag-node', node, context) ) {
+        }else if ( src = bus.at('astgen-node-tag', node, context) ) {
             ary.push( ` ${AryNm}.push( ${src} ); ` );                       // 标签节点
-        }else if ( src = bus.at('astgen-of-text-node', node, context) ) {
+        }else if ( src = bus.at('astgen-node-text', node, context) ) {
             ary.push( ` ${AryNm}.push( ${src} ); ` );                       // 文本节点
         }else{
             throw new Err('unhandle node type');                            // 应该没有这种情况
@@ -80,10 +80,10 @@ function topNodesWithoutScriptJsify(nodes=[], context){
         throw new Err('missing top tag', {text, file, start});              // 组件顶部只能有一个标签
     }
 
-    src = bus.at('astgen-of-tag-node', node, context);
+    src = bus.at('astgen-node-tag', node, context);
     if ( src ) return `return ${src}`;                                      // 标签节点 {...}
 
-    src = bus.at('astgen-of-text-node', node, context);
+    src = bus.at('astgen-node-text', node, context);
     if ( src ) return `return ${src}`;                                      // 文本节点 {...}
 
     // 应该没有这种情况，万一有，多数是修改添加后漏对应

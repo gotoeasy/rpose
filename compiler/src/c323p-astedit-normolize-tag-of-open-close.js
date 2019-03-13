@@ -4,6 +4,7 @@ const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
+    // 开闭标签统一转换为Tag类型节点
     return postobject.plugin(__filename, function(root, context){
 
 

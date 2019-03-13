@@ -16,7 +16,7 @@ let opts = {
 	release: !!cmmd.release,
 	publish: !!cmmd.publish,
 	debug: !!cmmd.debug,
-	disableDiskCache: !!cmmd.nocache,
+	nocache: !!cmmd.nocache,
 
 	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd()
 };

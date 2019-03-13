@@ -29,8 +29,8 @@ class  JsWriter{
     toString (){
         let js = this.ary.join('\n');
         try{
-           // return csjs.formatJs( js );
-            return csjs.formatJs( csjs.miniJs(js) );
+            return csjs.formatJs( js );
+           // return csjs.formatJs( csjs.miniJs(js) );
         }catch(e){
             File.write(process.cwd() + '/build/error/format-error.js', js);
             throw e;

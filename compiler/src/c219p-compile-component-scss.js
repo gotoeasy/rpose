@@ -13,11 +13,11 @@ bus.on('编译插件', function(){
         root.walk( 'RposeBlock', (node, object) => {
 
             // 编译结果追加到context中以便于读取，节点相应删除
-            if ( /^sass$/.test(object.name.value) ) {
-                let sass = object.text ? object.text.value : '';
-                if ( sass ) {
+            if ( /^scss$/.test(object.name.value) ) {
+                let scss = object.text ? object.text.value : '';
+                if ( scss ) {
                     let theme = bus.at('样式风格');
-                    style.sass = sassToCss(theme.sass + sass);
+                    style.scss = scssToCss(theme.scss + scss);
                 }                
 
                 node.remove();
@@ -30,12 +30,13 @@ bus.on('编译插件', function(){
 }());
 
 
-function sassToCss(sass){
-    let hashcode = hash(sass);
-    let cachefile = `${bus.at('缓存目录')}/sass-to-css/${hashcode}.css`;
-    if ( File.existsFile(cachefile) ) return File.read(cachefile);
+function scssToCss(scss){
+    let env  = bus.at('编译环境');
+    let hashcode = hash(scss);
+    let cachefile = `${bus.at('缓存目录')}/scss-to-css/${hashcode}.css`;
+    if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
 
-    let css = csjs.sassToCss(sass);
+    let css = csjs.scssToCss(scss);
     File.write(cachefile, css);
     return css;
 }

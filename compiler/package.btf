@@ -2,16 +2,16 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.0.5
+0.0.7
 
 [main]
 index.js
 
 [bin] // cli命令
-rpose = bin/rpose
+rp = bin/rpose
 
 [dependencies] // 依赖库
-@rpose/runtime = *
+@rpose/runtime = ^0.0.3
 @gotoeasy/bus = *
 @gotoeasy/npm = *
 @gotoeasy/file = *

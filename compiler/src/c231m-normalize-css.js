@@ -17,9 +17,11 @@ module.exports = bus.on('样式统一化整理', function(){
     // -------------------------------------------------------------
     return (css, fromPath, toPath, assetsPath) => {
 
+        let env  = bus.at('编译环境');
         let hashcode = hash(JSON.stringify([css, fromPath, toPath, assetsPath]));
         let cachefile = `${bus.at('缓存目录')}/normalize-css/${hashcode}.css`;
-        if ( File.existsFile(cachefile) ) return File.read(cachefile);
+
+        if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
 
         // 修改url并复文件哈希化文件名
         let url = 'copy';

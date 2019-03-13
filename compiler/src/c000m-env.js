@@ -18,7 +18,7 @@ module.exports = bus.on('编译环境', function(result){
             // 没有配置文件时的默认设定
             let root = process.cwd().replace(/\\/g, '/');
             let src = root + '/src';
-            let src_buildin = path.resolve(__dirname, '../buildin').replace(/\\/g, '/');
+            let src_buildin = path.resolve(__dirname, '../buildin').replace(/\\/g, '/');        // TODO
             let build = root + '/build';
             let build_temp = root + '/build/temp';
             let build_dist = root + '/build/dist';
@@ -31,6 +31,8 @@ module.exports = bus.on('编译环境', function(result){
         result.clean = !!opts.clean;
         result.release = !!opts.release;
         result.debug = !!opts.debug;
+        result.nocache = !!opts.nocache;
+        result.compilerVersion = JSON.parse(File.read(File.resolve(__dirname, '../package.json'))).version;
 
         return result;
     };

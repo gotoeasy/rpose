@@ -19,14 +19,14 @@ bus.on('编译插件', function(){
             let action = env.release ? 'min' : 'format';
             let cachefile = `${bus.at('缓存目录')}/babel-browserify/${hashbrowsers}-${hashcode}-${action}.js`;
 
-            if ( File.existsFile(cachefile) ) return File.read(cachefile);
+            if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
             
             
             let js;
             try{
                 js = csjs.babel(context.result.pageJs);
             }catch(e){
-                File.write(env.path.root + '/log/log.txt', context.result.pageJs + '\n\n' + e.stack);
+                File.write(env.path.build + '/log/log.txt', context.result.pageJs + '\n\n' + e.stack);
                 throw e;
             }
 

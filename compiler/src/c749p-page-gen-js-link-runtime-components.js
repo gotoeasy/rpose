@@ -35,10 +35,6 @@ bus.on('编译插件', function(){
 
         context.result.pageJs = src;
 
-        if ( !env.release ) {
-            let file = env.path.build_temp + '/' + bus.at('组件目标文件名', context.input.file) + '.js';
-            File.write(file, csjs.formatJs(src) );
-        }
     });
 
 }());
