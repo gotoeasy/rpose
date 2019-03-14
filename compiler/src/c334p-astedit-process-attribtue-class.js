@@ -39,6 +39,7 @@ bus.on('编译插件', function(){
             let oNode = ary[0].clone();
             oNode.type = 'Class';
             oNode.object.type = 'Class';
+            oNode.object.classes = getClasses(oNode.object.value);
 
             node.addChild(oNode);
             ary[0].remove();    // 删除节点
@@ -48,3 +49,41 @@ bus.on('编译插件', function(){
     });
 
 }());
+
+function getClasses(clas){
+
+    // TODO 含大括号冒号的复杂表达式
+    let result = [];
+    clas = clas.replace(/\{.*?\}/g, function(match){
+        let str = match.substring(1, match.length-1);   // {'xxx': ... , yyy: ...} => 'xxx': ... , yyy: ...
+        
+        let idx, key, val;
+        while ( str.indexOf(':') > 0 ) {
+            idx = str.indexOf(':');
+            key = str.substring(0, idx).replace(/['"]/g, '').trim();   // key
+
+            val = str.substring(idx+1);
+            let idx2 = val.indexOf(':');
+            if ( idx2 > 0 ) {
+                val = val.substring(0, idx2);
+                val = val.substring(0, val.lastIndexOf(','));   // val
+                str = str.substring(idx + 1 + val.length + 1);                     // 更新临时变量
+            }else{
+                str = '';
+            }
+
+            key && result.push(key);
+        }
+
+        return '';
+    });
+    
+
+	let ary = clas.split(/\s+/);
+	for ( let i=0; i<ary.length; i++) {
+        ary[i].trim() && result.push(ary[i].trim());
+	}
+
+	return result;
+}
+

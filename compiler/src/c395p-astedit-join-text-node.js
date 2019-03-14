@@ -5,38 +5,35 @@ bus.on('编译插件', function(){
     
     return postobject.plugin(__filename, function(root, context){
 
-        root.walk( /^(Text|EscapeExpression|UnescapeExpression)$/, (node, object) => {
+        const OPTS = bus.at('视图编译选项');
+
+        // TODO 用选项常量
+        root.walk( /^(Text|Expression)$/, (node, object) => {
+
             // 合并连续的文本节点
             let ary = [node];
             let nAfter = node.after();
-            while ( nAfter && (nAfter.type === 'Text' || nAfter.type === 'EscapeExpression' || nAfter.type === 'UnescapeExpression') ) {
+            while ( nAfter && (nAfter.type === OPTS.TypeText || nAfter.type === OPTS.TypeExpression) ) {
                 ary.push(nAfter);
                 nAfter = nAfter.after();
             }
 
             if ( ary.length < 2 ) return;
 
-            // TODO 有必要考虑转义吗？
             let aryRs = [], tmp;
             ary.forEach(nd => {
-                if ( nd.type === 'Text' ) {
+                if ( nd.type === OPTS.TypeText ) {
                     aryRs.push('"' + lineString(nd.object.value) + '"');
-                }else if ( nd.type === 'EscapeExpression' ) {
-                    tmp = nd.object.value.trim();
-                    tmp = tmp.substring(1, tmp.length-1);
-                    aryRs.push('(' + tmp + ')');
-                }else if ( nd.type === 'UnescapeExpression' ) {
-                    tmp = nd.object.value.trim();
-                    tmp = tmp.substring(2, tmp.length-1);
-                    aryRs.push('(' + tmp + ')');
+                }else {
+                    aryRs.push( nd.object.value.replace(/^\s*\{/, '(').replace(/\}\s*$/, ')') );
                 }
             });
 
-            let value = '{' + aryRs.join(' + ') + '}';
+            let value = OPTS.ExpressionStart + aryRs.join(' + ') + OPTS.ExpressionEnd;
             let start = ary[0].object.loc.start;
             let end = ary[ary.length-1].object.loc.end;
             let loc = {start, end};
-            let tNode = this.createNode({type: 'UnescapeExpression', value, loc});
+            let tNode = this.createNode({type: OPTS.TypeExpression, value, loc});
             node.before(tNode);
             ary.forEach(nd => nd.remove());
         });

@@ -11,9 +11,9 @@ bus.on('编译插件', function(){
 
             let tagNode = node.parent;                                                  // 所属标签节点
 
-            if ( /^\s*\{/.test(object.value) && /\}\s*$/.test(object.value) && !/\\\}\s*$/.test(object.value) ) {
+            if ( bus.at('是否表达式', object.value) ) {
                 // 属性 @ref 不能使用表达式
-                throw new Err('invalid attribute value of @ref', {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                throw new Err('@ref unsupport the expression', {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
             }
 
 

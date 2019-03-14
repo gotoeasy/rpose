@@ -8,7 +8,7 @@ bus.on('astgen-node-class', function(){
     return function (tagNode, context){
         if ( !tagNode.nodes ) return '';
 
-        // 查找检查事件属性节点
+        // 查找Class属性节点
         let classNode;
         for ( let i=0,nd; nd=tagNode.nodes[i++]; ) {
             if ( nd.type === 'Class' ) {

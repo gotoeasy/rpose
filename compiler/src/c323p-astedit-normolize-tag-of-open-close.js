@@ -7,13 +7,14 @@ bus.on('编译插件', function(){
     // 开闭标签统一转换为Tag类型节点
     return postobject.plugin(__filename, function(root, context){
 
+        const OPTS = bus.at('视图编译选项');
 
         let normolizeTagNode = (tagNode, nodeTagOpen) => {
 
             let nextNode = nodeTagOpen.after();
-            while ( nextNode && nextNode.type !== 'TagClose' ) {
+            while ( nextNode && nextNode.type !== OPTS.TypeTagClose ) {
 
-                if ( nextNode.type === 'TagOpen' ) {
+                if ( nextNode.type === OPTS.TypeTagOpen ) {
                     let type = 'Tag';
                     let value = nextNode.object.value;
                     let loc = nextNode.object.loc;
@@ -34,7 +35,7 @@ bus.on('编译插件', function(){
             }
 
 
-            if ( nextNode.type === 'TagClose' ) {
+            if ( nextNode.type === OPTS.TypeTagClose ) {
                 if ( nodeTagOpen.object.text !== nextNode.object.text ) {
                     throw new Err('unmatch close tag', 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos, end: nextNode.object.loc.end.pos});
                 }
@@ -49,7 +50,7 @@ bus.on('编译插件', function(){
         }
 
 
-        root.walk( 'TagOpen', (node, object) => {
+        root.walk( OPTS.TypeTagOpen, (node, object) => {
             if ( !node.parent ) return;
 
             let type = 'Tag';

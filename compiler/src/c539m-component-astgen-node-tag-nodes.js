@@ -26,7 +26,7 @@ function nodesWithScriptJsify(nodes=[], context){
             ary.push( ` ${AryName}.push( ${src} ); ` );                     // 标签节点
         }else if ( src = bus.at('astgen-node-text', node, context) ) {
             ary.push( ` ${AryName}.push( ${src} ); ` );                     // 文本节点
-        }else if ( node.type === 'Attributes' || node.type === 'Events' || node.type === 'ExpressionAttributes' ) {
+        }else if ( node.type === 'Attributes' || node.type === 'Events' || node.type === 'ObjectExpressionAttributes' ) {
             // ignore
         }else{
 //console.info('-------------node------------', node)

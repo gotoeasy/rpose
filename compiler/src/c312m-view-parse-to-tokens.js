@@ -2,6 +2,9 @@ const bus = require('@gotoeasy/bus');
 const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 
+// 自闭合标签
+const SELF_CLOSE_TAGS = 'br,hr,input,img,meta,link,area,base,col,command,embed,keygen,param,srouce,trace,wbr'.split(',');
+
 const MODULE = '[' + __filename.substring(__filename.replace(/\\/g, '/').lastIndexOf('/')+1, __filename.length-3) + '] ';
 
 // TODO 未转义字符引起的解析错误，友好提示
@@ -12,13 +15,6 @@ function escape(str){
 }
 function unescape(str){
     return str == null ? null : str.replace(/\u0000\u0001/g, '{').replace(/\ufffe\uffff/g, '}');
-}
-function unescapeHtml(str){
-    // 引号包围的属性值，做反向转义处理
-    if ( /&/.test(str) ) {
-        return str.replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-    }
-    return str;
 }
 
 function getLocation(src, startPos, endPos, PosOffset){
@@ -68,8 +64,7 @@ function TokenParser(fileText, src, file, PosOffset){
     function parseNode() {
         let pos = reader.getPos();
         if ( reader.getCurrentChar() !== '<' || reader.eof() || reader.getNextString(4) === '<!--' || reader.getNextString(9) === '<![CDATA['
-            || src.indexOf(options.CodeBlockStart, pos) == pos || src.indexOf(options.ExpressionStart, pos) == pos
-            || src.indexOf(options.ExpressionUnescapeStart, pos) == pos ) {
+            || src.indexOf(options.CodeBlockStart, pos) == pos || src.indexOf(options.ExpressionStart, pos) == pos ) {
             return 0;
         }
 
@@ -135,7 +130,7 @@ function TokenParser(fileText, src, file, PosOffset){
 
         if ( reader.getCurrentChar() === '>' ) {
             // 默认可以自闭合的标签（如<br>）
-            if ( options.AutoCloseTags.includes(tagNm.toLowerCase()) ) {
+            if ( SELF_CLOSE_TAGS.includes(tagNm.toLowerCase()) ) {
                 tokenTagNm.type = options.TypeTagSelfClose; // 更新 Token: 标签
             }else{
                 tokenTagNm.type = options.TypeTagOpen; // 更新 Token: 标签
@@ -172,7 +167,7 @@ function TokenParser(fileText, src, file, PosOffset){
             while ( !reader.eof() ) {
                 if ( reader.getCurrentChar() === '{' ) {
                     if ( reader.getPrevChar() !== '\\' ) {
-                        stack.push('{'); // 表达式中支持写{....}, 但字符串包含表达式符号将引起混乱误解析，编写时应避免
+                        stack.push('{');                        // TODO 表达式中支持写{....}, 但字符串包含表达式符号将引起混乱误解析，编写时应避免
                     }
                 }
                 if ( reader.getCurrentChar() === '}' ) {
@@ -235,7 +230,7 @@ function TokenParser(fileText, src, file, PosOffset){
                 reader.skip(1);    // 跳过右双引号
                 oPos.end = reader.getPos();
 
-                token = { type: options.TypeAttributeValue, value: unescape(unescapeHtml(val)), pos: oPos };    // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
+                token = { type: options.TypeAttributeValue, value: unescape(val), pos: oPos };    // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                 tokens.push(token);
             }else if ( reader.getCurrentChar() === "'" ) {
                 // 值由单引号包围
@@ -254,7 +249,7 @@ function TokenParser(fileText, src, file, PosOffset){
                 reader.skip(1);    // 跳过右单引号
                 oPos.end = reader.getPos();
 
-                token = { type: options.TypeAttributeValue, value: unescape(unescapeHtml(val)), pos: oPos };    // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
+                token = { type: options.TypeAttributeValue, value: unescape(val), pos: oPos };    // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                 tokens.push(token);
             }else if ( reader.getCurrentChar() === "{" ) {
                 // 值省略引号包围
@@ -462,14 +457,14 @@ function TokenParser(fileText, src, file, PosOffset){
             pos = reader.getPos();
 
             if ( reader.getCurrentChar() === '<' || reader.getNextString(3) === '```' || src.indexOf(options.CodeBlockStart, pos) === pos
-                || src.indexOf(options.ExpressionStart, pos) === pos || src.indexOf(options.ExpressionUnescapeStart, pos) === pos ) {
+                || src.indexOf(options.ExpressionStart, pos) === pos ) {
                 break; // 见起始符则停
             }
         }
 
         if ( text ) {
             oPos.end = reader.getPos();
-            token = { type: options.TypeText, value: unescape(unescapeHtml(text)), pos: oPos };    // Token: 文本
+            token = { type: options.TypeText, value: unescape(text), pos: oPos };    // Token: 文本
             tokens.push(token);
             return 1;
         }
@@ -477,7 +472,7 @@ function TokenParser(fileText, src, file, PosOffset){
         return 0;
     }
 
-    // 表达式 { } 或 {= }
+    // 表达式 { }
     function parseExpression() {
         if ( reader.eof() ) {
             return 0;
@@ -486,12 +481,7 @@ function TokenParser(fileText, src, file, PosOffset){
         let token;
         let oPos = {};
         oPos.start = reader.getPos();
-        if ( options.ExpressionStart.length > options.ExpressionUnescapeStart.length ) {
-            // 起始符较长者优先
-            token = parseExpr(options.ExpressionStart, options.ExpressionEnd, options.TypeEscapeExpression) || parseExpr(options.ExpressionUnescapeStart, options.ExpressionUnescapeEnd, options.TypeUnescapeExpression);
-        }else{
-            token = parseExpr(options.ExpressionUnescapeStart, options.ExpressionUnescapeEnd, options.TypeUnescapeExpression) || parseExpr(options.ExpressionStart, options.ExpressionEnd, options.TypeEscapeExpression);
-        }
+        token = parseExpr();
 
         if ( token ) {
             oPos.end = reader.getPos();
@@ -502,13 +492,12 @@ function TokenParser(fileText, src, file, PosOffset){
         return 0;
     }
 
-    function parseExpr(sStart, sEnd, type) {
+    function parseExpr() {
         let pos = reader.getPos();
-        let idxStart = src.indexOf(sStart, pos), idxEnd = src.indexOf(sEnd, pos + sStart.length);
+        let idxStart = src.indexOf(options.ExpressionStart, pos), idxEnd = src.indexOf(options.ExpressionEnd, pos + options.ExpressionStart.length);
         if ( idxStart === pos && idxEnd > 0 ) {
-//            let rs = { type: type, value: src.substring(pos + sStart.length, idxEnd) }; // Token: 表达式(删除两边的表达式符号)
-            let rs = { type: type, value: unescape(src.substring(pos, idxEnd + sEnd.length)) }; // Token: 表达式(保留原样)
-            reader.skip(idxEnd + sEnd.length - pos); // 位置更新
+            let rs = { type: options.TypeExpression, value: unescape(src.substring(pos, idxEnd + options.ExpressionEnd.length)) }; // Token: 表达式(保留原样)
+            reader.skip(idxEnd + options.ExpressionEnd.length - pos); // 位置更新
             return rs;
         }
         return null;

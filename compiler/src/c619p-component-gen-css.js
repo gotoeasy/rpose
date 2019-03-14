@@ -12,7 +12,7 @@ bus.on('编译插件', function(){
         let style = context.style;
         let ary = [];
         style.less && ary.push(style.less);
-        style.sass && ary.push(style.sass);
+        style.scss && ary.push(style.scss);
         style.css && ary.push(style.css);
         style.csslib && ary.push(style.csslib);
 

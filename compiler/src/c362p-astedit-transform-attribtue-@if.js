@@ -7,11 +7,13 @@ bus.on('编译插件', function(){
     // 转换处理指令节点 @ref
     return postobject.plugin(__filename, function(root, context){
 
+        const OPTS = bus.at('视图编译选项');
+
         root.walk( '@if', (node, object) => {
 
             let tagNode = node.parent;                                                      // 所属标签节点
 
-            let type = 'JsCode';
+            let type = OPTS.TypeCodeBlock;
             let value = 'if (' + object.value.replace(/^\s*\{=?/, '').replace(/\}\s*$/, '') + ') {';
             let jsNode = this.createNode({type, value});
             tagNode.before(jsNode);

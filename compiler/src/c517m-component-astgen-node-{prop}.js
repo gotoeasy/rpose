@@ -12,7 +12,7 @@ bus.on('astgen-node-{prop}', function(){
         // 查找检查事件属性节点
         let exprAttrNode;
         for ( let i=0,nd; nd=tagNode.nodes[i++]; ) {
-            if ( nd.type === 'ExpressionAttributes' ) {
+            if ( nd.type === 'ObjectExpressionAttributes' ) {
                 exprAttrNode = nd;
                 break;  // 找到
             }
