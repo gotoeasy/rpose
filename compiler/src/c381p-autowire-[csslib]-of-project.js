@@ -11,7 +11,7 @@ bus.on('编译插件', function(){
         let style = context.style;
         let oCssSet = style.csslibset = style.csslibset || new Set();
 
-        let prj = bus.at('项目配置处理');
+        let prj = bus.at('项目配置处理', context.input.file);
         let csslibs = prj.csslibs || [];
         let nonameCsslib = prj.nonameCsslib;
 

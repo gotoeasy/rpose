@@ -4,20 +4,20 @@ const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 
 // TODO 模块包的配置处理？
-bus.on('项目配置处理', function(result){
+bus.on('项目配置处理', function(result={}){
 
-    return function(){
-        if ( result ) return result;
+    return function(srcFile){
 
-        let env = bus.at('编译环境');
-        let btfFile = env.path.root + '/rpose.config.btf';
-        if ( !File.existsFile(btfFile) ) return {};
-        
+        let btfFile = bus.at('文件所在项目配置文件', srcFile);
+
+        if ( !btfFile ) return {};
+        if ( result[btfFile] ) return result[btfFile];
+
         let plugins = bus.on('项目配置处理插件');
-        let rs = postobject(plugins).process({file: btfFile}, {log:env.debug});
+        let rs = postobject(plugins).process({file: btfFile});
 
-        result = rs.result;
-        return result;
+        result[btfFile] = rs.result;
+        return result[btfFile];
     };
 
 }());
