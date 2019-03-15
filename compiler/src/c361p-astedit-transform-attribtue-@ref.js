@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
             }
 
 
-            // TODO 按特殊属性处理，需同步修改运行时脚本
+            // TODO @ref 转为特殊属性处理，需同步修改运行时脚本
             // 添加到普通属性中使用
 
             // 查找Attributes
@@ -33,14 +33,21 @@ bus.on('编译插件', function(){
             cNode.type = 'Attribute';
             cNode.object.type = 'Attribute';
             cNode.object.name = 'ref';
+
+            let $contextNode = node.clone();
+            $contextNode.type = 'Attribute';
+            $contextNode.object.type = 'Attribute';
+            $contextNode.object.name = '$context';
+            $contextNode.object.value = '{$this}';
+            $contextNode.object.isExpression = true;
+
             if ( !attrsNode ) {
                 attrsNode = this.createNode({type: 'Attributes'});
-                attrsNode.addChild(cNode);
                 tagNode.addChild(attrsNode);
-            }else{
-                attrsNode.addChild(cNode);
             }
-            node.remove();   // 删除节点
+            attrsNode.addChild(cNode);              // @ref 转为 ref属性
+            attrsNode.addChild($contextNode);       // 含ref属性时，自动添加$context属性，避免组件对象上下文混乱，深度slot内的标签含ref属性时特需
+            node.remove();                          // 删除节点
 
 
         });

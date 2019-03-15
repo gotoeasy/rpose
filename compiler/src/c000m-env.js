@@ -8,7 +8,7 @@ const path = require('path');
 
 // 从根目录的rpose.config.btf读取路径文件配置
 // 读不到则使用默认配置
-module.exports = bus.on('编译环境', function(result){
+bus.on('编译环境', function(result){
 
     return function(opts){
         if ( result ) return result;

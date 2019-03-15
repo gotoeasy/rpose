@@ -39,7 +39,7 @@ bus.on('编译插件', function(){
             let oNode = ary[0].clone();
             oNode.type = 'Class';
             oNode.object.type = 'Class';
-            oNode.object.classes = getClasses(oNode.object.value);
+            oNode.object.classes = getClasses(oNode.object.value);                      // 取出全部类名保存备用
 
             node.addChild(oNode);
             ary[0].remove();    // 删除节点

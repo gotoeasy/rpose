@@ -1,5 +1,6 @@
 const File = require('@gotoeasy/file');
 const bus = require('@gotoeasy/bus');
+const npm = require('@gotoeasy/npm');
 const hash = require('@gotoeasy/hash');
 const findNodeModules = require('find-node-modules');
 
@@ -144,3 +145,20 @@ bus.on('页面目标HTML文件名', function(){
     };
 
 }());
+
+bus.on('自动安装', function(rs={}){
+    
+    return function autoinstall(pkg){
+
+        pkg.indexOf(':') > 0 && (pkg = pkg.substring(0, pkg.indexOf(':')));             // @scope/pkg:component => @scope/pkg
+        pkg.lastIndexOf('@') > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf('@')));     // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
+
+        if ( !rs[pkg] ) {
+            !npm.isInstalled(pkg) && npm.install(pkg);
+            rs[pkg] = true;
+        }
+
+    }
+
+}());
+

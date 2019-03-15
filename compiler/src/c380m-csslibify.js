@@ -5,38 +5,75 @@ const csslibify = require('csslibify');
 
 bus.on('样式库', function(rs={}){
     
-    return function (name, imports){
-        if ( imports == null ) {
-            return rs[name];
+    // ----------------------------------------------------
+    // bus.at('样式库', 'defaultname=pkg:**.min.css')             ...... 建库，库名为defaultname
+    // bus.at('样式库', 'thename', 'defaultname=pkg:**.min.css')  ...... 建库，库名为thename
+    // bus.at('样式库', 'thename', 'pkg:**.min.css')              ...... 建库，库名为thename
+    // bus.at('样式库', 'thename')                                ...... 取名为thename的库
+    // 
+    // [ defCsslib ] 
+    //   *=pkg:**/**.min.js
+    //   name=pkg:**/aaa*.min.js, **/bbb*.min.js
+    //   name=pkg
+    //   pkg:**/**.min.js
+    //   pkg
+    return function (name='', defCsslib=''){
+
+        let names = name.split('=');
+        if ( names.length > 1 && !defCsslib ) {
+            // 定义包含库名，直接按定义建库的意思，重新整理参数后继续
+            defCsslib = names[1];
+            name = names[0].trim();
+        }else if ( name.indexOf(':') > 0 ) {
+            // 定义不包含库名，直接按定义建库的意思，重新整理参数后继续
+            defCsslib = name;
+            name = '';
         }
 
- //console.info(MODULE, '---csslibify----', name, imports)
+        if ( !defCsslib ) {
+            let csslib = rs[name] || csslibify(name);
+            csslib.name = name;
+            return csslib;                                                                  // 没有定义导入内容，直接返回库对象
+        }
 
-        name = name.toLowerCase().trim();
-        if ( rs[name] ) return rs[name];    // 已定义过则返回已定义结果（意味着无法重复定义）   // TODO 警告提示
+        let match;
+        let pkg, filters = [];
+        if ( (match = defCsslib.match(/^.*?=(.*?):(.*)$/)) ) {
+            // name=pkg:filters
+            pkg = match[1].trim();
+            cssfilter = match[2];
+            cssfilter.replace(/;/g, ',').split(',').forEach(filter => {
+                filter = filter.trim();
+                filter && filters.push(filter);
+            });
+        }else if ( (match = defCsslib.match(/^.*?=(.*)$/)) ) {
+            // name=pkg
+            pkg = match[1].trim();
+            filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
+        }else if ( (match = defCsslib.match(/^(.*?):(.*)$/)) ) {
+            // pkg:filters
+            pkg = match[1].trim();
+            cssfilter = match[2];
+            cssfilter.replace(/;/g, ',').split(',').forEach(filter => {
+                filter = filter.trim();
+                filter && filters.push(filter);
+            });
+        }else{
+            // pkg
+            pkg = defCsslib.trim();
+            filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
+        }
 
-        let idx = imports.indexOf(':');
-        let npmpkg = idx > 0 ? imports.substring(0, idx) : imports;
-        npmpkg.lastIndexOf('@') > 1 && ( npmpkg = imports.substring(0, npmpkg.lastIndexOf('@')) );
-        npmpkg = npmpkg.trim();
-        let filters = [];
-        let cssfilter = idx > 0 ? imports.substring(idx + 1) : '';
-        cssfilter.replace(/;/g, ',').split(',').forEach(ptn => {
-            ptn = ptn.trim();
-            ptn && filters.push(ptn);
-        });
-        
-        !filters.length && filters.push('**.min.css');      // 默认取npm包下所有压缩后文件*.min.css
+        // 导入处理
+        pkg.lastIndexOf('@') > 1 && ( pkg = pkg.substring(0, pkg.lastIndexOf('@')) );       // 模块包名去除版本号 （通常不该有，保险起见处理下）
+        let dir = getNodeModulePath(pkg);                                                   // 模块包安装目录
+        let cssfiles = File.files(dir, ...filters);                                         // 待导入的css文件数组
 
-        let dir = getNodeModulePath(npmpkg);
-        let cssfiles = File.files(dir, ...filters);
-        let aryTxt = [];
-        cssfiles.forEach( f => aryTxt.push(File.read(f)) );
+        let csslib = rs[name] || csslibify(name);                                           // 已定义过则按名称取出库，继续导入文件
+        cssfiles.forEach( cssfile => csslib.imp(cssfile) );                                 // 逐个文件导入
 
-        let css = aryTxt.join('\n');
-        let csslib = csslibify(name);
-        csslib.imp(css);
-        rs[name] = csslib;
+        name && (rs[name] = csslib);
+        csslib.name = name;             // 库名
 		return csslib;
     }
 
@@ -60,12 +97,9 @@ function getNodeModulePath(npmpkg){
 
 bus.on('样式库引用', function(){
     
-    return function (pkg, ...classnames){
-       let csslib = bus.at('样式库', pkg);
-       let ary = [];
-       classnames.forEach(cls => ary.push(cls.startsWith('.') ? cls : ('.' + cls)));
-       let css = csslib.get( ...ary );
-       return css;
+    return function (libname, ...classnames){
+       let csslib = bus.at('样式库', libname);
+       return csslib.get( ...classnames );
     }
 
 }());
