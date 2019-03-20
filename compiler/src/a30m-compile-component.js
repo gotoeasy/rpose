@@ -8,7 +8,6 @@ bus.on('编译组件', function (){
         
         let file = srcfile;
         let text = src;
-        
         !File.existsFile(file) && (file = bus.at('标签源文件', srcfile));
         !text && (text = File.read(file));
 

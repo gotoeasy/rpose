@@ -21,7 +21,7 @@ bus.on('样式风格', function(result){
 
                 result = {
                     less: getThemeLess(map),
-                    sass: getThemeSass(map),
+                    scss: getThemeScss(map),
                     css: getThemeCss(map)
                 };
             }
@@ -40,7 +40,7 @@ function getThemeLess(map) {
     map.forEach((v,k) => rs.push('@' + k + ' : ' + v + ';'));
     return rs.join('\n')+'\n';
 }
-function getThemeSass(map) {
+function getThemeScss(map) {
     let rs = [];
     map.forEach((v,k) => rs.push('$' + k + ' : ' + v + ';'));
     return rs.join('\n')+'\n';

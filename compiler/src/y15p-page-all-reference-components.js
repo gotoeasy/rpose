@@ -5,7 +5,6 @@ bus.on('编译插件', function(){
     
     // allreferences排序存放页面使用的全部组件的标签全名，便于生成页面js
     return postobject.plugin(__filename, function(root, context){
-
         if ( !context.result.isPage ) return false;         // 仅针对页面
 
         let oSetAllRef = new Set();

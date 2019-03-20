@@ -10,7 +10,7 @@ bus.on('编译插件', function(){
         root.walk( 'RposeBlock', (node, object) => {
 
             // 指定块存放到context中以便于读取，节点相应删除
-            if ( /^(api|option|state|mount)$/.test(object.name.value) ) {
+            if ( /^(api|options|state|mount)$/.test(object.name.value) ) {
                 doc[object.name.value] = object.text ? object.text.value : '';
                 node.remove();
             }

@@ -22,7 +22,7 @@ bus.on('标签全名', function(){
                 tagpkg = ary[0] + ':' + File.name(file);                            // xxx/node_modules/aaa/xxxxxx/abc.rpose => aaa:abc
             }
         }else{
-            tagpkg = File.name(file);                                               // aaa/bbb/xxxxxx/abc.rpose => abc
+            tagpkg = File.name(file);                                               // aaa/bbb/xxxxxx/abc.rpose => abc      ui-btn => ui-btn
         }
 
         return tagpkg;
@@ -32,7 +32,13 @@ bus.on('标签全名', function(){
 
 bus.on('标签源文件', function(){
 
-    return (tag, pkg) => {
+    // 【tag】
+    //   -- 源文件
+    //   -- nnn=@aaa/bbb:ui-xxx
+    //   -- @aaa/bbb:ui-xxx
+    //   -- bbb:ui-xxx
+    //   -- ui-xxx
+    return (tag) => {
         if ( tag.endsWith('.rpose') ) {
             return tag; // 已经是文件
         }
@@ -40,24 +46,81 @@ bus.on('标签源文件', function(){
         if ( tag.indexOf(':') > 0 ) {
             // @taglib指定的标签
             let ary = tag.split(':');
-            let oPkg = bus.at('模块组件信息', ary[0]);  //  TODO 配置文件
+            ary[0].indexOf('=') > 0 && (ary = ary[0].split('='))
+            let oPkg = bus.at('模块组件信息', ary[0].trim());     // nnn=@aaa/bbb:ui-xxx => @aaa/bbb
             let files = oPkg.files;
             let name = '/' + ary[1] + '.rpose';
-            for ( let i=0,file; file=files[i++]; ) {
-                if ( file.endsWith(name) ) {
-                    return file;
+            for ( let i=0,srcfile; srcfile=files[i++]; ) {
+                if ( srcfile.endsWith(name) ) {
+                    return srcfile;
                 }
             }
+
+            return bus.at('标签库引用', tag, oPkg.config);
 
         }else{
             let files = bus.at('源文件清单');
             let name = '/' + tag + '.rpose';
-            for ( let i=0,file; file=files[i++]; ) {
-                if ( file.endsWith(name) ) {
-                    return file;
+            for ( let i=0,srcfile; srcfile=files[i++]; ) {
+                if ( srcfile.endsWith(name) ) {
+                    return srcfile;
                 }
             }
+
+            let env = bus.at('编译环境');
+            let f = bus.at('标签库引用', tag, env.path.root);
+            return f;
         }
+console.info('-------tag-找不到则undefined找不到则undefined找不到则undefined---',tag)
+        // 找不到则undefined
+    };
+
+}());
+
+bus.on('文件所在模块', function(){
+
+    return file => {
+
+        let pkg = '', idx = file.lastIndexOf('/node_modules/');
+        if ( idx > 0 ) {
+            let rs = [];
+            let ary = file.substring(idx + 14).split('/');                     
+            if ( ary[0].startsWith('@') ) {
+                pkg = ary[0] + '/' + ary[1];                           // xxx/node_modules/@aaa/bbb/xxxxxx => @aaa/bbb
+            }else{
+                pkg = ary[0];                                          // xxx/node_modules/aaa/bbb/xxxxxx => aaa
+            }
+        }
+
+        return pkg;
+    };
+
+}());
+
+
+bus.on('文件所在项目根目录', function(){
+
+    return file => {
+
+        let dir, idx = file.lastIndexOf('/node_modules/');
+        if ( idx > 0 ) {
+            let rs = [];
+            rs.push(file.substring(0, idx + 13))                        // xxx/node_modules/@aaa/bbb/xxxxxx => xxx/node_modules
+            let ary = file.substring(idx + 14).split('/');                     
+            if ( ary[0].startsWith('@') ) {
+                rs.push(ary[0]);                                        // xxx/node_modules/@aaa/bbb/xxxxxx => @aaa
+                rs.push(ary[1]);                                        // xxx/node_modules/@aaa/bbb/xxxxxx => bbb
+            }else{
+                rs.push(ary[0]);                                        // xxx/node_modules/aaa/bbb/xxxxxx => aaa
+            }
+
+            dir = rs.join('/');                                         // xxx/node_modules/@aaa/bbb/xxxxxx => xxx/node_modules/@aaa/bbb
+        }else{
+            let env = bus.at('编译环境');
+            dir = env.path.root;
+        }
+
+        return dir;
     };
 
 }());

@@ -34,6 +34,9 @@ bus.on('编译插件', function(){
                 // 属性 @show 不能重复
                 throw new Err('duplicate attribute of @show', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
             }
+            if ( /^(if|for)$/.test(object.value) ) {
+                throw new Err(`unsupport attribute @show on tag <${object.value}>`, {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
+            }
 
             // 创建节点保存
             let oNode = ary[0].clone();

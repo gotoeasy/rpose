@@ -14,6 +14,15 @@ bus.on('编译插件', function(){
 
         context.result = {};                // 存放编译结果
 
+
+        // 保存原始输入（file、text）
+        root.walk( (node, object) => {
+            context.input.file = object.file
+            context.input.text = object.text;
+        }, {readonly: true});
+
+//console.info('compile ..........', context.input.file);
+
     });
 
 }());

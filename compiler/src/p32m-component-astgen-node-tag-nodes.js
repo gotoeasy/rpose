@@ -16,9 +16,9 @@ function nodesJsify(nodes=[], context){
 // 节点数组中含有代码块，通过箭头函数返回动态数组
 function nodesWithScriptJsify(nodes=[], context){
     let ary = [], src;
+
     ary.push( ` ((${AryName}) => { ` );
 
-//    ary.push( ` let ${AryName} = []; ` );
     for ( let i=0,node; node=nodes[i++]; ) {
         if ( node.type === 'JsCode' ) {
             ary.push( node.object.value );                                  // 代码块，直接添加
@@ -28,9 +28,10 @@ function nodesWithScriptJsify(nodes=[], context){
             ary.push( ` ${AryName}.push( ${src} ); ` );                     // 文本节点
         }else if ( node.type === 'Attributes' || node.type === 'Events' || node.type === 'ObjectExpressionAttributes' ) {
             // ignore
+        }else if ( node.type === 'Class') {
+            // ignore
         }else{
-//console.info('-------------node------------', node)
-            throw new Err('unhandle node type');                            // 应该没有这种情况
+            throw new Err('unhandle node type: ' + node.type);              // 应该没有这种情况
         }
     }
     ary.push( ` return ${AryName}; `   );

@@ -4,7 +4,7 @@ statekeys = header-fixed, header-bgcolor, footer-bgcolor
 
 [view]
 <div class="container">
-    <header class="header" style={= $state['header-bgcolor'] ? 'background-color:' + $state['header-bgcolor'] : '' }>
+    <header class="header" style={ $state['header-bgcolor'] ? 'background-color:' + $state['header-bgcolor'] : '' }>
         <div class="header-content">
             <slot name="header"/>
         </div>
@@ -13,7 +13,7 @@ statekeys = header-fixed, header-bgcolor, footer-bgcolor
         <div class="main-content">
             <slot name="main"/>
         </div>
-        <footer class="main-footer" style={= $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
+        <footer class="main-footer" style={ $state['footer-bgcolor'] ? 'background-color:' + $state['footer-bgcolor'] : '' }>
             <ui-line @taglib="@rpose/ui-line" margin="0 auto 10px auto"/>
             <slot name="footer"/>
         </footer>

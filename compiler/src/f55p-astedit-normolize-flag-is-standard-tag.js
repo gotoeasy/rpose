@@ -9,7 +9,7 @@ bus.on('编译插件', function(){
     return postobject.plugin(__filename, function(root, context){
 
         root.walk( 'Tag', (node, object) => {
-            object.standard = REG_TAGS.test(object.value);
+            object.standard = !!object.svg || REG_TAGS.test(object.value); // svg及其子标签都是标准标签
         }, {readonly:true});
 
     });

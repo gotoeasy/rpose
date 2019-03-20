@@ -6,14 +6,9 @@ bus.on('编译插件', function(){
     // 解析rpose源文件，替换树节点（单个源文件的单一节点），输入{file，text}
     return postobject.plugin(__filename, function(root, context){
 
-        let input = context.input;
         let result = context.result;
 
         root.walk( (node, object) => {
-
-            // 保存输入
-            input.file = object.file
-            input.text = object.text;
 
             result.tagpkg = bus.at('标签全名', object.file);
 

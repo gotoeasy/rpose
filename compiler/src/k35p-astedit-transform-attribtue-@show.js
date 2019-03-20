@@ -38,6 +38,7 @@ bus.on('编译插件', function(){
             }
             styleNode.object.isExpression = true;
 
+            node.remove();
         });
 
 

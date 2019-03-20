@@ -3,14 +3,22 @@ const postobject = require('@gotoeasy/postobject');
 const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 
-// TODO 模块包的配置处理？
+bus.on('编译插件', function(){
+    
+    return postobject.plugin(__filename, function(root, context){
+        context.project = bus.at('项目配置处理', context.input.file);
+    });
+
+}());
+
+
 bus.on('项目配置处理', function(result={}){
 
     return function(srcFile){
+        let btfFile = srcFile.endsWith('/rpose.config.btf') ? srcFile : bus.at('文件所在项目配置文件', srcFile);
 
-        let btfFile = bus.at('文件所在项目配置文件', srcFile);
 
-        if ( !btfFile ) return {};
+        if ( !File.existsFile(btfFile) ) return {};
         if ( result[btfFile] ) return result[btfFile];
 
         let plugins = bus.on('项目配置处理插件');
@@ -27,7 +35,7 @@ bus.on('项目配置处理', function(result={}){
 // 解析项目的btf配置文件, 构建语法树
 bus.on('项目配置处理插件', function(){
     
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin('process-project-config-101', function(root, context){
         context.input = {};
         context.result = {};
 
@@ -58,7 +66,7 @@ bus.on('项目配置处理插件', function(){
 
 // 建立项目样式库
 bus.on('项目配置处理插件', function(){
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin('process-project-config-102', function(root, context){
 
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (lib, cls) => hashClassName(context.input.file, lib ? (cls+ '@' + lib) : cls );  // 自定义改名函数
@@ -66,56 +74,37 @@ bus.on('项目配置处理插件', function(){
 
         let oKv;
         root.walk( 'csslib', (node, object) => {
-            oKv = parseCsslib(object.value, context, object.loc);
+            oKv = bus.at('解析[csslib]', object.value, context, object.loc);
             node.remove();
         });
         if ( !oKv ) return;
 
-        let csslibs = context.result.csslibs = [];
+        let oCsslib = context.result.oCsslib = {};
         for ( let k in oKv ) {
-            csslibs.push( bus.at('样式库', k==='*'?'':k, oKv[k]) );
-            if ( k === '*' ) {
-                context.result.nonameCsslib = csslibs.pop();
-            }
+            oCsslib[k] = bus.at('样式库', k, oKv[k]);
         }
 
     });
 }());
 
 
-// 日志
+// 建立项目标签库
 bus.on('项目配置处理插件', function(){
-    return postobject.plugin(__filename, function(root, context){
-//        console.info('[process-project-config]', JSON.stringify( root , null, 4) );
+    return postobject.plugin('process-project-config-103', function(root, context){
+
+        let oKv;
+        root.walk( 'taglib', (node, object) => {
+            oKv = bus.at('解析[taglib]', object.value, context, object.loc);
+            node.remove();
+        });
+        
+        context.result.oTaglib = oKv || {}; // 存键值，用于检查重复
+        if ( !oKv ) return;
+
+        for ( let k in oKv ) {
+            bus.at('标签库定义', `${k}=${oKv[k]}`, context.input.file); 
+        }
     });
 }());
 
 
-
-function parseCsslib(csslib, context, loc){
-    let rs = {};
-    let lines = (csslib == null ? '' : csslib.trim()).split('\n');
-
-    for ( let i=0,line; i<lines.length; i++ ) {
-        line = lines[i];
-        let key, value, idx = line.indexOf('=');                    // libname = npmpkg : filter, filter, filter
-        if ( idx < 0) continue;
-
-        key = line.substring(0, idx).trim();
-        value = line.substring(idx+1).trim();
-
-        idx = value.lastIndexOf('//');
-        idx >= 0 && (value = value.substring(0, idx).trim());       // 去注释，无语法分析，可能会误判
-
-        if ( !key ) {
-            throw new Err('use * as empty csslib name. etc. * = ' + value, { file: context.input.file, text: context.input.text, line: loc.start.line + i, column: 1 })
-        }
-
-        if ( rs[key] ) {
-            throw new Err('duplicate csslib name: ' + key, { file: context.input.file, text: context.input.text, line: loc.start.line + i, column: 1 })
-        }
-        rs[key] = value;
-    }
-
-    return rs;
-}
