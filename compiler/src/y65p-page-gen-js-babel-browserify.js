@@ -25,6 +25,7 @@ bus.on('编译插件', function(){
             let js;
             try{
                 js = csjs.babel(context.result.pageJs);
+                File.write(env.path.build + '/babel.js', js);
             }catch(e){
                 File.write(env.path.build + '/log/log.txt', context.result.pageJs + '\n\n' + e.stack);
                 throw e;

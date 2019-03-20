@@ -2,7 +2,7 @@
 @rpose/ui
 
 [version] // 版本号 （必填）
-0.0.6
+0.0.7
 
 
 
@@ -11,9 +11,9 @@
 [bin] // cli命令
 
 [dependencies] // 依赖库
-@rpose/ui-button = *
-@rpose/ui-layout = *
-@rpose/ui-line = *
+@rpose/ui-button = ~0.0
+@rpose/ui-layout = ~0.0
+@rpose/ui-line = ~0.0
 
 [devDependencies] // 开发依赖库
 

@@ -1,12 +1,12 @@
 {
   "name": "@rpose/cli",
-  "version": "0.3.0",
+  "version": "0.3.4",
   "main": "index.js",
   "dependencies": {
-    "@gotoeasy/rpose": "*",
-    "commander": "*",
-    "chalk": "*",
-    "inquirer": "*"
+    "@gotoeasy/rpose": "~0.0",
+    "commander": "~2.19",
+    "chalk": "~2.4",
+    "inquirer": "~6.2"
   },
   "bin": {
     "rpose": "bin/rpose"
@@ -32,5 +32,5 @@
     "name": "青松",
     "email": "gotoeasy@163.com"
   },
-  "license": "Apache-2.0"
+  "license": "MIT"
 }

@@ -2,7 +2,7 @@
 @rpose/cli
 
 [version] // 版本号 （必填）
-0.3.0
+0.3.4
 
 
 
@@ -13,10 +13,10 @@ index.js
 rpose = bin/rpose
 
 [dependencies] // 依赖库
-@gotoeasy/rpose = *
-commander = *
-chalk = *
-inquirer = *
+@gotoeasy/rpose = ~0.0
+commander = ~2.19
+chalk = ~2.4
+inquirer = ~6.2
 
 [devDependencies] // 开发依赖库
 
