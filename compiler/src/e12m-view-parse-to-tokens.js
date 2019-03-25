@@ -39,8 +39,9 @@ function getLocation(src, startPos, endPos, PosOffset){
     return {start, end};
 }
 
-function TokenParser(fileText, src, file, PosOffset){
+function TokenParser(fileText, viewText, file, PosOffset){
 
+    let src = escape(viewText);
     // ------------ 变量 ------------
     let options = bus.at('视图编译选项');
     let reader = bus.at('字符阅读器', src);
@@ -323,7 +324,7 @@ function TokenParser(fileText, src, file, PosOffset){
         return 0;
     }
 
-    // CDATA
+    // CDATA，转换为文本及表达式组合
     function parseCdata() {
         let token, pos = reader.getPos();
         let idxStart = src.indexOf('<![CDATA[', pos), idxEnd = src.indexOf(']]>', pos+9);
@@ -332,10 +333,41 @@ function TokenParser(fileText, src, file, PosOffset){
             let oPos = {};
             oPos.start = idxStart;
             oPos.end = idxEnd + 3;
-            token = { type: options.TypeText, value: unescape(src.substring(pos+9, idxEnd)), pos: oPos };    // Token: CDATA, 暂按文本处理
+            let value = escape(src.substring(pos+9, idxEnd));
             reader.skip(idxEnd+3-pos); // 位置更新
 
-            tokens.push(token);
+            if ( !/\{.*?}/.test(value) ) {
+                // 不含表达式
+                token = { type: options.TypeText, value, pos: oPos };    // Token: 无表达式的文本
+                tokens.push(token);
+            }else{
+
+                let idx1, idx2, txt, iStart=idxStart+9, oPosTxt;
+                while ( (idx1 = value.indexOf('{')) >= 0 && (idx2 = value.indexOf('}', idx1)) > 0 ) {
+                    if ( idx1 > 0 ) {
+                        txt = unescape(value.substring(0, idx1));
+                        oPosTxt = {start: iStart, end: iStart+txt.length};
+                        iStart = oPosTxt.end;
+                        token = { type: options.TypeText, value: txt, pos: oPosTxt };    // Token: 无表达式的文本
+                        tokens.push(token);
+                    }
+
+                    txt = unescape(value.substring(idx1, idx2+1));
+                    oPosTxt = {start: iStart, end: iStart+txt.length};
+                    iStart = oPosTxt.end;
+                    token = { type: options.TypeExpression, value: txt, pos: oPosTxt };    // Token: 表达式文本
+                    tokens.push(token);
+                    value = value.substring(idx2+1);
+                }
+                if ( value ) {
+                    txt = unescape(value);
+                    oPosTxt = {start: iStart, end: iStart+txt.length};
+                    iStart = oPosTxt.end;
+                    token = { type: options.TypeText, value: txt, pos: oPosTxt };    // Token: 无表达式的文本
+                    tokens.push(token);
+                }
+            }
+
             return 1;
         }
 
@@ -389,7 +421,7 @@ function TokenParser(fileText, src, file, PosOffset){
             tokens.push(token);
         }
 
-        // 【Token】 ref
+        // 【Token】 ref                                         // ???? TODO ...............................
         match = rs[1].match(/\bref\s?=\s?"(.*?)"/i);
         let ref = match && match[0] ? match[0] : '';
         if ( ref ) {
@@ -401,22 +433,22 @@ function TokenParser(fileText, src, file, PosOffset){
             tokens.push(token);
         }
 
-        // 【Token】 $code
-        let $code = rs[2].replace(/\u0000\u0001/g, '\\{').replace(/\ufffe\uffff/g, '\\}');    // 转义，确保值为原输入
-        $code = $code.replace(/\n\\+```/g, match => '\n' + match.substring(2));                // 删除一个转义斜杠     \n\``` => \n``` ，  \n\\``` => \n\```
-        /^\\+```/.test($code) && ($code = $code.substring(1));                                // 删除一个转义斜杠     \``` => ``` ，  \\``` => \```
+        // 【Token】 $CODE
+        let $CODE = rs[2].replace(/\u0000\u0001/g, '\\{').replace(/\ufffe\uffff/g, '\\}');    // 转义，确保值为原输入
+        $CODE = $CODE.replace(/\n\\+```/g, match => '\n' + match.substring(2));               // 删除一个转义斜杠     \n\``` => \n``` ，  \n\\``` => \n\```
+        /^\\+```/.test($CODE) && ($CODE = $CODE.substring(1));                                // 删除一个转义斜杠     \``` => ``` ，  \\``` => \```
 
         // 属性值中的大括号会被当做表达式字符解析，需要转义掉
-        $code = bus.at('highlight', $code);
-        $code = $code.replace(/\{/g, '\\{').replace(/\}/g, '\\}')
+       // $CODE = bus.at('highlight', $CODE);
+        $CODE = $CODE.replace(/\{/g, '\\{').replace(/\}/g, '\\}')
 
         start = pos + rs[1].length;
         end = start + rs[2].length;
-        token = { type: options.TypeAttributeName, value: '$code', pos: {start, end} };
+        token = { type: options.TypeAttributeName, value: '$CODE', pos: {start, end} };
         tokens.push(token);
         token = { type: options.TypeEqual, value: '=', pos: {start, end} };
         tokens.push(token);
-        token = { type: options.TypeAttributeValue, value: $code, pos: {start, end} };
+        token = { type: options.TypeAttributeValue, value: $CODE, pos: {start, end} };
         tokens.push(token);
 
 

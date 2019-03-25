@@ -17,7 +17,11 @@ bus.on('编译插件', function(){
             if ( !/^methods$/.test(object.name.value) ) return;
 
             let methods = object.text ? object.text.value.trim() : '';
-            methods && (script.methods = generateMethods(methods, object.text.loc));        // 编译结果追加到context中以便于读取，节点相应删除
+            if ( methods ) {
+                let rs = generateMethods(methods, object.text.loc);
+                script.methods = rs.src;
+//                script.$methodkeys = rs.names;
+            }
             node.remove();
             return false;
 

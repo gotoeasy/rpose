@@ -1,0 +1,160 @@
+// ---------------------------------------------------
+// 这是个内置的语法高亮组件，编译期被特殊照顾
+// 
+// 使用方式类似md
+//   ```
+//   var num = 1;
+//   ```
+//   
+//   ```js
+//   var num = 1;
+//   ```
+//   
+//   ```js max-height=300px
+//   var num = 1;
+//   ```
+// ---------------------------------------------------
+[api]
+optionkeys  = lang, height, $CODE    // $CODE非常特殊，编译期硬编码，不能修改
+
+[view]
+<pre class="highlight" style="max-height:{$options.height || 500}px">
+    <code class="highlight"></code>
+</pre>
+
+[methods]
+{ 
+    render: (state={}) => {
+        // 代码高亮组件仅支持一次性渲染
+        if ( this.isInitRender ){
+            rpose.extend(this.$state, state, this.$STATE_KEYS);
+            let vnode = this.nodeTemplate(this.$state, this.$options, this.$actions, this);
+            let el = rpose.createDom(vnode, this); 
+            if ( el && el.nodeType == 1 ) {
+                $$(el).addClass(this.$COMPONENT_ID);
+                $$(el.children[0]).attr('innerHTML', this.$options.$CODE);
+            } 
+            this.isInitRender = false;
+            return el;
+        }
+    }
+}
+
+[css]
+/* 基于 prism-okaidia.css 修改 */
+code.highlight,
+pre.highlight {
+	color: #f8f8f2;
+	background: none;
+	text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+	word-break: normal;
+	word-wrap: normal;
+	line-height: 1.5;
+
+	tab-size: 4;
+
+	hyphens: none;
+}
+
+/* Code blocks */
+pre.highlight {
+	padding: 0 20px;
+	margin: .5em 0;
+	overflow: auto;
+	border-radius: 0.3em;
+}
+
+:not(pre) > code.highlight,
+pre.highlight {
+	background: #272822;
+}
+
+/* Inline code */
+:not(pre) > code.highlight {
+	padding: .1em;
+	border-radius: .3em;
+	white-space: normal;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: slategray;
+}
+
+.token.punctuation {
+	color: #f8f8f2;
+}
+
+.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+	color: #f92672;
+}
+
+.token.boolean,
+.token.number {
+	color: #ae81ff;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+	color: #a6e22e;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string,
+.token.variable {
+	color: #f8f8f2;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.function,
+.token.class-name {
+	color: #e6db74;
+}
+
+.token.keyword {
+	color: #66d9ef;
+}
+
+.token.regex,
+.token.important {
+	color: #fd971f;
+}
+
+.token.important,
+.token.bold {
+	font-weight: bold;
+}
+.token.italic {
+	font-style: italic;
+}
+
+.token.entity {
+	cursor: help;
+}
+
+code.highlight > ol > li {
+    border-left: 1px solid #ddd;
+    padding-left: 10px;
+}		

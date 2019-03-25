@@ -1,23 +1,22 @@
 {
-  "name": "@rpose/ui-layout",
-  "version": "0.0.9",
+  "name": "@rpose/buildin",
+  "version": "0.0.2",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "description": "rpose base component: layout",
+  "description": "rpose buildin components",
   "keywords": [
     "rpose",
     "rpose-ui",
-    "ui-layout",
-    "layout",
     "ui",
+    "buildin",
     "components"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gotoeasy/rpose.git"
   },
-  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/ui-layout/README.md",
+  "homepage": "https://github.com/gotoeasy/rpose/blob/master/ui/README.md",
   "bugs": {
     "url": "https://github.com/gotoeasy/rpose/issues"
   },

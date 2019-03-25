@@ -21,8 +21,8 @@ bus.on('哈希样式类名', function(){
             let ary = clsName.split('@');
             name = `${ary[1]}---${ary[0]}`;             // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
         }else{
-            if ( name.indexOf('---') > 0 ) {
-                // 已经是含命名空间前缀的类名，不用修改
+            if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 ) {
+                // 已经改过名
             }else{
                 let tag = bus.at('标签全名', srcFile);
                 name = `${clsName}___${hash(tag)}`;     // 当前项目组件时，标签全名哈希作为后缀，如 my-class___xxxxx

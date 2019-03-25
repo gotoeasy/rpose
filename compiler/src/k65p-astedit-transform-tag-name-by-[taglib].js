@@ -26,6 +26,11 @@ bus.on('编译插件', function(){
                 comp = object.value;
             }
 
+            let install = bus.at('自动安装', pkg);
+            if ( !install ) {
+                throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+            }
+
             let oPkg = bus.at('模块组件信息', pkg);
             let srcFile = bus.at('标签库引用', `${pkg}:${comp}`, oPkg.config);  // 从指定模块查找
             if ( !srcFile ) {

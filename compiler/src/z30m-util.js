@@ -8,10 +8,6 @@ bus.on('标签全名', function(){
 
     return file => {
 
-        if ( file.endsWith('```.rpose') ) {
-            return '$BuildIn$_' + hash(File.name(file));  // 内置的【```.rpose】特殊处理
-        }
-
         let tagpkg = '';
         let idx = file.lastIndexOf('/node_modules/');
         if ( idx > 0 ) {
@@ -71,17 +67,18 @@ bus.on('标签源文件', function(){
             let f = bus.at('标签库引用', tag, env.path.root);
             return f;
         }
-console.info('-------tag-找不到则undefined找不到则undefined找不到则undefined---',tag)
+
         // 找不到则undefined
     };
 
 }());
 
+// 当前项目文件时，返回'/'
 bus.on('文件所在模块', function(){
 
     return file => {
 
-        let pkg = '', idx = file.lastIndexOf('/node_modules/');
+        let pkg = '/', idx = file.lastIndexOf('/node_modules/');
         if ( idx > 0 ) {
             let rs = [];
             let ary = file.substring(idx + 14).split('/');                     
@@ -183,7 +180,7 @@ bus.on('模块组件信息', function(map=new Map){
             }
         }
 
-        return map.get(pkgname) || {};
+        return map.get(pkgname) || {files:[],config:''};
     }
 
 }());
@@ -192,7 +189,7 @@ bus.on('组件类名', function(){
 
     return file => {
         let tagpkg = bus.at('标签全名', bus.at('标签源文件', file));                                             // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
-        tagpkg = tagpkg.replace(/[@\/]/g, '$').replace(/\./g, '_').replace(':', '$-');                          // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc
+        tagpkg = tagpkg.replace(/[@\/`]/g, '$').replace(/\./g, '_').replace(':', '$-');                          // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc
         tagpkg = ('-'+tagpkg).split('-').map( s => s.substring(0,1).toUpperCase()+s.substring(1) ).join('');    // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
         return tagpkg;
     };
@@ -249,11 +246,17 @@ bus.on('自动安装', function(rs={}){
         pkg.indexOf(':') > 0 && (pkg = pkg.substring(0, pkg.indexOf(':')));             // @scope/pkg:component => @scope/pkg
         pkg.lastIndexOf('@') > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf('@')));     // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
 
-        if ( !rs[pkg] ) {
-            !npm.isInstalled(pkg) && npm.install(pkg);
-            rs[pkg] = true;
-        }
 
+        if ( !rs[pkg] ) {
+            if ( !npm.isInstalled(pkg) ) {
+                rs[pkg] = npm.install(pkg, {timeout: 60000});                           // 安装超时1分钟则异常
+
+                let oPkg = bus.at('模块组件信息', pkg);
+            }else{
+                rs[pkg] = true;
+            }
+        }
+        return rs[pkg];
     }
 
 }());

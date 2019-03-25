@@ -1,8 +1,8 @@
 [name] // 项目名 （必填）
-@rpose/ui-layout
+@rpose/buildin
 
 [version] // 版本号 （必填）
-0.0.9
+0.0.2
 
 
 
@@ -15,10 +15,10 @@
 [devDependencies] // 开发依赖库
 
 [description] // 描述
-rpose base component: layout
+rpose buildin components
 
 [keywords] // 检索关键字，多个关键字用半角逗号分隔
-rpose, rpose-ui, ui-layout, layout, ui, components
+rpose, rpose-ui, ui, buildin, components
 
 [scripts] // 脚本命令
 test = echo "Error: no test specified" && exit 1
@@ -27,10 +27,10 @@ test = echo "Error: no test specified" && exit 1
 type= git
 url = git+https://github.com/gotoeasy/rpose.git
 
-[homepage] // 主页，github项目会自动识别设定
-https://github.com/gotoeasy/rpose/blob/master/ui/ui-layout/README.md
+[homepage] // 主页
+https://github.com/gotoeasy/rpose/blob/master/ui/README.md
 
-[bugs] // BUG提交地址，github项目会自动识别设定
+[bugs] // BUG提交地址
 url = https://github.com/gotoeasy/rpose/issues
 
 [author] // 作者信息
@@ -39,4 +39,3 @@ email= gotoeasy@163.com
 
 [license] // 协议
 MIT
-

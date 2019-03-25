@@ -5,7 +5,7 @@ const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
 const acornGlobals = require('acorn-globals');
 
-const JS_VARS = 'require,window,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
+const JS_VARS = '$$,require,window,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
 
 bus.on('编译插件', function(){
     
@@ -56,7 +56,7 @@ function checkAndInitVars(src, context){
 		scopes = acornGlobals(src);
 		if ( !scopes.length ) return src; // 正常，直接返回
 	}catch(e){
-		throw Err.cat('source syntax error', '\n-----------------', src, '\n-----------------', 'file='+ doc.file, e); // 多数表达式中有语法错误导致
+		throw Err.cat('source syntax error', '\n-----------------', src, '\n-----------------', 'file='+ context.input.file, e); // 多数表达式中有语法错误导致
 	}
 
 	// 函数内部添加变量声明赋值后返回

@@ -28,7 +28,7 @@ function nodesWithScriptJsify(nodes=[], context){
             ary.push( ` ${AryName}.push( ${src} ); ` );                     // 文本节点
         }else if ( node.type === 'Attributes' || node.type === 'Events' || node.type === 'ObjectExpressionAttributes' ) {
             // ignore
-        }else if ( node.type === 'Class') {
+        }else if ( node.type === 'Class' || node.type === 'Style') {
             // ignore
         }else{
             throw new Err('unhandle node type: ' + node.type);              // 应该没有这种情况

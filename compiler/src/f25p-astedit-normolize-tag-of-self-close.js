@@ -15,10 +15,10 @@ bus.on('编译插件', function(){
             let loc = object.loc;
             let tagNode = this.createNode({type, value, loc})
 
-            let tagAttrNode = node.after();
-            if ( tagAttrNode && tagAttrNode.type === 'Attributes' ) {
-                tagNode.addChild(tagAttrNode.clone());
-                tagAttrNode.remove();
+            let tagAttrsNode = node.after();
+            if ( tagAttrsNode && tagAttrsNode.type === 'Attributes' ) {
+                tagNode.addChild(tagAttrsNode.clone());
+                tagAttrsNode.remove();
             }
 
             node.replaceWith(tagNode);

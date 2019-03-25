@@ -31,7 +31,6 @@ bus.on('编译插件', function(){
                     throw new Err('invalid empty expression', {file: context.input.file, text: context.input.text, start: valNode.object.loc.start.pos, end: valNode.object.loc.end.pos});
                 }
 
-
                 let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: bus.at('是否表达式', valNode.object.value), loc: {start: object.loc.start, end: valNode.object.loc.end}}
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);

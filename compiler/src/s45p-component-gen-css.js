@@ -15,8 +15,8 @@ bus.on('编译插件', function(){
         style.less && ary.push(style.less);
         style.scss && ary.push(style.scss);
         style.css && ary.push(style.css);
-
-        context.result.css = ary.join('\n');
+        
+        context.result.css = bus.at('组件样式类名哈希化', context.input.file, ary.join('\n'));
 
         let env  = bus.at('编译环境');
         let file = env.path.build_temp + '/' + bus.at('组件目标文件名', context.input.file) + '.css';
