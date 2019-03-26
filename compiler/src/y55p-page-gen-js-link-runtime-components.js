@@ -16,7 +16,7 @@ bus.on('编译插件', function(){
 
         let srcRuntime = bus.at('RPOSE运行时代码');
         let srcStmt = getSrcRegisterComponents(allreferences);
-        let srcComponents = getSrcComponents(allreferences);
+        let srcComponents = getSrcComponents(context.input.file, allreferences);
         let tagpkg = context.result.tagpkg;
 
         let src = `
@@ -63,12 +63,17 @@ function getSrcRegisterComponents(allreferences){
 }
 
 // 本页面关联的全部组件源码
-function getSrcComponents(allreferences){
+function getSrcComponents(srcFile, allreferences){
     try{
         let ary = [];
+        let imagepath = bus.at('页面图片相对路径', srcFile);
         for ( let i=0,tagpkg,context; tagpkg=allreferences[i++]; ) {
             context = bus.at('编译组件', tagpkg);
-            ary.push( context.result.componentJs );
+            if ( context.result.hasImg ) {
+                ary.push( context.result.componentJs.replace(/\%imagepath\%/g, imagepath) );
+            }else{
+                ary.push( context.result.componentJs );
+            }
         }
         return ary.join('\n');
     }catch(e){

@@ -246,18 +246,25 @@ bus.on('自动安装', function(rs={}){
         pkg.indexOf(':') > 0 && (pkg = pkg.substring(0, pkg.indexOf(':')));             // @scope/pkg:component => @scope/pkg
         pkg.lastIndexOf('@') > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf('@')));     // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
 
-
         if ( !rs[pkg] ) {
             if ( !npm.isInstalled(pkg) ) {
                 rs[pkg] = npm.install(pkg, {timeout: 60000});                           // 安装超时1分钟则异常
-
-                let oPkg = bus.at('模块组件信息', pkg);
             }else{
                 rs[pkg] = true;
             }
         }
         return rs[pkg];
     }
+
+}());
+
+bus.on('页面图片相对路径', function(){
+
+	return (srcFile) => {
+		let env = bus.at('编译环境');
+        let ary = srcFile.substring(env.path.src.length).split('/');
+        return '../'.repeat(ary.length-2) + 'images/';
+	};
 
 }());
 

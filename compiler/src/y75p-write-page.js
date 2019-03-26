@@ -30,7 +30,7 @@ bus.on('编译插件', function(){
             File.write( fileHtml, context.result.html );
 
         }).catch(e => {
-            console.error(e);
+            console.error('[write-page]', e);
         });
 
     });
