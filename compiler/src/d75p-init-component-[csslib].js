@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
             if ( object.name.value !== 'csslib' ) return;
             if ( !object.text || !object.text.value || !object.text.value.trim() ) return;
 
-            let oKv = bus.on('解析[csslib]', object.text.value, context, object.text.loc);
+            let oKv = bus.at('解析[csslib]', object.text.value, context, object.text.loc);
 
             for ( let k in oKv ) {
                 if ( oCsslib[k] ) {

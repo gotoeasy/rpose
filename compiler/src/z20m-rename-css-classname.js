@@ -6,13 +6,12 @@ const MODULE = '[' + __filename.substring(__filename.replace(/\\/g, '/').lastInd
 
 bus.on('哈希样式类名', function(){
     
-    let regIgnore = /^rpose-|^hidden$|^active$|^hljs/i; // 不哈希处理的名称 // TODO，转为配置实现？
-
     return function renameCssClassName(srcFile, clsName){
 
         let name = clsName;
-        // 特殊名称不哈希
-        if ( regIgnore.test(name) ) {
+
+        // 特殊名称不哈希（已哈希的也是下划线开头）
+        if ( name.startsWith('_') ) {
             return name;
         }
 
@@ -21,7 +20,7 @@ bus.on('哈希样式类名', function(){
             let ary = clsName.split('@');
             name = `${ary[1]}---${ary[0]}`;             // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
         }else{
-            if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 ) {
+            if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 || name.startsWith('_') ) {
                 // 已经改过名
             }else{
                 let tag = bus.at('标签全名', srcFile);
@@ -30,7 +29,7 @@ bus.on('哈希样式类名', function(){
         }
 
         // 非release模式时不哈希
-        if ( !env.release ) return name;
+     //   if ( !env.release ) return name;
 
         return '_' + hash(name.toLowerCase());          // 名称已有命名空间前缀，转换为小写后哈希便于复用
     }

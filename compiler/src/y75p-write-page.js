@@ -3,6 +3,7 @@ const csjs = require('@gotoeasy/csjs');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
+const csso = require('csso');
 
 bus.on('编译插件', function(){
     
@@ -20,14 +21,16 @@ bus.on('编译插件', function(){
         context.result.promiseJs.then(js => {
 
             if ( env.release ) {
-//                File.write( fileCss, csjs.miniCss(context.result.css) );
-                File.write( fileCss, context.result.css );
+                File.write( fileCss, csso.minify(context.result.css, {forceMediaMerge: true}).css );
+//                File.write( fileCss, context.result.css );
             }else{
                 File.write( fileCss, context.result.css );
             }
 
             File.write( fileJs, js );
             File.write( fileHtml, context.result.html );
+
+            bus.at('同步刷新浏览器')
 
         }).catch(e => {
             console.error('[write-page]', e);

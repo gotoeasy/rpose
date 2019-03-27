@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.0.16
+0.0.19
 
 [main]
 index.js
@@ -18,7 +18,7 @@ rp = bin/rpose
 @gotoeasy/util = 0.0.*
 @gotoeasy/btf = 1.1.*
 @gotoeasy/err = 0.0.*
-@gotoeasy/csjs = 0.1.*
+@gotoeasy/csjs = 0.2.*
 @gotoeasy/postobject = 0.0.*
 @gotoeasy/cache = 0.0.*
 @gotoeasy/theme = 0.0.*
@@ -26,6 +26,7 @@ rp = bin/rpose
 csslibify = 0.1.*
 resolve-pkg = 1.0.*
 acorn-globals = 4.3.*
+acorn-walk = 6.1.*
 astring = 1.3.*
 chokidar = 2.1.*
 browser-sync = 2.26.*

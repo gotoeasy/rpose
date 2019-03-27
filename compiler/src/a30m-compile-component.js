@@ -4,7 +4,7 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译组件', function (){
 
-    return function(srcfile, src){
+    return function(srcfile, src, rebuild=false){
         
         let file = srcfile;
         let text = src;
@@ -12,6 +12,7 @@ bus.on('编译组件', function (){
         !text && (text = File.read(file));
 
         let env = bus.at('编译环境');
+        rebuild && bus.at('组件编译缓存', file, false);     // rebuild时删除该文件相应缓存
         let context = bus.at('组件编译缓存', file);
         if ( !context ) {
             let plugins = bus.on('编译插件');

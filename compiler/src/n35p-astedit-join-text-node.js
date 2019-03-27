@@ -25,7 +25,9 @@ bus.on('编译插件', function(){
                 if ( nd.type === OPTS.TypeText ) {
                     aryRs.push('"' + lineString(nd.object.value) + '"');
                 }else {
-                    aryRs.push( nd.object.value.replace(/^\s*\{/, '(').replace(/\}\s*$/, ')') );
+                    if ( !isBlankOrCommentExpr(nd.object.value) ) {
+                        aryRs.push( nd.object.value.replace(/^\s*\{/, '(').replace(/\}\s*$/, ')') );
+                    }
                 }
             });
 
@@ -58,3 +60,22 @@ function lineString(str, quote = '"') {
     return rs;
 }
 
+function isBlankOrCommentExpr(code){
+    code = code.trim();
+    if ( code.startsWith('{') && code.endsWith('}') ) {
+        code = code.substring(1, code.length-1).trim();
+    }
+    if ( !code ) return true;                                               // 空白
+
+    if ( /^\/\/.*$/.test(code) && code.indexOf('\n') < 0 ) return true;     // 单行注释
+
+    if ( !code.startsWith('/*') || !code.endsWith('*/') ) {
+        return false;                                                       // 肯定不是多行注释
+    }
+
+    if ( code.indexOf('*/') === (code.length-2) ) {
+        return true;                                                        // 中间没有【*/】，是多行注释
+    }
+
+    return false;
+}

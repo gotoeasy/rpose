@@ -32,6 +32,8 @@ bus.on('编译环境', function(result){
         result.release = !!opts.release;
         result.debug = !!opts.debug;
         result.nocache = !!opts.nocache;
+        result.build = !!opts.build;
+        result.watch = !!opts.watch;
         result.compilerVersion = JSON.parse(File.read(File.resolve(__dirname, '../package.json'))).version;
 
         return result;
