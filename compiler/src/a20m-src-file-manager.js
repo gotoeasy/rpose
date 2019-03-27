@@ -34,11 +34,15 @@ console.time('build');
         // TODO 删除页面
         let refFiles = getRefPages(file);
         refFiles.forEach(refFile => {
+            let text, hashcode, context = bus.at('组件编译缓存', refFile);
+            if ( context ) {
+                text = File.read(refFile);
+                hashcode = hash(text);
+            }else{
+                text = File.read(refFile);
+                hashcode = hash(text);
+            }
             bus.at('组件编译缓存', refFile, false);     // 删除该文件相应缓存
-        });
-        refFiles.forEach(refFile => {
-            let text = File.read(refFile);
-            let hashcode = hash(text);
             bus.at('编译组件', refFile, text, hashcode);
         });
 
@@ -57,11 +61,16 @@ console.time('build');
 
         let refFiles = getRefPages(file);
         refFiles.forEach(refFile => {
+            let txt, hcode, context = bus.at('组件编译缓存', refFile);
+            if ( context ) {
+                txt = File.read(refFile);
+                hcode = hash(text);
+            }else{
+                txt = File.read(refFile);
+                hcode = hash(text);
+            }
             bus.at('组件编译缓存', refFile, false);     // 删除该文件相应缓存
-        });
-        refFiles.forEach(refFile => {
-            let txt = File.read(refFile);
-            bus.at('编译组件', refFile, txt, hash(txt));
+            bus.at('编译组件', refFile, txt, hcode);
         });
 
 console.timeEnd('build');
@@ -79,10 +88,12 @@ function getRefPages(file){
     let refFiles = [];
     let files = bus.at('源文件清单');
     files.forEach(srcFile => {
-        let context = bus.at('编译组件', srcFile);
-        let allreferences = context.result.allreferences || [];
-        if ( allreferences.includes(tagpkg) ) {
-            refFiles.push(srcFile);
+        let context = bus.at('组件编译缓存', srcFile);
+        if ( context ) {
+            let allreferences = context.result.allreferences || [];
+            if ( allreferences.includes(tagpkg) ) {
+                refFiles.push(srcFile);
+            }
         }
     });
     
