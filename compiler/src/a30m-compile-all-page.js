@@ -30,10 +30,8 @@ bus.on('全部编译', function (bs){
 
 
     bus.on('同步刷新浏览器', function (){
-        console.info('------reload--watch--1--', env.watch)
         let env = bus.at('编译环境');
         env.watch && bs.reload();
-        console.info('------reload--watch--2--', env.watch)
     });
 
 }());

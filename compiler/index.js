@@ -38,5 +38,12 @@ console.timeEnd('clean');
 }
 
 
-module.exports = { build, clean };
+function watch(opts){
+
+    build(opts);
+    bus.at('文件监视');
+
+}
+
+module.exports = { build, clean, watch };
 

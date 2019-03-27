@@ -19,6 +19,7 @@ bus.on('编译插件', function(){
         root.walk( (node, object) => {
             context.input.file = object.file
             context.input.text = object.text;
+            context.input.hashcode = object.hashcode;
         }, {readonly: true});
 
 //console.info('compile ..........', context.input.file);

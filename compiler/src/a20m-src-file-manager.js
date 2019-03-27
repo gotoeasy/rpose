@@ -1,5 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const os = require('@gotoeasy/os');
+const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
 
 (function (fileSet){
@@ -18,22 +19,72 @@ const File = require('@gotoeasy/file');
         return [...fileSet];
     });
 
-    bus.on('源文件添加', function(file){
+    bus.on('源文件添加', function(file, text, hashcode){
+console.time('build');
         fileSet.add(file);
-        bus.at('编译组件', file);
+        bus.at('编译组件', file, text, hashcode);   // 重新编译
+console.timeEnd('build');
     });
 
-    bus.on('源文件删除', function(...files){
-        files.forEach(file => {
-            fileSet.delete(file);
-            bus.at('组件编译缓存', file, false);   // 删除该文件编译缓存
+    bus.on('源文件删除', function(file){
+console.time('build');
+        fileSet.delete(file);
+        bus.at('组件编译缓存', file, false);   // 删除该文件编译缓存
+
+        // TODO 删除页面
+        let refFiles = getRefPages(file);
+        refFiles.forEach(refFile => {
+            bus.at('组件编译缓存', refFile, false);     // 删除该文件相应缓存
         });
-    });
+        refFiles.forEach(refFile => {
+            let text = File.read(refFile);
+            let hashcode = hash(text);
+            bus.at('编译组件', refFile, text, hashcode);
+        });
 
-    bus.on('源文件修改', function(file){
-console.info('[nnnnnnnnnnnnnnnnnnnn]', '......', file);
-        bus.at('编译组件', file, File.read(file), true);
+console.timeEnd('build');
         bus.at('同步刷新浏览器');
     });
 
+    bus.on('源文件修改', function(file, text, hashcode){
+console.time('build');
+
+        let context = bus.at('编译组件', file, text, hashcode);
+        if ( context.result.hashcode !== hashcode ) {
+            bus.at('组件编译缓存', file, false);        // 删除该文件相应缓存
+            bus.at('编译组件', file, text, hashcode);   // 重新编译
+        }
+
+        let refFiles = getRefPages(file);
+        refFiles.forEach(refFile => {
+            bus.at('组件编译缓存', refFile, false);     // 删除该文件相应缓存
+        });
+        refFiles.forEach(refFile => {
+            let txt = File.read(refFile);
+            bus.at('编译组件', refFile, txt, hash(txt));
+        });
+
+console.timeEnd('build');
+        bus.at('同步刷新浏览器');
+    });
+
+
 })();
+
+
+function getRefPages(file){
+
+    let tagpkg = bus.at('标签全名', file);
+
+    let refFiles = [];
+    let files = bus.at('源文件清单');
+    files.forEach(srcFile => {
+        let context = bus.at('编译组件', srcFile);
+        let allreferences = context.result.allreferences || [];
+        if ( allreferences.includes(tagpkg) ) {
+            refFiles.push(srcFile);
+        }
+    });
+    
+    return refFiles;
+}
