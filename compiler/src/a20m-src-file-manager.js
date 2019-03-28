@@ -47,16 +47,19 @@ console.time('build');
         });
 
 console.timeEnd('build');
-        bus.at('同步刷新浏览器');
     });
 
     bus.on('源文件修改', function(file, text, hashcode){
 console.time('build');
 
-        let context = bus.at('编译组件', file, text, hashcode);
-        if ( context.result.hashcode !== hashcode ) {
-            bus.at('组件编译缓存', file, false);        // 删除该文件相应缓存
-            bus.at('编译组件', file, text, hashcode);   // 重新编译
+        let context = bus.at('组件编译缓存', file);
+        if ( context ) {
+            if ( context.input.hashcode !== hashcode ) {
+                bus.at('组件编译缓存', file, false);        // 删除该文件相应缓存
+                bus.at('编译组件', file, text, hashcode);   // 重新编译
+            }else{
+                return;
+            }
         }
 
         let refFiles = getRefPages(file);
@@ -74,7 +77,6 @@ console.time('build');
         });
 
 console.timeEnd('build');
-        bus.at('同步刷新浏览器');
     });
 
 
@@ -88,11 +90,13 @@ function getRefPages(file){
     let refFiles = [];
     let files = bus.at('源文件清单');
     files.forEach(srcFile => {
-        let context = bus.at('组件编译缓存', srcFile);
-        if ( context ) {
-            let allreferences = context.result.allreferences || [];
-            if ( allreferences.includes(tagpkg) ) {
-                refFiles.push(srcFile);
+        if ( srcFile !== file ){
+            let context = bus.at('组件编译缓存', srcFile);
+            if ( context ) {
+                let allreferences = context.result.allreferences || [];
+                if ( allreferences.includes(tagpkg) ) {
+                    refFiles.push(srcFile);
+                }
             }
         }
     });

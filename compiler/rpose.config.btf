@@ -1,9 +1,0 @@
-[path]
-build               : build
-
-[theme] // 样式风格包
-@gotoeasy/theme
-
-[prerender] // 预渲染包
-@gotoeasy/pre-render
-

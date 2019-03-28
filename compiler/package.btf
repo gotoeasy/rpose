@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.0.21
+0.0.22
 
 [main]
 index.js
@@ -29,14 +29,13 @@ acorn-globals = 4.3.*
 acorn-walk = 6.1.*
 astring = 1.3.*
 chokidar = 2.1.*
-browser-sync = 2.26.*
 refractor = 2.7.*
 rehype = 7.0.*
+opn = 5.3.*
 
 [devDependencies] // 开发依赖库
 ava = *
 nyc = *
-opn = *
 
 [description] // 描述
 rpose compiler

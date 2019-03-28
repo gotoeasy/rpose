@@ -1,6 +1,6 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "main": "index.js",
   "dependencies": {
     "@rpose/runtime": "0.0.*",
@@ -21,14 +21,13 @@
     "acorn-walk": "6.1.*",
     "astring": "1.3.*",
     "chokidar": "2.1.*",
-    "browser-sync": "2.26.*",
     "refractor": "2.7.*",
-    "rehype": "7.0.*"
+    "rehype": "7.0.*",
+    "opn": "5.3.*"
   },
   "devDependencies": {
     "ava": "*",
-    "nyc": "*",
-    "opn": "*"
+    "nyc": "*"
   },
   "bin": {
     "rp": "bin/rpose"

@@ -14,6 +14,8 @@ bus.on('文件监视', function (oHash={}){
             return;
         }
 
+        bus.at('热刷新服务器');
+
 		// 监视文件变化
 		let ready, watcher = chokidar.watch(env.path.src);
 		watcher.on('add', file => {

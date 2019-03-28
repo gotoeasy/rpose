@@ -68,7 +68,11 @@ function getSrcComponents(allreferences){
     try{
         let ary = [];
         for ( let i=0,tagpkg,context; tagpkg=allreferences[i++]; ) {
-            context = bus.at('编译组件', tagpkg);
+            //context = bus.at('编译组件', tagpkg);
+            context = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg));
+            if ( !context ) {
+                context = bus.at('编译组件', tagpkg);
+            }
             ary.push( context.result.componentJs );
         }
         return ary.join('\n');

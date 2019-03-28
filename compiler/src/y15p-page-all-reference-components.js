@@ -43,7 +43,10 @@ function addRefComponent(tagpkg, oSetAllRequires, oStatus){
     oStatus[tagpkg] = true;
 
     let srcFile = bus.at('标签源文件', tagpkg);
-    let context = bus.at('编译组件', srcFile);  // 有缓存
+    let context = bus.at('组件编译缓存', srcFile);
+    if ( !context ) {
+        context = bus.at('编译组件', srcFile);
+    }
     let references = context.result.references;
     references.forEach(subTagpkg => {
         addRefComponent(subTagpkg, oSetAllRequires, oStatus);
