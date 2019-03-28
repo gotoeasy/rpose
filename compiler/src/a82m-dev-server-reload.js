@@ -36,15 +36,18 @@ bus.on('热刷新服务器', function (hasQuery){
         let htmlpage = oUrl.query.split('&')[0].split('=')[1];
         let srcFile = File.resolve(env.path.src, htmlpage.substring(0, htmlpage.length-5) + '.rpose');
 
+
         let hashcode = '';
-        let context = bus.at('组件编译缓存', srcFile);
-        if ( context ) {
-            hashcode = context.result.hashcode || '';
+        if ( File.existsFile(srcFile) ) {
+            let context = bus.at('组件编译缓存', srcFile);
+            if ( context ) {
+                hashcode = context.result.hashcode || '';
+            }
             if ( !hashcode ) {
                 let fileHtml = bus.at('页面目标HTML文件名', srcFile);
                 let fileCss = bus.at('页面目标CSS文件名', srcFile);
                 let fileJs = bus.at('页面目标JS文件名', srcFile);
-                hashcode = hash(File.read(fileHtml) + File.read(fileCss) + File.read(fileJs));  // 确保有值返回避免两次刷新
+                hashcode = hash(File.read(fileHtml) + File.read(fileCss) + File.read(fileJs));      // 确保有值返回避免两次刷新
             }
         }
 
@@ -115,7 +118,7 @@ bus.on('热刷新服务器', function (hasQuery){
                 return;
             }
 
-            let reqfile = path.join(www, oUrl.pathname);
+            let reqfile = path.join(www, oUrl.pathname).replace(/\\/g, '/');
             if ( File.existsDir(reqfile) ) {
                 reqfile = File.resolve(reqfile, 'index.html');                                  // 默认访问目录下的index.html
             }

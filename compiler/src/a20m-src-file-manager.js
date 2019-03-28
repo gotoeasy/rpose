@@ -10,8 +10,6 @@ const File = require('@gotoeasy/file');
         if ( !fileSet ) {
             let env = bus.at('编译环境');
             let files = File.files(env.path.src, '**.rpose');                   // 源文件目录
-//                let buildinfiles = File.files(env.path.src_buildin, '**.rpose');    // 内置源文件目录
-//                files.unshift(...buildinfiles);                                     // 添加到数组起始位置
             fileSet = new Set(files);
             return [...fileSet];
         }
@@ -31,7 +29,13 @@ console.time('build');
         fileSet.delete(file);
         bus.at('组件编译缓存', file, false);   // 删除该文件编译缓存
 
-        // TODO 删除页面
+        // 删除已生成的页面文件
+        let fileHtml = bus.at('页面目标HTML文件名', file);
+        let fileCss = bus.at('页面目标CSS文件名', file);
+        let fileJs = bus.at('页面目标JS文件名', file);
+        File.remove(fileHtml) > File.remove(fileCss) > File.remove(fileJs);
+
+        // 关联页面重新编译
         let refFiles = getRefPages(file);
         refFiles.forEach(refFile => {
             let text, hashcode, context = bus.at('组件编译缓存', refFile);
@@ -53,14 +57,10 @@ console.timeEnd('build');
 console.time('build');
 
         let context = bus.at('组件编译缓存', file);
-        if ( context ) {
-            if ( context.input.hashcode !== hashcode ) {
-                bus.at('组件编译缓存', file, false);        // 删除该文件相应缓存
-                bus.at('编译组件', file, text, hashcode);   // 重新编译
-            }else{
-                return;
-            }
-        }
+        if ( context && context.input.hashcode === hashcode ) return;
+
+        bus.at('组件编译缓存', file, false);        // 删除该文件相应缓存
+        bus.at('编译组件', file, text, hashcode);       // 重新编译
 
         let refFiles = getRefPages(file);
         refFiles.forEach(refFile => {

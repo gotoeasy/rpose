@@ -21,7 +21,11 @@ bus.on('astgen-node-attributes', function(){
         ary.push( `{ `);     
         attrsNode.nodes.forEach(node => {
             key = '"' + lineString(node.object.name) + '"';
-            value = '"' + lineString(node.object.value) + '"';
+            if ( node.object.isExpression ) {
+                value = parseExpr(node.object.value);
+            }else{
+                value = '"' + lineString(node.object.value) + '"';
+            }
 
             ary.push( ` ${comma} ${key}: ${value} ` );
             !comma && (comma = ',');
@@ -32,6 +36,13 @@ bus.on('astgen-node-attributes', function(){
     }
 
 }());
+
+
+function parseExpr(expression){
+    let expr = expression.trim();
+    expr.startsWith('{') && expr.endsWith('}') && (expr = expr.substring(1, expr.length-1));
+    return `(${expr})`;
+}
 
 
 function lineString(str, quote = '"') {
