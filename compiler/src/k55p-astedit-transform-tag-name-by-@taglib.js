@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
                 throw new Err('unsupport @taglib on standard tag', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            let cpFile = getComponentFileOfProject(tagNode.object.value);
+            let cpFile = bus.on('标签项目源文件', tagNode.object.value); // 当前项目范围内查找标签对应的源文件
             if ( cpFile ) {
                 throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
@@ -69,15 +69,3 @@ bus.on('编译插件', function(){
 
 }());
 
-
-function getComponentFileOfProject(tag){
-    // TODO 性能改善
-    let files = bus.at('源文件清单');
-    let name = '/' + tag + '.rpose';
-    for ( let i=0,file; file=files[i++]; ) {
-        if ( file.endsWith(name) ) {
-            let env = bus.at('编译环境');
-            return file.replace(env.path.root + '/', '');
-        }
-    }
-}

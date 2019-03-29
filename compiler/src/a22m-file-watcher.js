@@ -24,8 +24,9 @@ bus.on('文件监视', function (oHash={}){
                     console.info('add ......', file);
                     let text = File.read(file);
                     let hashcode = hash(text);
-                    bus.at('源文件添加', file, text, hashcode);
-                    oHash[file] = hashcode;
+                    let oFile = {file, text, hashcode};
+                    oHash[file] = oFile;
+                    busAt('源文件添加', oFile);
                 }
             }catch(e){
                 console.error(Err.cat('build failed', e).toString());
@@ -35,25 +36,21 @@ bus.on('文件监视', function (oHash={}){
                 if ( ready && (file = file.replace(/\\/g, '/')) && file.endsWith('.rpose') ) {
                     let text = File.read(file);
                     let hashcode = hash(text);
-
-                    if ( oHash[file] !== hashcode ) {
+                    if ( !oHash[file] || oHash[file].hashcode !== hashcode ) {
                         console.info('change ......', file);
-                        oHash[file] = hashcode;
-                        bus.at('源文件修改', file, text, hashcode);
+                        let oFile = {file, text, hashcode};
+                        oHash[file] = oFile;
+                        busAt('源文件修改', oFile);
                     }
                 }
             }catch(e){
                 console.error(Err.cat('build failed', e).toString());
             }
 		}).on('unlink', file => {
-            try{
-                if ( ready && (file = file.replace(/\\/g, '/')) && file.endsWith('.rpose') ) {
-                    console.info('del ......', file);
-                    bus.at('源文件删除', file);
-                    delete oHash[file];
-                }
-            }catch(e){
-                console.error(Err.cat('build failed', e).toString());
+            if ( ready && (file = file.replace(/\\/g, '/')) && file.endsWith('.rpose') ) {
+                console.info('del ......', file);
+                delete oHash[file];
+                busAt('源文件删除', file);
             }
 		}).on('ready', () => {
 			ready = true;
@@ -65,3 +62,13 @@ bus.on('文件监视', function (oHash={}){
 }());
 
 
+function busAt(name, ofile){
+    console.time('build');
+    try{
+        bus.at(name, ofile);
+    }catch(e){
+        console.error(Err.cat('build failed', e).toString());
+    }finally{
+        console.timeEnd('build');
+    }
+}

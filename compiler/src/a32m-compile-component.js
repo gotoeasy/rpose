@@ -5,24 +5,32 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译组件', function (){
 
-    return function(srcfile, src, hashcode=''){
-        
-        let file = srcfile;
-        let text = src;
-        !File.existsFile(file) && (file = bus.at('标签源文件', srcfile));
-        !text && (text = File.read(file));
+    return function(infile){
+
+        let oFile;
+        if ( infile.file ) {
+            oFile = infile;       // 项目源文件对象
+        }else{
+            let file, text, hashcode;
+            file = bus.at('标签源文件', infile);   // 标签则转为源文件，源文件时还是源文件
+            if ( !File.existsFile(file) ) {
+                throw new Err(`file not found: ${file} (${infile})`);
+            }
+            text = File.read(file);
+            hashcode = hash(text);
+            oFile = {file, text, hashcode};
+        }
 
 
         let env = bus.at('编译环境');
-        let context = bus.at('组件编译缓存', file);
-
-        if ( context && context.input.hashcode !== hashcode ) {
-            context = bus.at('组件编译缓存', srcfile, false);     // 删除该文件相应缓存
+        let context = bus.at('组件编译缓存', oFile.file);
+        if ( context && context.input.hashcode !== oFile.hashcode ) {
+            context = bus.at('组件编译缓存', oFile.file, false);     // 删除该文件相应缓存
         }
 
         if ( !context ) {
             let plugins = bus.on('编译插件');
-            return postobject(plugins).process({file, text, hashcode}, {log:env.debug});
+            return postobject(plugins).process({...oFile}, {log:env.debug});
         }
 
         return context;

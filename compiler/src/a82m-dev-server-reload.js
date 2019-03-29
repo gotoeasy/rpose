@@ -47,7 +47,12 @@ bus.on('热刷新服务器', function (hasQuery){
                 let fileHtml = bus.at('页面目标HTML文件名', srcFile);
                 let fileCss = bus.at('页面目标CSS文件名', srcFile);
                 let fileJs = bus.at('页面目标JS文件名', srcFile);
-                hashcode = hash(File.read(fileHtml) + File.read(fileCss) + File.read(fileJs));      // 确保有值返回避免两次刷新
+                if ( File.existsFile(fileHtml) ) {
+                    let html = File.read(fileHtml);
+                    let css = File.existsFile(fileCss) ? File.read(fileCss) : '';
+                    let js = File.existsFile(fileJs) ? File.read(fileJs) : '';
+                    hashcode = hash(html + css + js);                                           // 确保有值返回避免两次刷新
+                }
             }
         }
 
@@ -66,7 +71,12 @@ bus.on('热刷新服务器', function (hasQuery){
             let fileHtml = bus.at('页面目标HTML文件名', srcFile);
             let fileCss = bus.at('页面目标CSS文件名', srcFile);
             let fileJs = bus.at('页面目标JS文件名', srcFile);
-            hashcode = hash(File.read(fileHtml) + File.read(fileCss) + File.read(fileJs));      // 确保有值返回避免两次刷新
+            if ( File.existsFile(fileHtml) ) {
+                let html = File.read(fileHtml);
+                let css = File.existsFile(fileCss) ? File.read(fileCss) : '';
+                let js = File.existsFile(fileJs) ? File.read(fileJs) : '';
+                hashcode = hash(html + css + js);                                               // 确保有值返回避免两次刷新
+            }
         }
         let htmlpage = htmlfile.substring(env.path.build_dist.length+1);
 

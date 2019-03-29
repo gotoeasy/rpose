@@ -13,6 +13,8 @@ bus.on('clean', function(){
                 File.remove(env.path.build);
                 console.info(MODULE, 'clean:', env.path.build);
             }
+
+            File.mkdir(env.path.build_dist);
         }catch(e){
             throw Err.cat(MODULE + ' clean failed', e);
         }

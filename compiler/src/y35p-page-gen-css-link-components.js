@@ -27,7 +27,8 @@ bus.on('编译插件', function(){
         context.result.css = ary.join('\n');
         context.result.css = csso.minify( ary.join('\n'), {forceMediaMerge: true} ).css;
 
-        context.result.promiseCss = bus.at('编译页面CSS', context.result.css, context.input.file);
+        //context.result.promiseCss = bus.at('编译页面CSS', context.result.css, context.input.file);
+        context.result.promiseCss = context.result.css;
     });
 
 }());

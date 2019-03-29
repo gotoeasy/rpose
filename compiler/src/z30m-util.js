@@ -55,17 +55,11 @@ bus.on('标签源文件', function(){
             return bus.at('标签库引用', tag, oPkg.config);
 
         }else{
-            let files = bus.at('源文件清单');
-            let name = '/' + tag + '.rpose';
-            for ( let i=0,srcfile; srcfile=files[i++]; ) {
-                if ( srcfile.endsWith(name) ) {
-                    return srcfile;
-                }
-            }
+            let file = bus.at('标签项目源文件', tag);             // 优先找文件名一致的源文件
+            if ( file ) return file;
 
             let env = bus.at('编译环境');
-            let f = bus.at('标签库引用', tag, env.path.root);
-            return f;
+            return bus.at('标签库引用', tag, env.path.root);      // 其次按标签库规则查找
         }
 
         // 找不到则undefined

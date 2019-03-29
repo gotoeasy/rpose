@@ -18,6 +18,7 @@ bus.on('编译插件', function(){
         let fileCss = bus.at('页面目标CSS文件名', context.input.file);
         let fileJs = bus.at('页面目标JS文件名', context.input.file);
 
+
         context.result.promiseJs.then(async js => {
 
             let html = context.result.html;
