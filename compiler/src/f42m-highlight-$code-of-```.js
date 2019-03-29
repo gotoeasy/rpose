@@ -18,17 +18,16 @@ refractor.register(inilike)
 
 
 
-bus.on('highlight', function (codefile, oClass={}){
+bus.on('语法高亮转换', function (tagpkgHighlight='@rpose/buildin:```', oClass){
 
     return function (code='', lang='clike') {
 
         // 取语法高亮组件文件的绝对地址，用于哈希语法高亮的样式类
-        if ( !codefile ) {
-            let oPkg = bus.at('模块组件信息', '@rpose/buildin');
-            oPkg.files.forEach(f => f.endsWith('```.rpose') && (codefile = f));
-            oClass['token'] = bus.at('哈希样式类名', codefile, 'token');
-            oClass['comment'] = bus.at('哈希样式类名', codefile, 'comment');
-            oClass['selector'] = bus.at('哈希样式类名', codefile, 'selector');
+        if ( !oClass ) {
+            oClass = {};
+            oClass['token'] = bus.at('哈希样式类名', tagpkgHighlight, 'token');
+            oClass['comment'] = bus.at('哈希样式类名', tagpkgHighlight, 'comment');
+            oClass['selector'] = bus.at('哈希样式类名', tagpkgHighlight, 'selector');
         }
 
         // 特殊处理btf、rpose格式代码
@@ -90,7 +89,7 @@ bus.on('highlight', function (codefile, oClass={}){
             if ( node.properties && node.properties.className ) {
                 let classes = [];
                 node.properties.className.forEach( cls => {
-                    !oClass[cls] && (oClass[cls] = bus.at('哈希样式类名', codefile, cls));  // 缓存
+                    !oClass[cls] && (oClass[cls] = bus.at('哈希样式类名', tagpkgHighlight, cls));  // 缓存
                     classes.push( oClass[cls] );
                 });
                 node.properties.className = classes;

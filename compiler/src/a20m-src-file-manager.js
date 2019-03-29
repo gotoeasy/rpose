@@ -52,7 +52,7 @@ const File = require('@gotoeasy/file');
                         oFiles[file] = getSrcFileObject(file, tag);
                     }
                 }else{
-                    console.error('[src-file-manager]', 'invalid source file name ..........', file);       // 无效文件出警告
+                    console.error('[src-file-manager]', 'ignore invalid source file ..........', file);     // 无效文件出警告
                 }
             });
 

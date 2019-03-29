@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
                 throw new Err('unsupport @taglib on standard tag', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            let cpFile = bus.on('标签项目源文件', tagNode.object.value); // 当前项目范围内查找标签对应的源文件
+            let cpFile = bus.at('标签项目源文件', tagNode.object.value); // 当前项目范围内查找标签对应的源文件
             if ( cpFile ) {
                 throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }

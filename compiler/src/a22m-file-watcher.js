@@ -20,7 +20,7 @@ bus.on('文件监视', function (oHash={}){
 		let ready, watcher = chokidar.watch(env.path.src);
 		watcher.on('add', file => {
             try{
-                if ( ready && (file = file.replace(/\\/g, '/')) && file.endsWith('.rpose') ) {
+                if ( ready && (file = file.replace(/\\/g, '/')) && isValidRposeFile(file) ) {
                     console.info('add ......', file);
                     let text = File.read(file);
                     let hashcode = hash(text);
@@ -33,7 +33,7 @@ bus.on('文件监视', function (oHash={}){
             }
 		}).on('change', file => {
             try{
-                if ( ready && (file = file.replace(/\\/g, '/')) && file.endsWith('.rpose') ) {
+                if ( ready && (file = file.replace(/\\/g, '/')) && isValidRposeFile(file) ) {
                     let text = File.read(file);
                     let hashcode = hash(text);
                     if ( !oHash[file] || oHash[file].hashcode !== hashcode ) {
@@ -47,7 +47,7 @@ bus.on('文件监视', function (oHash={}){
                 console.error(Err.cat('build failed', e).toString());
             }
 		}).on('unlink', file => {
-            if ( ready && (file = file.replace(/\\/g, '/')) && file.endsWith('.rpose') ) {
+            if ( ready && (file = file.replace(/\\/g, '/')) && isValidRposeFile(file) ) {
                 console.info('del ......', file);
                 delete oHash[file];
                 busAt('源文件删除', file);
@@ -71,4 +71,12 @@ function busAt(name, ofile){
     }finally{
         console.timeEnd('build');
     }
+}
+
+function isValidRposeFile(file){
+    let name = File.name(file);
+    if ( /[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name) || !/\.rpose$/i.test(file) ) {
+        return false;
+    }
+    return true;
 }

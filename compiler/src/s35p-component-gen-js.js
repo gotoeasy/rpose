@@ -5,7 +5,7 @@ const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
 const acornGlobals = require('acorn-globals');
 
-const JS_VARS = '$$,require,window,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
+const JS_VARS = '$$,require,window,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
 
 bus.on('编译插件', function(){
     

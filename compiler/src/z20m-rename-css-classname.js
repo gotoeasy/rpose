@@ -29,7 +29,7 @@ bus.on('哈希样式类名', function(){
         }
 
         // 非release模式时不哈希
-     //   if ( !env.release ) return name;
+        if ( !env.release ) return name;
 
         return '_' + hash(name.toLowerCase());          // 名称已有命名空间前缀，转换为小写后哈希便于复用
     }

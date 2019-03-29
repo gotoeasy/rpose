@@ -29,12 +29,17 @@ bus.on('编译插件', function(){
                     lang = nd.object.value;
                 }
             }
-            codeNode.object.value = bus.at('highlight', codeNode.object.value, lang);                       // 代码转换为语法高亮的html
+            codeNode.object.value = bus.at('语法高亮转换', codeNode.object.value, lang);                     // 代码转换为语法高亮的html
 
             // 添加@taglib属性
             let taglibNode = this.createNode({type: 'Attribute'});
             taglibNode.object.name = '@taglib';
             taglibNode.object.value = '@rpose/buildin:```';
+            let loc = Object.assign({}, object.loc);
+            loc.end.line = loc.start.line;
+            loc.end.column = 3;
+            loc.end.pos = loc.start.pos + 3;
+            taglibNode.object.loc = loc;
             attrsNode.addChild(taglibNode);
 
         });

@@ -88,9 +88,29 @@ bus.on('项目配置处理插件', function(){
 }());
 
 
-// 建立项目标签库
-bus.on('项目配置处理插件', function(){
+// 添加内置标签库
+bus.on('项目配置处理插件', function(addBuildinTaglib){
     return postobject.plugin('process-project-config-103', function(root, context){
+
+        if ( !addBuildinTaglib ) {
+            let pkg = '@rpose/buildin';
+            if ( !bus.at('自动安装', pkg) ) {
+                throw new Error('package install failed: ' + pkg);
+            }
+            bus.at('标签库定义', '@rpose/buildin:```', '');  // 项目范围添加内置标签库
+            bus.at('标签库定义', '@rpose/buildin:router', '');  // 项目范围添加内置标签库
+            bus.at('标签库定义', '@rpose/buildin:router-link', '');  // 项目范围添加内置标签库
+            addBuildinTaglib = true;
+        }
+
+    });
+
+}());
+
+
+// 建立项目标签库
+bus.on('项目配置处理插件', function(addBuildinTaglib){
+    return postobject.plugin('process-project-config-105', function(root, context){
 
         let oKv, startLine;
         root.walk( 'taglib', (node, object) => {
@@ -101,7 +121,6 @@ bus.on('项目配置处理插件', function(){
         
         context.result.oTaglib = oKv || {}; // 存键值，用于检查重复
         if ( !oKv ) return;
-
 
         // 检查安装依赖包
         let mapPkg = new Map();
@@ -123,5 +142,19 @@ bus.on('项目配置处理插件', function(){
             }
         }
 
+        // 添加内置标签库
+        if ( !addBuildinTaglib ) {
+            pkg = '@rpose/buildin';
+            if ( !bus.at('自动安装', pkg) ) {
+                throw new Error('package install failed: ' + pkg);
+            }
+            bus.at('标签库定义', '@rpose/buildin:```', '');  // 项目范围添加内置标签库
+            bus.at('标签库定义', '@rpose/buildin:router', '');  // 项目范围添加内置标签库
+            bus.at('标签库定义', '@rpose/buildin:router-link', '');  // 项目范围添加内置标签库
+            addBuildinTaglib = true;
+        }
+
+
     });
+
 }());

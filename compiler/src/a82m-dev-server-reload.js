@@ -26,7 +26,9 @@ bus.on('热刷新服务器', function (hasQuery){
         let env = bus.at('编译环境');
         if ( !env.watch ) return;
 
-        createHttpServer(env.path.build_dist, 3700);
+        setTimeout(() => {
+            createHttpServer(env.path.build_dist, 3700);
+        }, 10);
     }
 
     // 查询

@@ -1,8 +1,10 @@
 const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
+const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
+const postcss = require('postcss');
 const csso = require('csso');
 
 bus.on('编译插件', function(){
@@ -25,47 +27,52 @@ bus.on('编译插件', function(){
         });
 
         context.result.css = ary.join('\n');
-        context.result.css = csso.minify( ary.join('\n'), {forceMediaMerge: true} ).css;
+        if ( env.release ){
+            context.result.css = csso.minify( ary.join('\n'), {forceMediaMerge: true} ).css;
+        }
 
         //context.result.promiseCss = bus.at('编译页面CSS', context.result.css, context.input.file);
-        context.result.promiseCss = context.result.css;
+        //context.result.promiseCss = context.result.css;
+
+        context.result.promiseCss = bus.at('编译页面样式', context.result.css, context.input.file);
     });
 
 }());
 
 
+bus.on('编译页面样式', function(){
 
-bus.on('编译页面CSS', function(){
+    // -------------------------------------------------------------
+    // 页面样式编译，同步处理，仅支持同步插件
+    // 
+    // 加前缀、复制url资源
+    // -------------------------------------------------------------
+    return (css, srcFile) => {
 
-	// srcFile定位编译前的css文件位置
-	return async function(inputCss, srcFile){
-		try{
-			let env = bus.at('编译环境');
+        let env  = bus.at('编译环境');
+        let from = env.path.build_dist + '/from.css';                   // 页面由组件拼装，组件都在%build_dist%目录
+        let to = bus.at('页面目标CSS文件名', srcFile);
 
-			// TODO 友好的出错信息提示
-			let from = env.path.build_temp + '/' + bus.at('标签全名', srcFile) + '.css';	    // 页面由组件拼装，组件都在%build_temp%目录
-			let to = env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length-6) + '.css';
-			let assetsPath = File.relative(to, env.path.build_dist + '/images');			// 图片统一复制到%build_dist%/images，按生成的css文件存放目录决定url相对路径
-			
-			let rs;
-			let opt = {from, to, assetsPath,
-				normalize: true,
-				removeComments: true
-			};
+        let hashbrowserslist = bus.at('browserslist');
+        let hashpath = hash(bus.at('页面图片相对路径', srcFile));			// 结果和图片资源的相对目录相关
+        let hashcss = hash(css);
+        let cachefile = `${bus.at('缓存目录')}/normalize-page-css/${hashbrowserslist}-${hashpath}-${hashcss}.css`;
 
-            let css;
-			if ( env.release ) {
-				rs = await csjs.miniCss(inputCss, opt);
-                css = csso.minify( rs.css, {forceMediaMerge: true} ).css;
-			}else{
-				rs = await csjs.formatCss(csso.minify( inputCss, {forceMediaMerge: true} ).css, opt);
-                css = rs.css;
-			}
+        if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
 
-			return css;
-		}catch(e){
-			throw Err.cat('compile page css failed', srcFile, e);
-		}
-	};
+        // 修改url相对目录
+        let url = 'rebase';
+        postcssUrlOpt = {url};
+
+        let plugins = [];
+        plugins.push( require('autoprefixer')() );                        // 添加前缀
+        plugins.push( require('postcss-url')(postcssUrlOpt) );                  // 修改url相对目录
+//        plugins.push( require('postcss-discard-comments')({remove:x=>1}) );     // 删除所有注释
+
+        let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
+        File.write(cachefile, rs.css);
+        return rs.css;
+    }
 
 }());
+

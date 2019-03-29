@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
         let srcRuntime = bus.at('RPOSE运行时代码');
         let srcStmt = getSrcRegisterComponents(allreferences);
         let srcComponents = getSrcComponents(allreferences);
-        srcComponents = srcComponents.replace(/\%imagepath\%/g, bus.at('页面图片相对路径', context.input.file));
+        srcComponents = srcComponents.replace(/\%imagepath\%/g, bus.at('页面图片相对路径', context.input.file) + '/');
         let tagpkg = context.result.tagpkg;
 
         let src = `

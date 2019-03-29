@@ -7,9 +7,14 @@ const findNodeModules = require('find-node-modules');
 bus.on('标签全名', function(){
 
     return file => {
+        
+        let idx = file.indexOf(':');
+        if ( idx > 0 && file.substring(idx).indexOf('.') < 0 ) {
+            return file; // 已经是全名标签
+        }
 
         let tagpkg = '';
-        let idx = file.lastIndexOf('/node_modules/');
+        idx = file.lastIndexOf('/node_modules/');
         if ( idx > 0 ) {
             let ary = file.substring(idx + 14).split('/');                          // xxx/node_modules/@aaa/bbb/xxxxxx => [@aaa, bbb, xxxxxx]
             if ( ary[0].startsWith('@') ) {
@@ -257,7 +262,7 @@ bus.on('页面图片相对路径', function(){
 	return (srcFile) => {
 		let env = bus.at('编译环境');
         let ary = srcFile.substring(env.path.src.length).split('/');
-        return '../'.repeat(ary.length-2) + 'images/';
+        return '../'.repeat(ary.length-2) + 'images';
 	};
 
 }());

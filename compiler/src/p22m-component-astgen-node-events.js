@@ -24,13 +24,14 @@ bus.on('astgen-node-events', function(){
             key = node.object.name.substring(2);                                                        // onclick => click
             value = node.object.value;
             if ( node.object.isExpression ) {
-                value = '$actions[' + value + ']';                                                      // { abcd } => $actions[(abcd)]
+                value = bus.at('表达式代码转换', value);                             // { abcd } => (abcd)
             }else{
                 value = value.trim();
                 let fnNm = value.startsWith('$actions.') ? value.substring(9) : value;
                 // 静态定义时顺便检查
                 if ( context.script.$actionkeys && context.script.$actionkeys.includes(fnNm) ) {
-                    !value.startsWith('$actions.') && (value = '$actions.' + value);                    // "fnClick" => $actions.fnClick
+                    value = '$actions.' + value;                    // "fnClick" => $actions.fnClick
+                    //value = `$actions['${value}']`;                    // "fnClick" => $actions['fnClick']
                 }else{
                     // 指定方法找不到
                     throw new Err('action not found: ' + fnNm, {file: context.input.file, text: context.input.text, start: node.object.loc.start.pos, end: node.object.loc.end.pos});

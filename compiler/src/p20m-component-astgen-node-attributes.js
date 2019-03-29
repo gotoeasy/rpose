@@ -1,5 +1,7 @@
 const bus = require('@gotoeasy/bus');
 
+const REG_EVENTS = /^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;
+
 bus.on('astgen-node-attributes', function(){
 
     // 标签普通属性生成json形式代码
@@ -22,9 +24,26 @@ bus.on('astgen-node-attributes', function(){
         attrsNode.nodes.forEach(node => {
             key = '"' + lineString(node.object.name) + '"';
             if ( node.object.isExpression ) {
-                value = parseExpr(node.object.value);
+                value = bus.at('表达式代码转换', node.object.value);
+            }else if (typeof node.object.value === 'string'){
+
+                if ( !tagNode.object.standard && REG_EVENTS.test(node.object.name) && !node.object.isExpression && context.script.$actionkeys ) {
+                    // 这是个组件上的事件名属性（非组件的事件名属性都转成Event了），如果不是表达式，而且在actions中有定义，顺便就办了，免得一定要写成表达式
+                    let val = node.object.value.trim();
+                    let fnNm = val.startsWith('$actions.') ? val.substring(9) : val;
+                    if ( context.script.$actionkeys.includes(fnNm) ) {
+                        // 能找到定义的方法则当方法处理
+                        value = `$actions['${fnNm}']`;                    // "fnClick" => $actions['fnClick']
+                    }else{
+                        // 找不到时，按普通属性处理
+                        value = '"' + lineString(node.object.value) + '"';
+                    }
+
+                }else{
+                    value = '"' + lineString(node.object.value) + '"';
+                }
             }else{
-                value = '"' + lineString(node.object.value) + '"';
+                value = node.object.value;
             }
 
             ary.push( ` ${comma} ${key}: ${value} ` );
@@ -36,13 +55,6 @@ bus.on('astgen-node-attributes', function(){
     }
 
 }());
-
-
-function parseExpr(expression){
-    let expr = expression.trim();
-    expr.startsWith('{') && expr.endsWith('}') && (expr = expr.substring(1, expr.length-1));
-    return `(${expr})`;
-}
 
 
 function lineString(str, quote = '"') {

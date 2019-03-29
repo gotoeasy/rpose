@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.0.24
+0.0.25
 
 [main]
 index.js

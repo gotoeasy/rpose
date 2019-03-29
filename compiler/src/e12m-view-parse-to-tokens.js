@@ -439,7 +439,6 @@ function TokenParser(fileText, viewText, file, PosOffset){
         /^\\+```/.test($CODE) && ($CODE = $CODE.substring(1));                                // 删除一个转义斜杠     \``` => ``` ，  \\``` => \```
 
         // 属性值中的大括号会被当做表达式字符解析，需要转义掉
-       // $CODE = bus.at('highlight', $CODE);
         $CODE = $CODE.replace(/\{/g, '\\{').replace(/\}/g, '\\}')
 
         start = pos + rs[1].length;
