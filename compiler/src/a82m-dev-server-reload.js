@@ -10,7 +10,7 @@ const opn = require('opn');
 // -----------------------------------------------------------------------
 // 某日，browser-sync启动及刷新竟然要数分钟
 // 原因或是众所周知的网络问题，或是不得而知的版本依赖问题
-// 总之，无心花精力细查解决它，不得已先来个简陋实现，毕竟需求非常简单
+// 总之，无心花精力细查解决它，不得已先写个简陋实现，毕竟需求非常简单
 //
 // 此服务器只在watch模式下才开启
 //
@@ -18,7 +18,7 @@ const opn = require('opn');
 // 2）服务器添加文件是否变更的查询接口
 // 3）html文件请求做特殊处理，注入客户端脚本，脚本中包含页面id和哈希码
 // 4）客户端脚本每隔1秒请求服务器查询当前页是否有变更，有改变则刷新
-// 5）服务器启动后，间隔一秒看有无请求，没有才打开浏览器访问，避免开一堆窗口
+// 5）服务器启动后，间隔一秒看有无请求，没有则打开浏览器访问，避免开一堆窗口
 // -----------------------------------------------------------------------
 bus.on('热刷新服务器', function (hasQuery){
 
@@ -26,9 +26,7 @@ bus.on('热刷新服务器', function (hasQuery){
         let env = bus.at('编译环境');
         if ( !env.watch ) return;
 
-        setTimeout(() => {
-            createHttpServer(env.path.build_dist, 3700);
-        }, 10);
+        createHttpServer(env.path.build_dist, 3700);
     }
 
     // 查询
@@ -167,7 +165,9 @@ bus.on('热刷新服务器', function (hasQuery){
 
         server.listen(port);
         let hostUrl = 'http://localhost:' + port;
-        console.info('server ready ...... http://127.0.0.1:' + port);
+        console.log('-------------------------------------------');
+        console.log(` server ready ...... ${hostUrl}`);
+        console.log('-------------------------------------------');
 
         setTimeout(() => {
             !hasQuery && opn(hostUrl);                                                          // 等1秒钟还是没有请求的话，新开浏览器

@@ -408,8 +408,14 @@ function TokenParser(fileText, viewText, file, PosOffset){
         }
 
         // 【Token】 height
-        match = rs[1].match(/\b\d+(\%?|px)?/i);                        // 高度（开始行中的数字，可选）
-        let height = match && match[0] ? match[0] : '';
+        match = rs[1].match(/\b\d+(\%|px)/i);                        // 带单位（%或px）的高度
+        let height;
+        if ( match ) {
+            height = match[0];
+        }else {
+            match = rs[1].match(/\b\d+/i);                           // 不带单位的高度（开始行中的数字，可选）
+            match && (height = match[0]);
+        }
         if ( height ) {
             start = pos + match.index;
             end = start + height.length;
@@ -417,6 +423,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
             tokens.push(token);
             token = { type: options.TypeEqual, value: '=', pos: {start, end} };
             tokens.push(token);
+            height = /^\d+$/.test(height) ? (height + 'px') : height;   // 默认单位px
             token = { type: options.TypeAttributeValue, value: height, pos: {start, end} };
             tokens.push(token);
         }

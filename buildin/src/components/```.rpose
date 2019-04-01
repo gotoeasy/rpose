@@ -10,7 +10,7 @@
 //   var num = 1;
 //   ```
 //   
-//   ```js max-height=300px
+//   ```js max-height=300px 或[js 300px]，或[js 300]
 //   var num = 1;
 //   ```
 // ---------------------------------------------------
@@ -18,7 +18,7 @@
 optionkeys  = lang, height, $CODE    // $CODE非常特殊，编译期硬编码，不能修改
 
 [view]
-<pre class="highlight" style="max-height:{$options.height || 500}px">
+<pre class="highlight" style="max-height:{$options.height || '500px'}">
     <code class="highlight"></code>
 </pre>
 

@@ -9,14 +9,14 @@ console.time('load')
 console.timeEnd('load')
 
 
-function build(opts){
+async function build(opts){
 console.time('build');
 
         try{
 			let env = bus.at('编译环境', opts);
 			bus.at('clean');
 
-            bus.at('全部编译');
+            await Promise.all(bus.at('全部编译'));
         }catch(e){
 			console.error(Err.cat('build failed', e).toString());
 		}
@@ -38,9 +38,9 @@ console.timeEnd('clean');
 }
 
 
-function watch(opts){
+async function watch(opts){
 
-    build(opts);
+    await build(opts);
     bus.at('文件监视');
 
 }

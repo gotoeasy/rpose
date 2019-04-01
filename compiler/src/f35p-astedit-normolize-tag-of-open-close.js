@@ -5,7 +5,7 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     // 开闭标签统一转换为Tag类型节点
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         const OPTS = bus.at('视图编译选项');
 
@@ -34,10 +34,9 @@ bus.on('编译插件', function(){
                 throw new Err('missing close tag', 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos});
             }
 
-
             if ( nextNode.type === OPTS.TypeTagClose ) {
-                if ( nodeTagOpen.object.text !== nextNode.object.text ) {
-                    throw new Err('unmatch close tag', 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos, end: nextNode.object.loc.end.pos});
+                if ( nodeTagOpen.object.value !== nextNode.object.value ) {
+                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos, end: nextNode.object.loc.end.pos});
                 }
                 tagNode.object.loc.end = nextNode.object.loc.end;
                 nextNode.remove();

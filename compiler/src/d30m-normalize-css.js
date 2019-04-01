@@ -50,7 +50,7 @@ module.exports = bus.on('样式统一化整理', function(){
         plugins.push( require('postcss-discard-empty') );                       // 删除空样式（@font-face;h1{}{color:blue}h2{color:}h3{color:red} => h3{color:red}）
 
 
-        let rs = postcss(plugins).process(css, {from}).sync().root.toResult();
+        let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
         File.write(cachefile, rs.css);
         return rs.css;
     }

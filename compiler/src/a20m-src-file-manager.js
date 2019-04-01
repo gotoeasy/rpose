@@ -89,7 +89,7 @@ const File = require('@gotoeasy/file');
         }
 
         oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);                           // 第一个有效
-        bus.at('全部编译');
+        return bus.at('全部编译');
 
     });
 
@@ -107,9 +107,12 @@ const File = require('@gotoeasy/file');
 
         // 保存输入，删除关联编译缓存，重新编译
         oFiles[oFile.file] = Object.assign({}, oFileIn);
-        refFiles.forEach(file => bus.at('组件编译缓存', file, false));      // 删除关联页面的编译缓存
+        refFiles.forEach(file => {
+            bus.at('组件编译缓存', file, false);                             // 删除关联页面的编译缓存
+            writeInfoPage(file, `rebuilding for component [${tag}] changed`);
+        });
         bus.at('组件编译缓存', oFile.file, false);                          // 删除当前文件的编译缓存
-        bus.at('全部编译');
+        return bus.at('全部编译');
     });
 
     bus.on('源文件删除', function(file){
@@ -139,9 +142,12 @@ const File = require('@gotoeasy/file');
         if ( !tag || !oFile) return;                                        // 无关文件的删除
 
         // 删除关联编译缓存，重新编译
-        refFiles.forEach(file => bus.at('组件编译缓存', file, false));       // 删除关联页面的编译缓存
+        refFiles.forEach(file => {
+            bus.at('组件编译缓存', file, false);                             // 删除关联页面的编译缓存
+            writeInfoPage(file, `rebuilding for component [${tag}] removed`);
+        });
         bus.at('组件编译缓存', oFile.file, false);                           // 删除当前文件的编译缓存
-        bus.at('全部编译');
+        return bus.at('全部编译');
     });
 
 
@@ -156,4 +162,27 @@ function getTagOfSrcFile(file){
         return;
     }
     return name.toLowerCase();
+}
+
+
+function writeInfoPage(file, msg){
+
+    let fileHtml = bus.at('页面目标HTML文件名', file);
+    let fileCss = bus.at('页面目标CSS文件名', file);
+    let fileJs = bus.at('页面目标JS文件名', file);
+
+    if ( File.existsFile(fileHtml) ) {
+        File.write(fileHtml, syncHtml(msg));   // html文件存在，可能正被访问，要替换
+        File.remove(fileCss);
+        File.remove(fileJs);
+    }
+
+}
+
+
+// 在watch模式下，文件改变时，生成的html文件不删除，便于浏览器同步提示信息
+function syncHtml(msg=''){
+	return `<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>Page build failed or src file removed<p/>
+        <pre style="background:#333;color:#ddd;padding:10px;">${msg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+    </body>`;
 }

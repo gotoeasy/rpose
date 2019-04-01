@@ -19,6 +19,7 @@ bus.on('编译插件', function(){
         let fileJs = bus.at('页面目标JS文件名', context.input.file);
 
 
+        let stime = new Date().getTime(), time;
         context.result.promiseJs.then(async js => {
 
             let html = context.result.html;
@@ -32,7 +33,8 @@ bus.on('编译插件', function(){
 
             env.watch && (context.result.hashcode = hash(html+css+js));        // 计算页面编译结果的哈希码，供浏览器同步判断使用
 
-            console.info('write ..........', fileHtml);
+            time = new Date().getTime() - stime;
+            console.info('[pack]', time + 'ms -', fileHtml.substring(env.path.build_dist.length+1));
 
         }).catch(e => {
             console.error('[write-page]', e);

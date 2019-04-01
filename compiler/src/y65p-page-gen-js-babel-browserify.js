@@ -17,22 +17,19 @@ bus.on('编译插件', function(){
             let hashbrowsers = bus.at('browserslist');
             let hashcode = hash(context.result.pageJs);
             let action = env.release ? 'min' : 'format';
-            let cachefile = `${bus.at('缓存目录')}/babel-browserify/${hashbrowsers}-${hashcode}-${action}.js`;
+            let cachefile = `${bus.at('缓存目录')}/babel-browserify-${hashbrowsers}/${hashcode}-${action}.js`;
 
             if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
-            
-            
-            let js;
+
+            let js = context.result.pageJs;
             try{
-                js = csjs.babel(context.result.pageJs);
-                File.write(env.path.build + '/babel.js', js);
+                js = csjs.babel(js);
+                js = await csjs.browserify(js, null);
+                env.release ? (js = csjs.miniJs(js)) : (js = csjs.formatJs(js));
             }catch(e){
-                File.write(env.path.build + '/log/log.txt', context.result.pageJs + '\n\n' + e.stack);
+                File.write(env.path.build + '/error-babel-browserify.log', js + '\n\n' + e.stack);
                 throw e;
             }
-
-            js = await csjs.browserify(js, null);
-            env.release ? (js = csjs.miniJs(js)) : (js = csjs.formatJs(js));
 
             File.write(cachefile, js);
             return js;
