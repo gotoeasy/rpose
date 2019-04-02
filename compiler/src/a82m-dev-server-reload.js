@@ -7,6 +7,8 @@ const path = require('path');
 const http = require('http');
 const opn = require('opn');
 
+const REBUILDING = 'rebuilding...';
+
 // -----------------------------------------------------------------------
 // 某日，browser-sync启动及刷新竟然要数分钟
 // 原因或是众所周知的网络问题，或是不得而知的版本依赖问题
@@ -49,9 +51,13 @@ bus.on('热刷新服务器', function (hasQuery){
                 let fileJs = bus.at('页面目标JS文件名', srcFile);
                 if ( File.existsFile(fileHtml) ) {
                     let html = File.read(fileHtml);
-                    let css = File.existsFile(fileCss) ? File.read(fileCss) : '';
-                    let js = File.existsFile(fileJs) ? File.read(fileJs) : '';
-                    hashcode = hash(html + css + js);                                           // 确保有值返回避免两次刷新
+                    if ( html.indexOf('<body>Page build failed or src file removed<p/>') > 0 ) {
+                        hashcode = REBUILDING;
+                    }else{
+                        let css = File.existsFile(fileCss) ? File.read(fileCss) : '';
+                        let js = File.existsFile(fileJs) ? File.read(fileJs) : '';
+                        hashcode = hash(html + css + js);                                           // 确保有值返回避免两次刷新
+                    }
                 }
             }
         }
@@ -82,15 +88,23 @@ bus.on('热刷新服务器', function (hasQuery){
 
         let script = `
         <script>
+            var _times_ = 0;
             function refresh() {
                 let url = '/query?page=${htmlpage}&t=' + new Date().getTime();
                 ajaxAsync(url, function(rs){
                     if ( rs !== '${hashcode}' ) {
-                        location.reload();
+                        if ( rs === '${REBUILDING}' ) {
+                            _times_++;
+                            _times_ >= 5 ? location.reload() : setTimeout(refresh, 1000);
+                        }else{
+                            location.reload();
+                        }
                     }else{
+                        _times_ = 0;
                         setTimeout(refresh, 1000);
                     }
                 }, function(err){
+                    _times_ = 0;
                     setTimeout(refresh, 1000);
                 });
             }
@@ -110,7 +124,6 @@ bus.on('热刷新服务器', function (hasQuery){
             setTimeout(refresh, 3000);
         </script>`;
 
-    //console.log('200 ' + req.url);
         let html = File.read(htmlfile).replace(/<head>/i, '<head>' + script);                   // 极简实现，注入脚本，定时轮询服务端
         res.writeHead(200, {'Content-Type': 'text/html;charset=UFT8'});
         res.end(html);

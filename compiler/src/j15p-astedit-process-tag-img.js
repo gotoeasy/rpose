@@ -1,6 +1,7 @@
 const bus = require('@gotoeasy/bus');
 const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
+const Err = require('@gotoeasy/err');
 const postobject = require('@gotoeasy/postobject');
 const fs = require('fs');
 
@@ -68,9 +69,8 @@ function hashImageName(srcFile, imgFile){
     let name = hash({file}) + File.extname(file); // 去除目录，文件名哈希化，后缀名不变
 
     // 复制文件
-	let env = bus.at('编译环境');
-    let distDir = env.path.build_dist + '/images';
-    let distFile = env.path.build_dist + '/images/' + name;
+    let distDir = bus.at('缓存目录') + '/resources';                                     // 统一目录，资源都复制到 %缓存目录%/resources
+    let distFile = distDir + '/' + name;
     if ( !File.exists(distFile) ) {
         !File.existsDir(distDir) && File.mkdir(distDir);
         fs.createReadStream(file).pipe(fs.createWriteStream(distFile));

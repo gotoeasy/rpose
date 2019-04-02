@@ -9,5 +9,4 @@ commander
   .command('build', 'build project')
   .command('watch', 'watch and build project')
   .command('clean', 'clean project')
-  .command('publish', 'publish project')
   .parse(process.argv);

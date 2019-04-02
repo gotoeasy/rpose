@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const rpose = require('..');
+const compiler = require('..');
 const cmmd = require('commander');
 
 cmmd.usage('[options] [path]')
@@ -22,5 +22,5 @@ let opts = {
 !opts.debug && (console.debug = x=>x);
 
 opts.watch = true;
-rpose.watch(opts);
+compiler.watch(opts);
 

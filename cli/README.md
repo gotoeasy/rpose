@@ -42,7 +42,6 @@ use file `rpose.config.btf` to config rpose project
 ```
 [path] // config project path info
 src                 : src
-build               : build
 
 [theme] // theme npm package
 @gotoeasy/theme

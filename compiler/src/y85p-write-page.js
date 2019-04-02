@@ -4,7 +4,6 @@ const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
-const csso = require('csso');
 
 bus.on('编译插件', function(){
     
@@ -14,17 +13,16 @@ bus.on('编译插件', function(){
         let env  = bus.at('编译环境');
         let browserslist = bus.at('browserslist');
 
-        let fileHtml = bus.at('页面目标HTML文件名', context.input.file);
-        let fileCss = bus.at('页面目标CSS文件名', context.input.file);
-        let fileJs = bus.at('页面目标JS文件名', context.input.file);
-
-
         let stime = new Date().getTime(), time;
-        context.result.promiseJs.then(async js => {
+        context.result.browserifyJs.then(browserifyJs => {
+
+            let fileHtml = bus.at('页面目标HTML文件名', context.input.file);
+            let fileCss = bus.at('页面目标CSS文件名', context.input.file);
+            let fileJs = bus.at('页面目标JS文件名', context.input.file);
 
             let html = context.result.html;
-            let css = await context.result.promiseCss;
-            context.result.css = css;
+            let css = context.result.pageCss;
+            let js = browserifyJs;
             context.result.js = js;
 
             File.write( fileCss, css );
@@ -37,8 +35,9 @@ bus.on('编译插件', function(){
             console.info('[pack]', time + 'ms -', fileHtml.substring(env.path.build_dist.length+1));
 
         }).catch(e => {
-            console.error('[write-page]', e);
+            console.error('[pack]', e);
         });
+
 
     });
 

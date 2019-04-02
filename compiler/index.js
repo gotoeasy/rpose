@@ -13,13 +13,13 @@ async function build(opts){
 console.time('build');
 
         try{
-			let env = bus.at('编译环境', opts);
-			bus.at('clean');
+            let env = bus.at('编译环境', opts);
+            bus.at('clean');
 
-            await Promise.all(bus.at('全部编译'));
+            await Promise.all( bus.at('全部编译') )
         }catch(e){
-			console.error(Err.cat('build failed', e).toString());
-		}
+            console.error(Err.cat('build failed', e).toString());
+        }
 
 console.timeEnd('build');
 }
@@ -28,11 +28,11 @@ function clean(opts){
 console.time('clean');
 
         try{
-			let env = bus.at('编译环境', opts);
-			bus.at('clean');
+            let env = bus.at('编译环境', opts);
+            bus.at('clean');
         }catch(e){
-			console.error(Err.cat('clean failed', e).toString());
-		}
+            console.error(Err.cat('clean failed', e).toString());
+        }
 
 console.timeEnd('clean');
 }

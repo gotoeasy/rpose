@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const rpose = require('@gotoeasy/rpose');
+const rposeCreate = require('..');
 const os = require('@gotoeasy/os');
 const fs = require('fs');
 const cmmd = require('commander');
@@ -74,7 +74,7 @@ function createProject(workDir, project) {
 	}
 
 
-	let rs = rpose.create({workDir: workDir, name: name});
+	let rs = rposeCreate({workDir: workDir, name: name});
 	if (rs) {
 		console.log();
 		console.log(`${i18n('msg_180', 'project created')}: [${name}] `);
@@ -84,11 +84,11 @@ function createProject(workDir, project) {
 		console.log(chalk.gray(i18n('msg_190', '      # change to project directory')));
 		console.log(`      $ cd ${name}`);
 		console.log();
-		console.log(chalk.gray(i18n('msg_200', '      # install devDependencies')));
-		console.log(`      $ npm i`);
-		console.log();
-		console.log(chalk.gray(i18n('msg_140', '      # run test')));
-		console.log(`      $ npm test`);
+//		console.log(chalk.gray(i18n('msg_200', '      # install devDependencies')));
+//		console.log(`      $ npm i`);
+//		console.log();
+		console.log(chalk.gray(i18n('msg_140', '      # build and watch file change')));
+		console.log(`      $ rpose watch`);
 		console.log();
 	}else{
 		help();
@@ -110,7 +110,7 @@ function initMessages(){
 					msg_110: '输入项目名:',
 					msg_120: '  使用方法:',
 					msg_130: '      # 按官方模板在当前目录创建一个新项目',
-					msg_140: '      $ 运行测试用例',
+					msg_140: '      $ 编译并监视文件修改',
 					msg_150: '  无效的项目名',
 					msg_160: '  目标目录已存在',
 					msg_170: '  项目创建失败，修改项目名或目录后再继续',
@@ -122,7 +122,7 @@ function initMessages(){
 					msg_110: 'プロジェクト名を入力する:',
 					msg_120: '  使用方法:',
 					msg_130: '      # オフィシャルテンプレートで現在のディレクトリに新しいプロジェクトを作成する',
-					msg_140: '      $ テストケースの実施を行う',
+					msg_140: '      $ ビルド・ファイル監視を行う',
 					msg_150: '  無効なプロジェクト名',
 					msg_160: '  ターゲットディレクトリが存在している',
 					msg_170: '  プロジェクトの作成に失敗した、プロジェクト名またはディレクトリを変更してから続ける',
@@ -134,7 +134,7 @@ function initMessages(){
 					msg_110: '  input project name:',
 					msg_120: '  Usage:',
 					msg_130: '      # create a new project in current directory with official template',
-					msg_140: '      $ run test',
+					msg_140: '      $ build and watch file change',
 					msg_150: '  Invalid project name',
 					msg_160: '  Target directory exists',
 					msg_170: '  Failed to create project, change the project name or directory to continue',

@@ -1,0 +1,52 @@
+// -------------------------------------------------
+// 这是个简化替代package.json用的配置文件
+// 结合gotoeasy-cli命令，发布前转换为package.json
+// -------------------------------------------------
+[name] // 项目名 （必填）
+name
+
+[version] // 版本号 （必填）
+0.0.0
+
+[main] // 入口文件
+index.js
+
+[dependencies] // 依赖库
+xxxxx : *
+yyyyy : *
+zzzzz : *
+
+[devDependencies] // 开发依赖库
+xxxxx : *
+yyyyy : *
+
+[scripts] // 脚本命令
+test = echo "Error: no test specified" && exit 1
+
+[description] // 描述
+@rpose/cli
+
+[keywords] // 检索关键字，多个关键字用半角逗号分隔
+keyword1, keyword2, keyword3
+
+[engines] // 指定环境要求版本
+node : >= 10.0.0
+npm : >= 6.1.0
+
+[repository] // 仓库
+type= git
+url = git+https://github.com/xxxxx/yyyyyyy.git
+
+[homepage] // 主页，github项目会被自动识别设定
+https://github.com/gotoeasy/........../README.md
+
+[bugs] // BUG提交地址，github项目会自动识别设定
+url = https://github.com/xxxxx/yyyyyyy/issues
+
+[author] // 作者信息
+name = your name
+email= your email
+
+[license] // 协议
+MIT
+

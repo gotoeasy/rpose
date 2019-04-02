@@ -1,7 +1,10 @@
 {
   "name": "rpose",
-  "version": "0.0.8",
+  "version": "0.4.0",
   "main": "index.js",
+  "dependencies": {
+    "@rpose/compiler": "0.4.*"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -23,9 +26,5 @@
     "name": "青松",
     "email": "gotoeasy@163.com"
   },
-  "license": "Apache-2.0",
-  "dependencies": {
-    "@rpose/ui": "0.0.1",
-    "flex-layout": "^1.0.1"
-  }
+  "license": "MIT"
 }

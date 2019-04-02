@@ -5,6 +5,11 @@ const File = require('@gotoeasy/file');
 
 bus.on('编译插件', function(){
     
+    // ----------------------------------------------------------------------
+    // 全部资源文件统一复制到 %缓存目录%/resources 中，并哈希化
+    // 用以避免clean命令删除build目录导致资源文件丢失
+    // 组件样式统一编译到同一目录，即url中没有目录，简化后续页面资源目录调整
+    // ----------------------------------------------------------------------
     return postobject.plugin(__filename, function(root, context){
 
         let style = context.style;
@@ -29,8 +34,8 @@ bus.on('编译插件', function(){
 
         let env = bus.at('编译环境');
         let fromPath = File.path(context.input.file);
-        let toPath = env.path.build_dist;                                               // 假定组件统一编译到%build_dist%目录
-        let assetsPath = 'images';                                                      // 资源统一复制到%build_dist%/images目录
+        let toPath = bus.at('缓存目录') + '/resources';                                     // 统一目录，假定组件样式及资源都编译到 %缓存目录%/resources
+        let assetsPath = '.';                                                               // 样式及资源在同一目录 %缓存目录%/resources
         style.css = bus.at('样式统一化整理', style.css, fromPath, toPath, assetsPath);
     });
 

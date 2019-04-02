@@ -22,6 +22,7 @@ bus.on('编译环境', function(result){
             let build = root + '/build';
             let build_temp = root + '/build/temp';
             let build_dist = root + '/build/dist';
+            let build_dist_images = 'images';                   // 打包后的图片目录
             let theme = '@gotoeasy/theme';
             let prerender = '@gotoeasy/pre-render';
 
@@ -66,6 +67,7 @@ function parseRposeConfigBtf(file){
     result.path.build = getConfPath(root, mapPath, 'build', 'build');
     result.path.build_temp = result.path.build + '/temp';
     result.path.build_dist = result.path.build + '/dist';
+    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';
 
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());

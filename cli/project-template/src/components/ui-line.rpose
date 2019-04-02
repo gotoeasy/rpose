@@ -1,0 +1,14 @@
+[api]
+optionkeys = height, width, color, margin
+
+[view]
+<div style="background-color:{color};height:{height};width:{width};margin:{margin}"></div>
+
+[options]
+{
+    height: '1px',
+    width: '98%',
+    color: '#e6e6e6',
+    margin: '20px auto 20px auto',
+}
+ 

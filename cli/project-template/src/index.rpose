@@ -1,0 +1,87 @@
+[view]
+<div class="page-section">
+
+    <div class="center">
+
+        <h2 class="title">GOTOEASY</h2>
+        <p class="text">WRITE BUSINESS, DONE <br>IT SHOULD BE SO EASY</p>	
+
+        <ui-line height="3px" width="50%" color="#ff9408"/>
+
+        <span class="text">写业务，完成，就该这么简单</span>		
+
+        <div class="group">
+            <a href="https://github.com/gotoeasy/block-text-file" style="margin:5px;width:110px">BTF SPEC</a>
+            <a href="https://gotoeasy.github.io/build/dist/pages/p101-rpose-start.html" style="margin:5px;width:110px">RPOSE</a>
+        </div>
+
+    </div>                
+</div>
+
+[mount]
+body
+
+[css]
+html,body{
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	width: 100%;
+}
+.page-section {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-size: cover;
+    
+    display: table;
+    background: url(./resources/images/bg.jpg) top center no-repeat;
+}
+.center {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
+.title {
+    font-size: 56px;
+    color: #fff;
+    font-family: "Oswald", sans-serif;
+    font-weight: 400;
+    margin: 0px;
+    text-transform: uppercase;
+    line-height: 60px;
+}
+.text {
+    padding: 25px 0px 35px 0px;
+    font-size: 14px;
+    color: #d8dfe5;
+    margin: 0px;
+    font-family: "Open Sans", sans-serif;
+    line-height: 25px;
+    font-weight: 400;
+}
+.text span {
+    color: #ff9000;
+}
+.group {
+    padding: 30px 0px 30px 0px;
+    width: 100%;
+    overflow: hidden;
+}
+.group a {
+    padding: 11px 16px;
+    font-size: 14px;
+    color: #fff;
+    font-family: "Open Sans", sans-serif;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    border: solid 1px #b0bdc8;
+    background: rgba(64, 93, 118, 0.8);
+    transition: all 0.3s ease;
+}
+.group a:hover {
+    background: #ff9000;
+    color: #fff;
+    border: solid 1px #ff9000;
+}
