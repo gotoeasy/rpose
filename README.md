@@ -49,9 +49,9 @@ body
 <div>
     <div class="title">TODO LIST</div>
     <ul>
-        {% for ( let i=0; i<$state.items.length; i++ ) { %}
-        <li><button style="margin-right:20px" index={i} onclick="del">Del</button> { $state.items[i] }</li>
-        {% } %}
+        <for @for="(item, i) in $state.items">
+        <li><button style="margin-right:20px" index={i} onclick="del">Del</button> {item}</li>
+        </for>
     </ul>
 
     <form onsubmit="add">
