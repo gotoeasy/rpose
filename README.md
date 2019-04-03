@@ -174,14 +174,12 @@ body
 </details>
 
 <br>
-<br>
 
 ## `安装使用`
 
 * `@rpose/cli`: [README.md](https://github.com/gotoeasy/rpose/blob/master/cli/README.md)
 
 <br>
-
 
 ## `功能列表`
 
@@ -199,7 +197,7 @@ body
 
 * `buildin`
 
-- [x] 语法高亮组件，写法雷同md的 ```，支持`btf`、`rpose`
+- [x] 语法高亮组件，写法雷同md的 ` ``` `，支持`btf`、`rpose`，支持设定最大高度
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
