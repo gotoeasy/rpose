@@ -186,8 +186,8 @@ body
 
 
 ## `功能列表`
-<details>
-<summary><strong>feature</strong></summary>
+
+* `feature`
 
 - [x] 源文件使用BTF的单文档格式，人性化强，可读性高
 - [x] 数据驱动、组件式、响应式、声明式的开发过程
@@ -198,27 +198,28 @@ body
 - [x] 提供简易安全的路由方案
 - [x] 提供预渲染方案
 - [x] 提供样式风格方案
-</details>
 
+<br>
 
-<summary><strong>buildin</strong></summary>
+* `buildin`
 
 - [x] 语法高亮组件，写法雷同md的 ```，支持`btf`、`rpose`
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
-</details>
 
-<summary><strong>runtime</strong></summary>
+<br>
+
+* `runtime`
 
 - [x] 虚拟DOM及局部差异化渲染实现
 - [x] 提供`on`、`at`、`once`、`off`等事件接口
 - [x] 提供`$$`接口，方便dom节点选择及属性修改操作
 - [x] 支持相对特殊的`<svg>`、`<script>`、`<link>`标签
-</details>
 
-<details>
-<summary><strong>compiler</strong></summary>
+<br>
+
+* `compiler`
 
 - [x] 编译模块插件化便于增减新功能
 - [x] 支持LESS预处理
@@ -245,16 +246,16 @@ body
 - [x] 支持特殊的CDATA标签写法，方便直接书写尖括号等特殊字符
 - [x] 自动删除纯注释代码块，删除空白文本表达式或纯注释文本表达式
 - [x] 源文件监视，自动编译，按需热更新浏览器
-</details>
 
-<summary><strong>other</strong></summary>
+<br>
 
-- [x] 热刷新服务器简易实现，方便按需刷新、按需打开窗口
+* `other`
+
+- [x] 简易实现热刷新服务器替代第三方包，方便按需刷新、按需打开窗口
 - [ ] 测试及覆盖率
 - [ ] 进一步优化缓存性能
 - [ ] 完善例子及文档
 - [ ] 改进、新特性好姿势增强
-</details>
 
 <br>
 
