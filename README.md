@@ -185,104 +185,54 @@ body
 <br>
 
 
-## `TODO`
-- [ ] 改进重构完善
-- [ ] 例子以及文档
-- [ ] 新特性好姿势
+## `功能列表`
+- [ ] 改进及完善
+- [ ] 例子及文档
+- [ ] 新特性姿势
 
 <br>
 
 
-
 ## `变更列表`
 <details>
-<summary><strong>Ver 0.3.0</strong></summary>
+<summary><strong>Ver 0.4.x</strong></summary>
 
-- [x] 源文件添加`[csslib]`块，支持定义样式库，并按需引用样式规则<br>
-
-```
-[view]
-<button type="button" class="btn@bootstrap btn-primary@bootstrap">
-    bootstrap primary button
-</button>
-----------------
-// 这就是写了个bootstrap按钮
-// 样式规则是按需使用
-// 选择器类名根据别名区分确保不会冲突
-
-[csslib]
-// 这个声明的意思是，引用bootstrap的样式，把它当成样式库使用，定义别名为bootstrap，以便于区别使用
-// 具体是从bootstrap模块目录内含子目录查找*.min.css文件，然后读取合并作为一个样式库，编译时会按需引用样式规则
-bootstrap = bootstrap:**/*.min.css
-```
-- [x] 为了便于理解统一语义，新添指令`@taglib`替换原有`@import`，`@import`指令将废弃，`[import]`也将废弃
-
+- [x] 为方便功能删减修改，咬牙重构编译器，分离`runtime`、`buildin`模块
+- [x] 更多的编译期检查以及更友好的错误信息提示
+- [x] 新增指令`@for`，新增内置标签`&lt;for&gt;`、`&lt;if&gt;`
+- [x] 新增CDATA模板支持，方便直接书写尖括号等特殊字符
+- [x] 改进内置的语法高亮组件，增加btf、rpose语言类型的语法高亮显示支持
+- [x] 项目以源码形式发布到npm，开发工程能自动安装依赖模块，按需编译相关组件
+- [x] 解决watch模式下文件重名等可能引起动态编译错误的问题
+- [x] 情不得已，简陋实现热更新服务器替换第三方包，按需刷新按需开窗口，改善体验
+- [x] 优化编译缓存，提升编译性能
 </details>
 
+<summary><strong>Ver 0.3.x</strong></summary>
 
-<details>
-<summary><strong>Ver 0.2.2</strong></summary>
-
-- [x] 配置文件`rpose.config.btf`添加`[import]`设定<br>该配置是`@import`指令的全局性表达，用于统一配置组件引用，省略逐个书写`@import`<br>如<br>[import]<br>ui-button : @gotoeasy/bootstrap<br>c-btn : @gotoeasy/bootstrap:ui-button<br>
-- [x] 新增指令`@show`<br>相应标签将添加或删除样式类`hidden`控制是否显示
+- [x] 新添指令`@taglib`、`@csslib`，组件支持`[taglib]`、`[csslib]`块定义
 </details>
 
 <details>
-<summary><strong>Ver 0.2.1</strong></summary>
+<summary><strong>Ver 0.2.x</strong></summary>
 
-- [x] 指令统一前缀为`@`，以方便阅读识别<br>新增`@ref`替代原有ref指令，原ref指令将废弃
-- [x] 新增指令`@import`<br>自动安装导入npm上指定包的组件，声明式引用的体验<br><br>如&lt;ui-button @import="@gotoeasy/bootstrap"&gt;按钮&lt;/ui-button&gt;<br>意思上如同import ui-button from @gotoeasy/bootstrap<br>也可以写成&lt;c-btn @import="@gotoeasy/bootstrap:ui-button"&gt;按钮&lt;/c-btn&gt;<br>意思上如同import ui-button from @gotoeasy/bootstrap as c-btn
+- [x] 指令统一前缀为`@`，以方便识别，如 `@if`、`@ref`、`@show`
 </details>
 
 <details>
-<summary><strong>Ver 0.1.5</strong></summary>
+<summary><strong>Ver 0.1.x 概念版</strong></summary> 
 
-- [x] 新增逻辑判断指令`@if`<br>
-- [x] 针对LESS、SCSS，自动添加node_modules所在目录为关联目录<br>以方便使用 `@import "node_modules/..."；`导入相关文件<br>
-- [x] 缓存目录放到当前工作路径的`.cache`目录下，方便确认或删除<br>
-</details>
-
-<details>
-<summary><strong>Ver 0.1.4</strong></summary>
-
-- [x] 增量编译支持，大幅提高编译性能<br>基于磁盘缓存实现，若要禁止磁盘缓存，使用参数`--nocache`<br>
-- [x] 其他细节改进<br>
-</details>
-
-<details>
-<summary><strong>Ver 0.1.3</strong></summary>
-
-- [x] 提供简便易用的前端路由方案<br>
-- [x] 改进class属性写法体验，支持混合表达式写法<br>如 class="foo {bar:$options.bar, hide:!$state.show} foobar"<br>等同 class={foo：1, bar:$options.bar, hide:!$state.show, foobar:1}
-- [x] 改善体验，自动安装`rpose.config.btf`中配置的依赖模块<br>
-- [x] 细节改进及BUG修改<br>
-</details>
-
-<details>
-<summary><strong>Ver 0.1.2</strong></summary>
-
-- [x] 提供预渲染(html页面源码的生成)方案，模块化可配置化，以灵活应付Loader或骨架屏等需求<br>
-</details>
-
-<details>
-<summary><strong>Ver 0.1.1</strong></summary>
-
-- [x] 统一哈希算法，自动调整img标签src属性的相对路径，确保不同目录页面都正常显示<br>
-</details>
-
-<details>
-<summary><strong>Ver 0.1.0 概念版</strong></summary> 
-
-- [x] 人性化的BTF格式源文件，舒适的开发体验<br>
-- [x] 回归自然，三驾马车HTML/JS/CSS，写业务，完成<br>
-- [x] 严格控制接口概念，保持简易性，杜绝过度开发<br>
+- [x] 使用BTF格式源文件，人性化可读性强，增强开发舒适性<br>
 - [x] 数据驱动、组件式、响应式、声明式的开发过程<br>
+- [x] 回归自然，三驾马车HTML/JS/CSS，写业务，完成<br>
+- [x] 控制框架接口概念复杂度，保持简易性，杜绝过度开发<br>
 - [x] 虚拟DOM及局部差异渲染<br>
-- [x] CSS支持LESS、SCSS等预处理，集成添加前缀、自动调整URL、去重复优化等后处理<br>
-- [x] 组件单位哈希化CSS类名，组件内类名无重复则不会有冲突，样式命名舒坦了<br>
+- [x] 框架上集成样式的预处理及后处理操作，同一解决样式类名冲突问题<br>
 - [x] 提供组件样式风格统一性方案<br>
-- [x] 命令行提供监视功能，源文件修改时自动编译，热更新浏览器<br>
-- [x] 命令行提供打包功能，配置要兼容的目标浏览器清单，直接打包成品<br>
+- [x] 提供简便易用的前端路由方案<br>
+- [x] 提供预渲染方案，用以灵活应付Loader或骨架屏等需求<br>
+- [x] 提供源监视功能，源文件修改时自动编译，热更新浏览器<br>
+- [x] 集成打包功能，按目标浏览器配置，直接按需打包成品<br>
 </details>
 
 <br>
