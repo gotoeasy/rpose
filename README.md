@@ -199,7 +199,7 @@ body
 
 - [x] 为方便功能删减修改，咬牙重构编译器，分离`runtime`、`buildin`模块
 - [x] 更多的编译期检查以及更友好的错误信息提示
-- [x] 新增指令`@for`，新增内置标签`&lt;for&gt;`、`&lt;if&gt;`
+- [x] 新增指令`@for`，新增内置标签`<for>`、`<if>`
 - [x] 新增CDATA模板支持，方便直接书写尖括号等特殊字符
 - [x] 改进内置的语法高亮组件，增加btf、rpose语言类型的语法高亮显示支持
 - [x] 项目以源码形式发布到npm，开发工程能自动安装依赖模块，按需编译相关组件
@@ -208,6 +208,7 @@ body
 - [x] 优化编译缓存，提升编译性能
 </details>
 
+<details>
 <summary><strong>Ver 0.3.x</strong></summary>
 
 - [x] 新添指令`@taglib`、`@csslib`，组件支持`[taglib]`、`[csslib]`块定义
@@ -216,7 +217,7 @@ body
 <details>
 <summary><strong>Ver 0.2.x</strong></summary>
 
-- [x] 指令统一前缀为`@`，以方便识别，如 `@if`、`@ref`、`@show`
+- [x] 指令统一前缀为`@`以方便识别，如 `@if`、`@ref`、`@show`
 </details>
 
 <details>
