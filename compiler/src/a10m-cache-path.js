@@ -9,7 +9,7 @@ module.exports = bus.on('缓存目录', function(){
 
     return function(){
         let env = bus.at('编译环境');
-        return (env.cwd + '/.cache/' + bus.at('编译环境').compilerVersion).replace(/\\/g, '/');
+        return (env.path.cwd + '/.cache/' + bus.at('编译环境').compilerVersion).replace(/\\/g, '/');
     }
 
 }());

@@ -26,7 +26,7 @@ bus.on('编译环境', function(result){
             let theme = '@gotoeasy/theme';
             let prerender = '@gotoeasy/pre-render';
 
-            result = { path: {root, src, build, build_temp, build_dist}, theme, prerender};
+            result = { path: {cwd, root, src, build, build_temp, build_dist}, theme, prerender};
         }
 
         result.clean = !!opts.clean;
