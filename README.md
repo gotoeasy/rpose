@@ -11,13 +11,12 @@
 <br>
 
 
-
 <br>
 了解请看 https://gotoeasy.github.io
 
 <br>
 <br>
-有好姿势欢迎提Issuse
+有好姿势欢迎提 Issuse
 
 <br>
 <br>
@@ -182,7 +181,6 @@ body
 * `@rpose/cli`: [README.md](https://github.com/gotoeasy/rpose/blob/master/cli/README.md)
 
 <br>
-<br>
 
 
 ## `功能列表`
@@ -199,8 +197,6 @@ body
 - [x] 提供预渲染方案
 - [x] 提供样式风格方案
 
-<br>
-
 * `buildin`
 
 - [x] 语法高亮组件，写法雷同md的 ```，支持`btf`、`rpose`
@@ -208,16 +204,12 @@ body
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
 
-<br>
-
 * `runtime`
 
 - [x] 虚拟DOM及局部差异化渲染实现
 - [x] 提供`on`、`at`、`once`、`off`等事件接口
 - [x] 提供`$$`接口，方便dom节点选择及属性修改操作
 - [x] 支持相对特殊的`<svg>`、`<script>`、`<link>`标签
-
-<br>
 
 * `compiler`
 
@@ -247,8 +239,6 @@ body
 - [x] 自动删除纯注释代码块，删除空白文本表达式或纯注释文本表达式
 - [x] 源文件监视，自动编译，按需热更新浏览器
 
-<br>
-
 * `other`
 
 - [x] 简易实现热刷新服务器替代第三方包，方便按需刷新、按需打开窗口
@@ -258,7 +248,6 @@ body
 - [ ] 改进、新特性好姿势增强
 
 <br>
-
 
 ## `变更列表`
 <details>
