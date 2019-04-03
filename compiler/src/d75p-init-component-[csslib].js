@@ -6,7 +6,7 @@ bus.on('编译插件', function(){
     
     // 处理 组件配置[csslib]
     // 检查安装建立组件样式库
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let prj = bus.at('项目配置处理', context.input.file);
         let oCsslib = context.result.oCsslib = Object.assign({}, prj.oCsslib || {});        // 项目配置的[csslib]合并存放到组件范围缓存起来

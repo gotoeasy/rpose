@@ -5,8 +5,6 @@ const Err = require('@gotoeasy/err');
 // 自闭合标签
 const SELF_CLOSE_TAGS = 'br,hr,input,img,meta,link,area,base,col,command,embed,keygen,param,srouce,trace,wbr'.split(',');
 
-const MODULE = '[' + __filename.substring(__filename.replace(/\\/g, '/').lastIndexOf('/')+1, __filename.length-3) + '] ';
-
 // TODO 未转义字符引起的解析错误，友好提示
 
 // \{ = '\u0000\u0001', \} = '\ufffe\uffff'
@@ -544,7 +542,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
 }
 
 
-module.exports = bus.on('视图TOKEN解析器', function(fileText, srcView, file, PosOffset){
+bus.on('视图TOKEN解析器', function(fileText, srcView, file, PosOffset){
     return new TokenParser(fileText, srcView, file, PosOffset);
 });
 

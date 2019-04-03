@@ -6,7 +6,7 @@ const REG_TAGS = /^(html|link|meta|style|title|address|article|aside|footer|head
 bus.on('编译插件', function(){
     
     // 判断是否为标准标签，并加上标记
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( 'Tag', (node, object) => {
             object.standard = !!object.svg || REG_TAGS.test(object.value); // svg及其子标签都是标准标签

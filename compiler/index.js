@@ -4,9 +4,9 @@ const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
 
-console.time('load')
+console.time('load');
     npm.requireAll(__dirname, 'src/**.js');
-console.timeEnd('load')
+console.timeEnd('load');
 
 
 async function build(opts){

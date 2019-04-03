@@ -9,7 +9,7 @@ const JS_VARS = '$$,require,window,location,clearInterval,setInterval,assignOpti
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
         let env = bus.at('编译环境');
         let result = context.result;
         let script = context.script;

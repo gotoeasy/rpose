@@ -5,7 +5,7 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     // 检查 @csslib
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let oCsslib = context.result.oCsslib;
 

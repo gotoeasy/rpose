@@ -14,7 +14,7 @@ bus.on('编译插件', function(){
     // 没有插槽时，无context.result.slots
     // 多个插槽时，数组context.result.slots中存放名称
     // 有插槽时，api的$state中添加插槽属性接口 $SLOT，以便差异渲染
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let nonameSlotNodes = [];
         let options = bus.at('视图编译选项');

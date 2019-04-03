@@ -11,7 +11,7 @@ bus.on('编译插件', function(){
     //   -- 复制图片资源并哈希化
     //   -- 图片路径加上替换用模板，便于不同目录页面使用时替换为正确的相对目录
     //   -- 上下文中保存是否包含img标签的标记，便于判断是否需替换目录
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( 'Tag', (node, object) => {
 

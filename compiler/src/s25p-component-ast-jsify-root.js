@@ -8,7 +8,7 @@ const AryNm = 'v_Array';
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
         let writer = context.writer;
         let script = context.script;
 

@@ -5,7 +5,7 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     // 转换处理指令节点 @ref
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( '@ref', (node, object) => {
 

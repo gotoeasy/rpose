@@ -16,9 +16,9 @@ bus.on('编译环境', function(result){
         result = parseRposeConfigBtf('rpose.config.btf');   // 相对命令行目录
         if ( !result ) {
             // 没有配置文件时的默认设定
-            let root = process.cwd().replace(/\\/g, '/');
+            let cwd = process.cwd().replace(/\\/g, '/');
+            let root = cwd;
             let src = root + '/src';
-            let src_buildin = path.resolve(__dirname, '../buildin').replace(/\\/g, '/');        // TODO
             let build = root + '/build';
             let build_temp = root + '/build/temp';
             let build_dist = root + '/build/dist';
@@ -26,7 +26,7 @@ bus.on('编译环境', function(result){
             let theme = '@gotoeasy/theme';
             let prerender = '@gotoeasy/pre-render';
 
-            result = { path: {root, src, src_buildin, build, build_temp, build_dist}, theme, prerender};
+            result = { path: {root, src, build, build_temp, build_dist}, theme, prerender};
         }
 
         result.clean = !!opts.clean;
@@ -35,7 +35,10 @@ bus.on('编译环境', function(result){
         result.nocache = !!opts.nocache;
         result.build = !!opts.build;
         result.watch = !!opts.watch;
-        result.compilerVersion = JSON.parse(File.read(File.resolve(__dirname, '../package.json'))).version;
+
+        let packagefile = File.resolve(__dirname, './package.json');
+        !File.existsFile(packagefile) && (packagefile = File.resolve(__dirname, '../package.json'));
+        result.compilerVersion = JSON.parse(File.read(packagefile)).version;
 
         return result;
     };
@@ -43,7 +46,8 @@ bus.on('编译环境', function(result){
 }());
 
 function parseRposeConfigBtf(file){
-    let root = process.cwd().replace(/\\/g, '/');
+    let cwd = process.cwd().replace(/\\/g, '/');
+    let root = cwd;
     file = File.resolve(root, file);
     if ( !File.exists(file) ) return;
     
@@ -60,9 +64,9 @@ function parseRposeConfigBtf(file){
     result.imports = imports;
 
     // 目录
+    result.path.cwd = cwd;
     result.path.root = root;
     result.path.src = root + '/src';
-    result.path.src_buildin = path.resolve(__dirname, '../buildin').replace(/\\/g, '/');
 
     result.path.build = getConfPath(root, mapPath, 'build', 'build');
     result.path.build_temp = result.path.build + '/temp';

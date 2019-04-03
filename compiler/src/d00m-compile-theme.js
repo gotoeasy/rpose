@@ -3,8 +3,6 @@ const bus = require('@gotoeasy/bus');
 const Btf = require('@gotoeasy/btf');
 const File = require('@gotoeasy/file');
 
-const MODULE = '[' + __filename.substring(__filename.replace(/\\/g, '/').lastIndexOf('/')+1, __filename.length-3) + '] ';
-
 bus.on('样式风格', function(result){
 
     return function(){
@@ -29,7 +27,7 @@ bus.on('样式风格', function(result){
             return result;
 
         }catch(e){
-            throw Err.cat(MODULE + 'init theme failed: '+ env.theme, e);
+            throw Err.cat('init theme failed: '+ env.theme, e);
         }
     };
 
@@ -90,7 +88,7 @@ const fileSet = new Set(); // 循环继承检查用
 function getThemeMapByFile(file) {
     if ( fileSet.has(file) ) {
         let ary = [...fileSet].push(file);
-        throw Err.cat(MODULE, ary, new Err('theme circular extend'));
+        throw Err.cat(ary, new Err('theme circular extend'));
     }
     fileSet.add(file);
 

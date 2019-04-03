@@ -3,7 +3,7 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         if ( !context.result.isPage ) return false;         // 仅针对页面
 

@@ -7,7 +7,7 @@ bus.on('编译插件', function(){
     // 针对含@taglib的标签，把标签名替换为标签全名
     // @taglib不能用于标准标签，不能用于项目实际存在的组件，不能用于特殊的内置标签，否则报错
     // 完成后删除@taglib节点
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( '@taglib', (node, object) => {
 

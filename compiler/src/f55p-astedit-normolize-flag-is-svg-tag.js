@@ -4,7 +4,7 @@ const postobject = require('@gotoeasy/postobject');
 bus.on('编译插件', function(){
     
     // 判断是否为SVG标签或SVG子标签，并加上标记
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( 'Tag', (node, object) => {
             if ( !/^svg$/i.test(object.value) ) return;

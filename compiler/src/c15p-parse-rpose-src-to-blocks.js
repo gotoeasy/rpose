@@ -4,7 +4,7 @@ const postobject = require('@gotoeasy/postobject');
 bus.on('编译插件', function(){
     
     // 解析rpose源文件，替换树节点（单个源文件的单一节点），输入{file，text}
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let result = context.result;
 

@@ -5,7 +5,7 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     // 按需查询引用样式库
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let style = context.style;
         let oCssSet = style.csslibset = style.csslibset || new Set();

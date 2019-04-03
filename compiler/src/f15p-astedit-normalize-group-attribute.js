@@ -6,7 +6,7 @@ bus.on('编译插件', function(){
     
     // 合并属性到新的Attributes节点
     // 属性值Attribute节点的数据对象中，添加 isExpresstion 标记
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         const OPTS = bus.at('视图编译选项');
 

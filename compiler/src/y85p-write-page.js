@@ -4,10 +4,11 @@ const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
+const fs = require('fs');
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         if ( !context.result.isPage ) return false;         // 仅针对页面
         let env  = bus.at('编译环境');

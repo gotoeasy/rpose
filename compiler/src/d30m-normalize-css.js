@@ -36,9 +36,9 @@ module.exports = bus.on('样式统一化整理', function(){
         plugins.push( require('postcss-import-sync')({from}) );                 // @import
         plugins.push( require('postcss-unprefix')() );                          // 删除前缀（含@规则、属性名、属性值，如果没有会自动补足无前缀样式）
         plugins.push( require('postcss-url')(postcssUrlOpt) );                  // url资源复制
-        plugins.push( require('postcss-discard-comments')({remove:x=>1}) );     // 删除所有注释
         plugins.push( require('postcss-nested')() );                            // 支持嵌套（配合下面变量处理）
         plugins.push( require('postcss-css-variables')() );                     // 把css变量静态化输出
+        plugins.push( require('postcss-discard-comments')({remove:x=>1}) );     // 删除所有注释
         plugins.push( require('postcss-minify-selectors') );                    // 压缩删除选择器空白（h1 + p, h2, h3, h2{color:blue} => h1+p,h2,h3{color:blue}）
         plugins.push( require('postcss-minify-params') );                       // 压缩删除参数空白（@media only screen   and ( min-width: 400px, min-height: 500px    ){} => @media only screen and (min-width:400px,min-height:500px){}）
         plugins.push( require('postcss-normalize-string') );                    // 统一写法（'\\'abc\\'' => "'abc'"）

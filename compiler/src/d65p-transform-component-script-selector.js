@@ -22,7 +22,7 @@ bus.on('编译插件', function(){
     // 方法名一致、且第一参数为字面量时才转换
     // 若希望被转换但又没按此规则书写，将不被转换而导致不符预期
     // ---------------------------------------------------------------
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let script = context.script;
         let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\$\s*\()/;

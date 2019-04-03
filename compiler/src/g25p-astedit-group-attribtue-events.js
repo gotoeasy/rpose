@@ -9,7 +9,7 @@ bus.on('编译插件', function(){
     // 处理标签中指定类型的属性，提取后新建节点管理
     // 标准标签的事件统一分组
     // 标签节点下新建Events节点存放
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( 'Tag', (node, object) => {
 

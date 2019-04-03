@@ -1,8 +1,5 @@
-const Err = require('@gotoeasy/err');
 const bus = require('@gotoeasy/bus');
 const hash = require('@gotoeasy/hash');
-
-const MODULE = '[' + __filename.substring(__filename.replace(/\\/g, '/').lastIndexOf('/')+1, __filename.length-3) + '] ';
 
 bus.on('哈希样式类名', function(){
     

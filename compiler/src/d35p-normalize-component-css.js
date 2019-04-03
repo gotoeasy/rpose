@@ -10,7 +10,7 @@ bus.on('编译插件', function(){
     // 用以避免clean命令删除build目录导致资源文件丢失
     // 组件样式统一编译到同一目录，即url中没有目录，简化后续页面资源目录调整
     // ----------------------------------------------------------------------
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let style = context.style;
 

@@ -7,7 +7,7 @@ bus.on('编译插件', function(){
     // 处理 [taglib]
     // 和并组件[taglib]以及项目[taglib]成一个新副本存放于context.result.oTaglib
     // 名称重复时报错
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let prj = bus.at('项目配置处理', context.input.file);
         let oTaglib = context.result.oTaglib = Object.assign({}, prj.oTaglib || {});        // 项目配置的[taglib]合并存放到组件范围缓存起来

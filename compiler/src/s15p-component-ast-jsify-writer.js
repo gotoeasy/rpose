@@ -41,7 +41,7 @@ class  JsWriter{
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         context.writer = new JsWriter();
 

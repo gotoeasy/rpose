@@ -55,14 +55,8 @@ bus.on('编译模板JS', function(result){
     return function () {
         if ( !result ) {
             let tmpl = getSrcTemplate().replace(/\\/g, "\\\\");
-            const clsTemplate = new ClsTemplate(tmpl, '$data');
-
-            let fn = clsTemplate.toString
-            result = ( (...args) => {
-                let rs = fn(...args);
-                let imagepath = args[0].imagepath;
-                return imagepath ? rs.replace(/\%imagepath\%/ig, imagepath) : rs;
-            });
+            let clsTemplate = new ClsTemplate(tmpl, '$data');
+            result = clsTemplate.toString;
         }
 
         return result;

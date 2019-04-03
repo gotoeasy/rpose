@@ -1,7 +1,7 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.4.0",
-  "main": "index.js",
+  "version": "0.4.2",
+  "main": "compiler.js",
   "dependencies": {
     "@rpose/runtime": "0.0.*",
     "@gotoeasy/bus": "0.0.*",
@@ -34,6 +34,7 @@
     "rp": "bin/rpose"
   },
   "scripts": {
+    "build": "node script/build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "description": "rpose compiler",

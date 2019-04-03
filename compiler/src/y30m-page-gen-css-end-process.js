@@ -23,15 +23,23 @@ bus.on('页面样式后处理', function(){
         let hashcss = hash(css);
         let cachefile = `${bus.at('缓存目录')}/pack-page-css-${hashbrowserslist}/${hashpath}-${hashcss}.css`;
 
-        if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
-
+        let pageCss;
+        let plugins = [];
         // 修改url相对目录
         let url = 'copy';
         let basePath = bus.at('缓存目录') + '/resources';                           // 组件样式目录和资源目录相同
         let useHash = false;                                                        // 组件样式统一处理时已哈希化
         let postcssUrlOpt = {url, basePath, assetsPath, useHash };
 
-        let plugins = [];
+        if ( !env.nocache && File.existsFile(cachefile) ){
+            pageCss = File.read(cachefile);
+            if ( pageCss.indexOf('url(') > 0 ) {
+                plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
+                postcss(plugins).process(css, {from, to}).sync().root.toResult();
+            }
+            return pageCss;
+        }
+
 	    plugins.push( require('postcss-discard-comments')({remove:x=>1}) );	        // 删除所有注释
 	    plugins.push( require('postcss-normalize-whitespace') );					// 压缩删除换行空格
 	    plugins.push( require('postcss-discard-empty') );							// 删除空样式（@font-face;h1{}{color:blue}h2{color:}h3{color:red} => h3{color:red}）
@@ -42,7 +50,7 @@ bus.on('页面样式后处理', function(){
 
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
 
-        let pageCss = env.release ? rs.css : csjs.formatCss(rs.css);                // 非release时格式化
+        pageCss = env.release ? rs.css : csjs.formatCss(rs.css);                // 非release时格式化
 
         File.write(cachefile, pageCss);
         return pageCss;

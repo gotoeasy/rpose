@@ -6,7 +6,7 @@ bus.on('编译插件', function(){
     
     // 内置for标签和if标签的转换
     // 前面已处理@for和@if，这里直接提升子节点就行了（节点无关属性全忽略）
-    return postobject.plugin(__filename, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root, context){
 
         root.walk( 'Tag', (node, object) => {
             if ( !/^(if|for)$/i.test(object.value) ) return;
