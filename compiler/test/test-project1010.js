@@ -4,13 +4,13 @@ const File = require('@gotoeasy/file');
 
 
 test('样式类名测试', async t => {
-	
+
     let opts = {};
+    opts.cwd =  File.resolve(__dirname, '../test-projects/project1010');
     opts.clean = true;
-    opts.release = true;
+    opts.release = false;
     opts.debug = false;
-    opts.nocache = true;
-    opts.cwd = File.resolve(__dirname, 'project1010');
+    opts.nocache = false;
     opts.build = true;
     
     await compiler.build(opts);

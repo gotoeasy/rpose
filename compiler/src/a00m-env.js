@@ -28,7 +28,9 @@ bus.on('编译环境', function(result){
         result.watch = !!opts.watch;
 
         result.compilerVersion = compilerVersion;
-        result.path.cache = File.resolve(result.path.cwd, result.path.cache).replace(/\\/g, '/');   // 缓存目录
+        if ( result.path.cache ) {
+            result.path.cache = File.resolve(result.path.cwd, result.path.cache);   // 缓存目录
+        }
 
         return result;
     };
@@ -67,8 +69,7 @@ function parseRposeConfigBtf(file, defaultFile, opts){
     result.path.build_temp = result.path.build + '/temp';
     result.path.build_dist = result.path.build + '/dist';
     result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';       // 打包后的图片目录
-    result.path.cache = mapPath.get('cache') || '.cache';                               // 缓存大目录
-    result.path.cache = path.resolve(result.path.cache).replace(/\\/g, '/');
+    result.path.cache = mapPath.get('cache');                                           // 缓存大目录
 
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());
