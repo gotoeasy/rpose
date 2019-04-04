@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const csjs = require('@gotoeasy/csjs');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
@@ -19,8 +18,9 @@ bus.on('编译插件', function(){
         let srcStmt = getSrcRegisterComponents(allreferences);
         let srcComponents = getSrcComponents(allreferences);
 
+        let oCache = bus.at('缓存');
         // 替换图片相对路径，图片不存在则复制
-        let resourcePath = bus.at('缓存目录') + '/resources';
+        let resourcePath = oCache.path + '/resources';
         let imgPath = bus.at('页面图片相对路径', context.input.file);
         srcComponents = srcComponents.replace(/\%imagepath\%([0-9a-z]+\.[0-9a-zA-Z]+)/g, function(match, filename){
             let from = resourcePath + '/' + filename;

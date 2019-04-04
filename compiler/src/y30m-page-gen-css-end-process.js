@@ -1,7 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
-const hash = require('@gotoeasy/hash');
-const File = require('@gotoeasy/file');
 const postcss = require('postcss');
 
 bus.on('页面样式后处理', function(){
@@ -13,31 +11,30 @@ bus.on('页面样式后处理', function(){
     // -------------------------------------------------------------
     return (css, srcFile) => {
 
-        let env  = bus.at('编译环境');
-        let from = bus.at('缓存目录') + '/from.css';                                // 页面由组件拼装，组件都在%缓存目录%目录
+        let env = bus.at('编译环境');
+        let oCache = bus.at('缓存');
+        let from = oCache.path + '/from.css';                                       // 页面由组件拼装，组件都在%缓存目录%目录
         let to = bus.at('页面目标CSS文件名', srcFile);
-
-        let assetsPath = bus.at('页面图片相对路径', srcFile);
-        let hashbrowserslist = bus.at('browserslist');
-        let hashpath = hash(assetsPath);			                                // 结果和图片资源的相对目录相关
-        let hashcss = hash(css);
-        let cachefile = `${bus.at('缓存目录')}/pack-page-css-${hashbrowserslist}/${hashpath}-${hashcss}.css`;
 
         let pageCss;
         let plugins = [];
         // 修改url相对目录
         let url = 'copy';
-        let basePath = bus.at('缓存目录') + '/resources';                           // 组件样式目录和资源目录相同
+        let basePath = oCache.path + '/resources';                                  // 组件样式目录和资源目录相同
         let useHash = false;                                                        // 组件样式统一处理时已哈希化
+        let assetsPath = bus.at('页面图片相对路径', srcFile);
         let postcssUrlOpt = {url, basePath, assetsPath, useHash };
 
-        if ( !env.nocache && File.existsFile(cachefile) ){
-            pageCss = File.read(cachefile);
-            if ( pageCss.indexOf('url(') > 0 ) {
-                plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
-                postcss(plugins).process(css, {from, to}).sync().root.toResult();
+        let catchKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, assetsPath, css]);
+        if ( !env.nocache ) {
+            let catchValue = oCache.get(catchKey);
+            if ( catchValue ) {
+                if ( catchValue.indexOf('url(') > 0 ) {
+                    plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
+                    postcss(plugins).process(catchValue, {from, to}).sync().root.toResult();
+                }
+                return catchValue;
             }
-            return pageCss;
         }
 
 	    plugins.push( require('postcss-discard-comments')({remove:x=>1}) );	        // 删除所有注释
@@ -50,10 +47,8 @@ bus.on('页面样式后处理', function(){
 
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
 
-        pageCss = env.release ? rs.css : csjs.formatCss(rs.css);                // 非release时格式化
-
-        File.write(cachefile, pageCss);
-        return pageCss;
+        pageCss = env.release ? rs.css : csjs.formatCss(rs.css);                    // 非release时格式化
+        return oCache.set(catchKey, pageCss);
     }
 
 }());

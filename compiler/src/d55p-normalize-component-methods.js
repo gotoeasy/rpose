@@ -1,8 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const csjs = require('@gotoeasy/csjs');
-const File = require('@gotoeasy/file');
-const hash = require('@gotoeasy/hash');
 const acorn = require('acorn');
 const astring = require('astring');
 
@@ -36,11 +33,13 @@ bus.on('编译插件', function(){
 // 把对象形式汇总的方法转换成组件对象的一个个方法，同时都直接改成箭头函数（即使function也不确认this，让this指向组件对象）
 function generateMethods(methods, loc){
 
-    let hashcode = hash(methods);
-    let cachefile = `${bus.at('缓存目录')}/normalize-methods/${hashcode}.js`;
-    if ( File.existsFile(cachefile) ) return JSON.parse(File.read(cachefile));
-
-
+    let env = bus.at('编译环境');
+    let oCache = bus.at('缓存');
+    let catchKey = JSON.stringify(['generateMethods', methods]);
+    if ( !env.nocache ) {
+        let catchValue = oCache.get(catchKey);
+        if ( catchValue ) return catchValue;
+    }
 
     let code = `oFn               = ${methods}`;
     let ast;
@@ -72,6 +71,5 @@ function generateMethods(methods, loc){
     let rs = {src:'', names: names};
     names.forEach(k => rs.src += (map.get(k)+'\n'));
 
-    File.write(cachefile, JSON.stringify(rs));
-    return rs;
+    return oCache.set(catchKey, rs);
 }

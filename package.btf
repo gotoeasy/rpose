@@ -2,12 +2,11 @@
 rpose
 
 [version] // 版本号 （必填）
-0.4.0
+0.4.1
 
 
 
 [main] // 入口文件
-index.js
 
 [bin] // cli命令
 

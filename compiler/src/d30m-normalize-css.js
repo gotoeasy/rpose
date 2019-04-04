@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const File = require('@gotoeasy/file');
 const hash = require('@gotoeasy/hash');
 const postcss = require('postcss');
 
@@ -16,12 +15,7 @@ module.exports = bus.on('样式统一化整理', function(){
     // assetsPath   : 样式url目录 （必须输入）
     // -------------------------------------------------------------
     return (css, fromPath, toPath, assetsPath) => {
-
-        let env  = bus.at('编译环境');
-        let hashcode = hash(JSON.stringify([css, fromPath, toPath, assetsPath]));
-        let cachefile = `${bus.at('缓存目录')}/normalize-css/${hashcode}.css`;
-
-        if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
+        
 
         // 修改url并复文件哈希化文件名
         let url = 'copy';
@@ -32,7 +26,21 @@ module.exports = bus.on('样式统一化整理', function(){
         let hashOptions = { method: contents => hash({contents}) };
         let postcssUrlOpt = {url, from, to, basePath, assetsPath, useHash, hashOptions };
 
+        let env = bus.at('编译环境');
+        let oCache = bus.at('缓存');
+        let catchKey = JSON.stringify(['样式统一化整理', css, fromPath, toPath, assetsPath]);
         let plugins = [];
+        if ( !env.nocache ) {
+            let catchValue = oCache.get(catchKey);
+            if ( catchValue ) {
+                if ( catchValue.indexOf('url(') > 0 ) {
+                    plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
+                    postcss(plugins).process(catchValue, {from, to}).sync().root.toResult();
+                }
+                return catchValue;
+            }
+        }
+
         plugins.push( require('postcss-import-sync')({from}) );                 // @import
         plugins.push( require('postcss-unprefix')() );                          // 删除前缀（含@规则、属性名、属性值，如果没有会自动补足无前缀样式）
         plugins.push( require('postcss-url')(postcssUrlOpt) );                  // url资源复制
@@ -52,8 +60,7 @@ module.exports = bus.on('样式统一化整理', function(){
 
 
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
-        File.write(cachefile, rs.css);
-        return rs.css;
+        return oCache.set(catchKey, rs.css);
     }
 
 }());

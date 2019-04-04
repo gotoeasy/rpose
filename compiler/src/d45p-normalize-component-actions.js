@@ -1,8 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const csjs = require('@gotoeasy/csjs');
-const File = require('@gotoeasy/file');
-const hash = require('@gotoeasy/hash');
 const Err = require('@gotoeasy/err');
 const acorn = require('acorn');
 const astring = require('astring');
@@ -37,9 +34,13 @@ bus.on('编译插件', function(){
 
 function generateActions(code, loc){
 
-    let hashcode = hash(code);
-    let cachefile = `${bus.at('缓存目录')}/normalize-actions/${hashcode}.js`;
-    if ( File.existsFile(cachefile) ) return JSON.parse(File.read(cachefile));
+    let env = bus.at('编译环境');
+    let oCache = bus.at('缓存');
+    let catchKey = JSON.stringify(['generateActions', code]);
+    if ( !env.nocache ) {
+        let catchValue = oCache.get(catchKey);
+        if ( catchValue ) return catchValue;
+    }
 
 
     let rs;
@@ -49,8 +50,7 @@ function generateActions(code, loc){
         rs = generateFunActions(code, loc);
     }
 
-    File.write(cachefile, JSON.stringify(rs));
-    return rs;
+    return oCache.set(catchKey, rs);
 }
 
 

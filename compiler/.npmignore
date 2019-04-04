@@ -1,5 +1,8 @@
-node_modules/
 package-lock.json
 .nyc_output/
 .gitignore
+coverage/
+**/node_modules/
+**/.cache/
+**/test/**/build/
 

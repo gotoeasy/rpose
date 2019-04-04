@@ -16,7 +16,7 @@ let opts = {
 	debug: !!cmmd.debug,
 	nocache: !!cmmd.nocache,
 
-	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd()
+	cwd: cmmd.args.length ? cmmd.args[0] : process.cwd()
 };
 
 !opts.debug && (console.debug = x=>x);

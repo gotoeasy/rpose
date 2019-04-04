@@ -1,6 +1,6 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "main": "compiler.js",
   "dependencies": {
     "@rpose/runtime": "0.0.*",
@@ -12,7 +12,7 @@
     "@gotoeasy/err": "0.0.*",
     "@gotoeasy/csjs": "0.2.*",
     "@gotoeasy/postobject": "0.0.*",
-    "@gotoeasy/cache": "0.0.*",
+    "@gotoeasy/cache": "0.1.*",
     "@gotoeasy/theme": "0.0.*",
     "@gotoeasy/pre-render": "0.0.*",
     "csslibify": "0.1.*",
@@ -35,7 +35,8 @@
   },
   "scripts": {
     "build": "node script/build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nyc ava",
+    "coverage": "nyc ava & nyc report --reporter=html & node coverage"
   },
   "description": "rpose compiler",
   "keywords": [

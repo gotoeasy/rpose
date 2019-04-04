@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const csjs = require('@gotoeasy/csjs');
-const File = require('@gotoeasy/file');
-const hash = require('@gotoeasy/hash');
 
 bus.on('编译插件', function(){
     
@@ -31,12 +29,14 @@ bus.on('编译插件', function(){
 
 
 function scssToCss(scss){
-    let env  = bus.at('编译环境');
-    let hashcode = hash(scss);
-    let cachefile = `${bus.at('缓存目录')}/scss-to-css/${hashcode}.css`;
-    if ( !env.nocache && File.existsFile(cachefile) ) return File.read(cachefile);
+    let env = bus.at('编译环境');
+    let oCache = bus.at('缓存');
+    let catchKey = JSON.stringify(['scssToCss', scss]);
+    if ( !env.nocache ) {
+        let catchValue = oCache.get(catchKey);
+        if ( catchValue ) return catchValue;
+    }
 
     let css = csjs.scssToCss(scss);
-    File.write(cachefile, css);
-    return css;
+    return oCache.set(catchKey, css);
 }

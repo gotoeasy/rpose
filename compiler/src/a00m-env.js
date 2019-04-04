@@ -13,21 +13,12 @@ bus.on('编译环境', function(result){
     return function(opts){
         if ( result ) return result;
 
-        result = parseRposeConfigBtf('rpose.config.btf');   // 相对命令行目录
-        if ( !result ) {
-            // 没有配置文件时的默认设定
-            let cwd = process.cwd().replace(/\\/g, '/');
-            let root = cwd;
-            let src = root + '/src';
-            let build = root + '/build';
-            let build_temp = root + '/build/temp';
-            let build_dist = root + '/build/dist';
-            let build_dist_images = 'images';                   // 打包后的图片目录
-            let theme = '@gotoeasy/theme';
-            let prerender = '@gotoeasy/pre-render';
+        let packagefile = File.resolve(__dirname, './package.json');
+        !File.existsFile(packagefile) && (packagefile = File.resolve(__dirname, '../package.json'));
+        let compilerVersion = JSON.parse(File.read(packagefile)).version;
+        let defaultFile = File.path(packagefile) + '/default.rpose.config.btf';
 
-            result = { path: {cwd, root, src, build, build_temp, build_dist}, theme, prerender};
-        }
+        result = parseRposeConfigBtf('rpose.config.btf', defaultFile, opts);   // 相对命令行目录
 
         result.clean = !!opts.clean;
         result.release = !!opts.release;
@@ -36,20 +27,24 @@ bus.on('编译环境', function(result){
         result.build = !!opts.build;
         result.watch = !!opts.watch;
 
-        let packagefile = File.resolve(__dirname, './package.json');
-        !File.existsFile(packagefile) && (packagefile = File.resolve(__dirname, '../package.json'));
-        result.compilerVersion = JSON.parse(File.read(packagefile)).version;
+        result.compilerVersion = compilerVersion;
+        result.path.cache = File.resolve(result.path.cwd, result.path.cache).replace(/\\/g, '/');   // 缓存目录
 
         return result;
     };
 
 }());
 
-function parseRposeConfigBtf(file){
-    let cwd = process.cwd().replace(/\\/g, '/');
+function parseRposeConfigBtf(file, defaultFile, opts){
+    let cwd = opts.cwd || process.cwd();
+    cwd = path.resolve(cwd).replace(/\\/g, '/');
+    if ( !File.existsDir(cwd) ) {
+        throw new Err('invalid path of cwd: '+ opts.cwd);
+    }
+
     let root = cwd;
     file = File.resolve(root, file);
-    if ( !File.exists(file) ) return;
+    if ( !File.exists(file) ) (file = defaultFile);
     
     let result = {path:{}};
 
@@ -71,7 +66,9 @@ function parseRposeConfigBtf(file){
     result.path.build = getConfPath(root, mapPath, 'build', 'build');
     result.path.build_temp = result.path.build + '/temp';
     result.path.build_dist = result.path.build + '/dist';
-    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';
+    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';       // 打包后的图片目录
+    result.path.cache = mapPath.get('cache') || '.cache';                               // 缓存大目录
+    result.path.cache = path.resolve(result.path.cache).replace(/\\/g, '/');
 
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());

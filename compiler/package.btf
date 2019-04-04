@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.4.3
+0.4.4
 
 [main]
 compiler.js
@@ -20,7 +20,7 @@ rp = bin/rpose
 @gotoeasy/err = 0.0.*
 @gotoeasy/csjs = 0.2.*
 @gotoeasy/postobject = 0.0.*
-@gotoeasy/cache = 0.0.*
+@gotoeasy/cache = 0.1.*
 @gotoeasy/theme = 0.0.*
 @gotoeasy/pre-render = 0.0.*
 csslibify = 0.1.*
@@ -46,7 +46,8 @@ gotoeasy, rpose, compiler
 
 [scripts] // 脚本命令
 build = node script/build
-test = echo "Error: no test specified" && exit 1
+test = nyc ava
+coverage = nyc ava & nyc report --reporter=html & node coverage
 
 [repository] // 仓库
 type= git

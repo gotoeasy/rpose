@@ -68,8 +68,9 @@ function hashImageName(srcFile, imgFile){
 
     let name = hash({file}) + File.extname(file); // 去除目录，文件名哈希化，后缀名不变
 
+    let oCache = bus.at('缓存');
     // 复制文件
-    let distDir = bus.at('缓存目录') + '/resources';                                     // 统一目录，资源都复制到 %缓存目录%/resources
+    let distDir = oCache.path + '/resources';                                     // 统一目录，资源都复制到 %缓存目录%/resources
     let distFile = distDir + '/' + name;
     if ( !File.exists(distFile) ) {
         !File.existsDir(distDir) && File.mkdir(distDir);

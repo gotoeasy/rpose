@@ -3,5 +3,5 @@
 **/.nyc_output/
 **/coverage/
 **/.cache/
-**/.build/
+**/build/
 

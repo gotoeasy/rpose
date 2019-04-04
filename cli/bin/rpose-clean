@@ -9,7 +9,7 @@ cmmd.usage('[options] [path]')
 
 let opts = {
 	clean: true,
-	workDir: cmmd.args.length ? cmmd.args[0] : process.cwd(),
+	cwd: cmmd.args.length ? cmmd.args[0] : process.cwd(),
 	debug: !!cmmd.debug
 };
 

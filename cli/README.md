@@ -41,7 +41,7 @@ ie 11
 use file `rpose.config.btf` to config rpose project
 ```
 [path] // config project path info
-src                 : src
+build : build
 
 [theme] // theme npm package
 @gotoeasy/theme
@@ -56,5 +56,4 @@ src                 : src
 ## `Links`
 * `gotoeasy` https://gotoeasy.github.io
 * `rpose` https://github.com/gotoeasy/rpose
-* `npm-packages` https://github.com/gotoeasy/npm-packages
 
