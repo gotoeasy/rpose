@@ -1,57 +1,50 @@
 const bus = require('@gotoeasy/bus');
 const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
+const hash = require('@gotoeasy/hash');
 const csslibify = require('csslibify');
 
 bus.on('样式库', function(rs={}){
     
-    // ----------------------------------------------------
-    // bus.at('样式库', 'defaultname=pkg:**.min.css')             ...... 建库，库名为defaultname
-    // bus.at('样式库', 'thename', 'defaultname=pkg:**.min.css')  ...... 建库，库名为thename
-    // bus.at('样式库', 'thename', 'pkg:**.min.css')              ...... 建库，库名为thename
-    // bus.at('样式库', 'thename')                                ...... 取名为thename的库
+    // ------------------------------------------------------------------------------------------------------
+    // 此编译模块用的样式库建库方法，定义后就按需使用，中途不会作样式库的修改操作
+    // 使用【包名：文件列表】作为缓存用的样式库名称，以提高性能
+    // 如，foo=pkg:**.min.css和bar=pkg:**/*.min.css，实际使用同一样式库
     // 
-    // [ defCsslib ] 
+    // 样式库实例通过返回值取得后自行管理 （参数中传入的name部分被无视）
+    // 
+    // 【 使用 】
+    // bus.at('样式库', 'defaultname=pkg:**.min.css')
+    // bus.at('样式库', 'pkg:**.min.css')
+    // bus.at('样式库', 'pkg')
+    // 
+    // 【 defCsslib 】
     //   *=pkg:**/**.min.js
     //   name=pkg:**/aaa*.min.js, **/bbb*.min.js
     //   name=pkg
     //   pkg:**/**.min.js
     //   pkg
-    return function (name='', defCsslib=''){
-
-        let names = name.split('=');
-        if ( names.length > 1 && !defCsslib ) {
-            // 定义包含库名，直接按定义建库的意思，重新整理参数后继续
-            defCsslib = names[1];
-            name = names[0].trim();
-        }else if ( name.indexOf(':') > 0 ) {
-            // 定义不包含库名，直接按定义建库的意思，重新整理参数后继续
-            defCsslib = name;
-            name = '';
-        }
-
-        if ( !defCsslib ) {
-            let csslib = rs[name] || csslibify(name);
-            csslib.name = name;
-            return csslib;                                                                  // 没有定义导入内容，直接返回库对象
-        }
+    return function (defCsslib){
 
         let match;
-        let pkg, filters = [];
-        if ( (match = defCsslib.match(/^.*?=(.*?):(.*)$/)) ) {
+        let name, pkg, filters = [];
+        if ( (match = defCsslib.match(/^(.*?)=(.*?):(.*)$/)) ) {
             // name=pkg:filters
-            pkg = match[1].trim();
-            cssfilter = match[2];
+            name = match[1].trim();
+            pkg = match[2].trim();
+            cssfilter = match[3];
             cssfilter.replace(/;/g, ',').split(',').forEach(filter => {
                 filter = filter.trim();
                 filter && filters.push(filter);
             });
-        }else if ( (match = defCsslib.match(/^.*?=(.*)$/)) ) {
+        }else if ( (match = defCsslib.match(/^(.*?)=(.*)$/)) ) {
             // name=pkg
-            pkg = match[1].trim();
+            name = match[1].trim();
+            pkg = match[2].trim();
             filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
         }else if ( (match = defCsslib.match(/^(.*?):(.*)$/)) ) {
             // pkg:filters
+            name = '*';
             pkg = match[1].trim();
             cssfilter = match[2];
             cssfilter.replace(/;/g, ',').split(',').forEach(filter => {
@@ -60,20 +53,21 @@ bus.on('样式库', function(rs={}){
             });
         }else{
             // pkg
+            name = '*';
             pkg = defCsslib.trim();
             filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
         }
 
         // 导入处理
         pkg.lastIndexOf('@') > 1 && ( pkg = pkg.substring(0, pkg.lastIndexOf('@')) );       // 模块包名去除版本号 （通常不该有，保险起见处理下）
+        (!name || name === '*') && (pkg = '');                                              // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
         let dir = getNodeModulePath(pkg);                                                   // 模块包安装目录
         let cssfiles = File.files(dir, ...filters);                                         // 待导入的css文件数组
+        let libid = hash( JSON.stringify([pkg, cssfiles]) );                                // 样式库缓存用ID【包名：文件列表】
 
-        let csslib = rs[name] || csslibify(name);                                           // 已定义过则按名称取出库，继续导入文件
-        cssfiles.forEach( cssfile => csslib.imp(cssfile) );                                 // 逐个文件导入
+        let csslib = csslibify(pkg, name, libid);
+        !csslib._imported.length && cssfiles.forEach( cssfile => csslib.imp(cssfile) );     // 未曾导入时，做导入
 
-        name && (rs[name] = csslib);
-        csslib.name = name;             // 库名
 		return csslib;
     }
 
@@ -95,11 +89,3 @@ function getNodeModulePath(npmpkg){
     throw new Error('path not found of npm package: ' + npmpkg);
 }
 
-bus.on('样式库引用', function(){
-    
-    return function (libname, ...classnames){
-       let csslib = bus.at('样式库', libname);
-       return csslib.get( ...classnames );
-    }
-
-}());

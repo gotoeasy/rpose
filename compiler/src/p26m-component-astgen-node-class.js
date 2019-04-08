@@ -19,45 +19,55 @@ bus.on('astgen-node-class', function(){
         if ( !classNode || !classNode.object.value ) return '';             // 没有类属性节点或没有类属性值，返回空白
 
         // 生成
-        return classStrToObjectString(classNode.object.value, context.input.file);
+        return classStrToObjectString(classNode.object.value, context);
     }
 
 }());
 
 
-function classStrToObjectString(clas, srcFile){
+function classStrToObjectString(clas, context){
 
     // TODO 含大括号冒号的复杂表达式
+    let oCsslibPkgs = context.result.oCsslibPkgs;
     let oRs = {};
     clas = clas.replace(/\{.*?\}/g, function(match){
         let str = match.substring(1, match.length-1);   // {'xxx': ... , yyy: ...} => 'xxx': ... , yyy: ...
         
-        let idx, key, val;
+        let idx, cls, expr;
         while ( str.indexOf(':') > 0 ) {
             idx = str.indexOf(':');
-            key = str.substring(0, idx).replace(/['"]/g, '');   // key
+            cls = str.substring(0, idx).replace(/['"]/g, '');   // cls
 
-            val = str.substring(idx+1);
-            let idx2 = val.indexOf(':');
+            expr = str.substring(idx+1);
+            let idx2 = expr.indexOf(':');
             if ( idx2 > 0 ) {
-                val = val.substring(0, idx2);
-                val = val.substring(0, val.lastIndexOf(','));   // val
-                str = str.substring(idx + 1 + val.length + 1);                     // 更新临时变量
+                expr = expr.substring(0, idx2);
+                expr = expr.substring(0, expr.lastIndexOf(','));   // expr
+                str = str.substring(idx + 1 + expr.length + 1);                     // 更新临时变量
             }else{
                 str = '';
             }
-            oRs[bus.at('哈希样式类名', srcFile, key.trim())] = '@(' + val + ')@';
+
+            oRs[bus.at('哈希样式类名', context.input.file, getClassPkg(cls, oCsslibPkgs))] = '@(' + expr + ')@';
         }
 
         return '';
     });
     
 
-	let ary = clas.split(/\s/);
-	for ( let i=0; i<ary.length; i++) {
-		ary[i].trim() && (oRs[bus.at('哈希样式类名', srcFile, ary[i].trim())] = 1);
-	}
+    let ary = clas.split(/\s/);
+    for ( let i=0; i<ary.length; i++) {
+        ary[i].trim() && (oRs[bus.at('哈希样式类名', context.input.file, getClassPkg(ary[i], oCsslibPkgs))] = 1);
+    }
 
-	return JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, '');
+    return JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, '');
 }
 
+function getClassPkg(cls, oCsslibPkgs){
+    let ary = cls.trim().split('@');
+    if ( ary.length > 1 ){
+        return ary[0] + '@' + oCsslibPkgs[ary[1]];
+    }
+
+    return ary[0];
+}

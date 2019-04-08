@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.4.5
+0.4.7
 
 [main]
 compiler.js
@@ -23,7 +23,7 @@ rp = bin/rpose
 @gotoeasy/cache = 0.1.*
 @gotoeasy/theme = 0.0.*
 @gotoeasy/pre-render = 0.0.*
-csslibify = 0.1.*
+csslibify = 0.2.*
 postcss-import-sync = 7.1.*
 resolve-pkg = 1.0.*
 acorn-globals = 4.3.*

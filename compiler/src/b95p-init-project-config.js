@@ -69,7 +69,7 @@ bus.on('项目配置处理插件', function(){
     return postobject.plugin('process-project-config-102', function(root, context){
 
         let hashClassName = bus.on('哈希样式类名')[0];
-        let rename = (lib, cls) => hashClassName(context.input.file, lib ? (cls+ '@' + lib) : cls );  // 自定义改名函数
+        let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
         let opts = {rename};
 
         let oKv;
@@ -80,8 +80,10 @@ bus.on('项目配置处理插件', function(){
         if ( !oKv ) return;
 
         let oCsslib = context.result.oCsslib = {};
+        let oCsslibPkgs = context.result.oCsslibPkgs = context.result.oCsslibPkgs || {};
         for ( let k in oKv ) {
-            oCsslib[k] = bus.at('样式库', k, oKv[k]);
+            oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`);
+            oCsslibPkgs[k] = oCsslib[k].pkg;            // 保存样式库{匿名：实际名}的关系，便于通过匿名找到实际包名
         }
 
     });

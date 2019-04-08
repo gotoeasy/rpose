@@ -5,6 +5,7 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     // 检查 @csslib
+    // 排除别名冲突 （不做建库处理）
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let oCsslib = context.result.oCsslib;
@@ -26,12 +27,12 @@ bus.on('编译插件', function(){
             }
 
             if ( oCsslib[libname] ) {
-                // 有别名冲突时报错
+                // 有别名冲突时报错（组件内@csslib的别名，不能和项目及组件的[csslib]有别名重复）
                 throw new Err('duplicate csslib name: ' + libname, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
             if ( oNameSet.has(libname) ) {
-                // 有别名冲突时报错
+                // 有别名冲突时报错（同一组件内，view中的@csslib不能有别名重复）
                 throw new Err('duplicate csslib name: ' + libname, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
             oNameSet.add(libname);

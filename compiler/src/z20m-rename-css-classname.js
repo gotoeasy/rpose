@@ -15,7 +15,7 @@ bus.on('哈希样式类名', function(){
         const env = bus.at('编译环境');
         if ( clsName.indexOf('@') > 0 ) {
             let ary = clsName.split('@');
-            name = `${ary[1]}---${ary[0]}`;             // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
+            name = `${ary[1]}---${ary[0]}`;                 // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
         }else{
             if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 || name.startsWith('_') ) {
                 // 已经改过名

@@ -9,7 +9,8 @@ bus.on('编译插件', function(){
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let prj = bus.at('项目配置处理', context.input.file);
-        let oCsslib = context.result.oCsslib = Object.assign({}, prj.oCsslib || {});        // 项目配置的[csslib]合并存放到组件范围缓存起来
+        let oCsslib = context.result.oCsslib = Object.assign({}, prj.oCsslib || {});                // 项目配置的 oCsslib 合并存放到组件范围缓存起来
+        let oCsslibPkgs = context.result.oCsslibPkgs = Object.assign({}, prj.oCsslibPkgs || {});    // 项目配置的 oCsslibPkgs 合并存放到组件范围缓存起来
 
         // 遍历树中的csslib节点，建库，处理完后删除该节点
         root.walk( 'RposeBlock', (node, object) => {
@@ -23,13 +24,14 @@ bus.on('编译插件', function(){
                 if ( oCsslib[k] ) {
                     throw new Err('duplicate csslib name: ' + k, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line, column: 1 });
                 }
-                oCsslib[k] = bus.at('样式库', k, oKv[k]);
+                oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`);
+                oCsslibPkgs[k] = oCsslib[k].pkg;
             }
 
             node.remove();
             return false;
         });
-   
+
     });
 
 }());
