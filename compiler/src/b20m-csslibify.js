@@ -61,11 +61,23 @@ bus.on('样式库', function(rs={}){
         // 导入处理
         pkg.lastIndexOf('@') > 1 && ( pkg = pkg.substring(0, pkg.lastIndexOf('@')) );       // 模块包名去除版本号 （通常不该有，保险起见处理下）
         (!name || name === '*') && (pkg = '');                                              // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
-        let dir = getNodeModulePath(pkg);                                                   // 模块包安装目录
+        let dir, env = bus.at('编译环境');
+        if ( pkg.startsWith('$') ) {
+            dir = env.path.root + '/' + pkg;                                                // pkg以$开头时优先查找本地目录
+            !File.existsDir(dir) && (dir = env.path.root + '/' + pkg.substring(1));         // 次优先查找去$的本地目录
+        }
+        (!dir || !File.existsDir(dir)) && (dir = getNodeModulePath(pkg));                   // 本地无相关目录则按模块处理，安装指定npm包返回安装目录
+        
         let cssfiles = File.files(dir, ...filters);                                         // 待导入的css文件数组
         let libid = hash( JSON.stringify([pkg, cssfiles]) );                                // 样式库缓存用ID【包名：文件列表】
 
         let csslib = csslibify(pkg, name, libid);
+
+        let pkgjsonfile = `${dir}/${pkg}/package.json`;
+        if ( File.existsFile(pkgjsonfile) ) {
+            let version = JSON.parse(File.read(pkgjsonfile)).version;
+            csslib.version = version;
+        }
         !csslib._imported.length && cssfiles.forEach( cssfile => csslib.imp(cssfile) );     // 未曾导入时，做导入
 
 		return csslib;
