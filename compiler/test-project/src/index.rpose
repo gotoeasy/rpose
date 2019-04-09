@@ -1,0 +1,5 @@
+[view]
+<bs-primary-button />
+
+[mount]
+body

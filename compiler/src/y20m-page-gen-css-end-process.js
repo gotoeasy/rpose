@@ -11,6 +11,8 @@ bus.on('页面样式后处理', function(){
     // -------------------------------------------------------------
     return (css, srcFile) => {
 
+        if ( !css ) return '';
+
         let env = bus.at('编译环境');
         let oCache = bus.at('缓存');
         let from = oCache.path + '/from.css';                                       // 页面由组件拼装，组件都在%缓存目录%目录

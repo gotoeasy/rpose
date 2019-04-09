@@ -1,0 +1,20 @@
+[api]
+optionkeys = onclick, type, style
+statekeys  = disabled
+
+[view]
+<button type="button" class="btn@bootstrap btn-lg@bootstrap dropdown-toggle@bootstrap{
+    'btn-primary@bootstrap': /primary/i.test(type)
+    }"
+    style={style}
+    disabled={disabled}
+    onclick={onclick}><slot/></button>
+
+[options]
+{
+    type: 'primary'
+}
+
+[csslib]
+bootstrap = bootstrap:**.min.css
+

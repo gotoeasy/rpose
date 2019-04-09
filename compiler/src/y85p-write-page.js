@@ -26,7 +26,7 @@ bus.on('编译插件', function(){
             let js = browserifyJs;
             context.result.js = js;
 
-            File.write( fileCss, css );
+            css ? File.write( fileCss, css ) : File.remove( fileCss );
             File.write( fileJs, js );
             File.write( fileHtml, html );
 

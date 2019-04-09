@@ -1,0 +1,6 @@
+[api]
+statekeys = name
+
+[view]
+<div>hello {name}!</div>
+
