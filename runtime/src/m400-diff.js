@@ -31,11 +31,6 @@ function diffRender(component, vnode2){
 	if ( vnode2.m ) {
 //		vnode1.o.setState(vnode2.c ? {[$SLOT]: vnode2.c} : undefined);	// 子组件对象时，交由子组件对象自己去做差异更新(如果有虚拟子节点则传入)
 		vnode1.o.setState( {[$SLOT]: vnode2.c} );	// 子组件对象时，交由子组件对象自己去做差异更新(传入虚拟子节点)
-
-        if ( vnode2.a && vnode2.a['@show'] !== undefined ) {
-            vnode2.a['@show'] ? $$el.removeClass('hidden') : $$el.addClass('hidden');
-        }
-
 		return;
 	}
 
@@ -142,11 +137,6 @@ function diffRenderChildern(component, parent, parentVnode2){
 				if ( wv2.vn.m ) {
 					// 是组件标签则调用组件对象做差异更新
 					wv2.wv1.vn[wv2.vn.t].o.setState( {[$SLOT]: wv2.vn.c} );		// 传入子虚拟节点参数
-                    
-                    if ( wv2.vn.a && wv2.vn.a['@show'] !== undefined ) {
-                        wv2.vn.a['@show'] ? $$(wv2.el).removeClass('hidden') : $$(wv2.el).addClass('hidden');
-                    }
-
 				}else{
 					let diffAttrs = getDiffAttrs(wv2.wv1.vn, wv2.vn);			// 比较属性差异
 					if ( diffAttrs ) {
@@ -166,11 +156,6 @@ function diffRenderChildern(component, parent, parentVnode2){
 				// 一样顺序的相同节点，比较属性后继续下一个
 				if ( wv2.vn.m ) {
 					wv1.vn[wv2.vn.t].o.setState( {[$SLOT]: wv2.vn.c} );	// 传入子虚拟节点参数
-
-                    if ( wv2.vn.a && wv2.vn.a['@show'] !== undefined ) {
-                        wv2.vn.a['@show'] ? $$(wv1.el).removeClass('hidden') : $$(wv1.el).addClass('hidden');
-                    }
-
                 }else{
 					let diffAttrs = getDiffAttrs(wv1.vn, wv2.vn);				// 比较属性差异
 					if ( diffAttrs ) {

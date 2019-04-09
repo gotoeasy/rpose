@@ -267,7 +267,6 @@
                 $$(el).addClass(val);
             }
         });
-        on("@show", (el, prop, val) => val ? $$(el).removeClass("hidden") : $$(el).addClass("hidden"));
         on("style", (el, prop, val) => {
             if (val === undefined) {
                 return el.getAttribute("style");
@@ -515,9 +514,6 @@
                     $$el = $$(el);
                     $$el.addClass(comp.$COMPONENT_ID);
                     cls && $$el.addClass(vnode.r = cls);
-                    if (vnode.a && vnode.a["@show"] !== undefined) {
-                        vnode.a["@show"] ? $$el.removeClass("hidden") : $$el.addClass("hidden");
-                    }
                 }
             } else {
                 if (/^script$/i.test(vnode.t)) {
@@ -738,9 +734,6 @@
             vnode1.o.setState({
                 [$SLOT]: vnode2.c
             });
-            if (vnode2.a && vnode2.a["@show"] !== undefined) {
-                vnode2.a["@show"] ? $$el.removeClass("hidden") : $$el.addClass("hidden");
-            }
             return;
         }
         let attr1 = (vnode1 || {}).a || {};
@@ -820,9 +813,6 @@
                         wv2.wv1.vn[wv2.vn.t].o.setState({
                             [$SLOT]: wv2.vn.c
                         });
-                        if (wv2.vn.a && wv2.vn.a["@show"] !== undefined) {
-                            wv2.vn.a["@show"] ? $$(wv2.el).removeClass("hidden") : $$(wv2.el).addClass("hidden");
-                        }
                     } else {
                         let diffAttrs = getDiffAttrs(wv2.wv1.vn, wv2.vn);
                         if (diffAttrs) {
@@ -840,9 +830,6 @@
                         wv1.vn[wv2.vn.t].o.setState({
                             [$SLOT]: wv2.vn.c
                         });
-                        if (wv2.vn.a && wv2.vn.a["@show"] !== undefined) {
-                            wv2.vn.a["@show"] ? $$(wv1.el).removeClass("hidden") : $$(wv1.el).addClass("hidden");
-                        }
                     } else {
                         let diffAttrs = getDiffAttrs(wv1.vn, wv2.vn);
                         if (diffAttrs) {

@@ -40,8 +40,6 @@ const DomAttrHandle = (function(){
 		}
 	} );
 
-	on('@show', (el, prop, val) => val ? $$(el).removeClass('hidden') : $$(el).addClass('hidden') );
-
 	// style .... 有必要支持?
 	on('style', (el, prop, val) => {
 		if ( val===undefined ) {
