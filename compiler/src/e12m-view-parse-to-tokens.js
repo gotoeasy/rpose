@@ -3,7 +3,7 @@ const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 
 // 自闭合标签
-const SELF_CLOSE_TAGS = 'br,hr,input,img,meta,link,area,base,col,command,embed,keygen,param,srouce,trace,wbr'.split(',');
+const SELF_CLOSE_TAGS = 'br,hr,input,img,meta,link,area,base,basefont,bgsound,col,command,isindex,frame,embed,keygen,menuitem,nextid,param,source,track,wbr'.split(',');
 
 // TODO 未转义字符引起的解析错误，友好提示
 

@@ -5,7 +5,6 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     // 按需查询引用样式库
-    // 把样式中的库匿名改成真实库名
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let style = context.style;
@@ -28,11 +27,9 @@ bus.on('编译插件', function(){
                 }
             }
             if ( csslibNode ) {
-                let tmpAry = csslibNode.object.value.split('=');
-                let asname = tmpAry.length > 1 ? tmpAry[0].trim() : '*';                // 别名，支持简写，如@csslib="pkg:**.min.css"，等同@csslib="*=pkg:**.min.css"
                 let atcsslib = bus.at('样式库', csslibNode.object.value);
-                oCsslib[asname] = atcsslib;                                             // 并入(前一步已检查)(项目[csslib]+组件[csslib]+标签[@csslib])
-                oCsslibPkgs[asname] = atcsslib.pkg;
+                oCsslib[atcsslib.name] = atcsslib;                                      // 并入(前一步已检查)(项目[csslib]+组件[csslib]+标签[@csslib])
+                oCsslibPkgs[atcsslib.name] = atcsslib.pkg;
             }
             let nonameCsslib = oCsslib['*'];
 
@@ -56,7 +53,6 @@ bus.on('编译插件', function(){
                         throw new Err('css class not found: '+ clsname, {file:context.input.file, text:context.input.text, start:object.loc.start.pos, end:object.loc.end.pos});
                     }
                     oCssSet.add( css );
-                  //  object.classes[i-1] = ary[0] + '@' + csslib.pkg;    // 把样式库匿名改成真实库名
 
                 }else{
                     // 普通样式类，按需引用无名库，找不到库或类都不报错

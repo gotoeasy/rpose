@@ -5,6 +5,7 @@ bus.on('astgen-node-class', function(){
 
     // 标签类属性生成json属性值形式代码
     // "abc def {bar:!bar}" => {class:{abc:1, def:1, bar:!bar}}
+    // 修改类名
     return function (tagNode, context){
         if ( !tagNode.nodes ) return '';
 

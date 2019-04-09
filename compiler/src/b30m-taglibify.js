@@ -2,7 +2,6 @@ const bus = require('@gotoeasy/bus');
 const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
 const Btf = require('@gotoeasy/btf');
-const csslibify = require('csslibify');
 
 bus.on('标签库定义', function(rs={}, rsPkg={}){
     
