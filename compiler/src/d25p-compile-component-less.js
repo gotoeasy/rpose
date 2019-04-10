@@ -31,12 +31,12 @@ bus.on('编译插件', function(){
 function lessToCss(less){
     let env = bus.at('编译环境');
     let oCache = bus.at('缓存');
-    let catchKey = JSON.stringify(['lessToCss', less]);
+    let cacheKey = JSON.stringify(['lessToCss', less]);
     if ( !env.nocache ) {
-        let catchValue = oCache.get(catchKey);
-        if ( catchValue ) return catchValue;
+        let cacheValue = oCache.get(cacheKey);
+        if ( cacheValue ) return cacheValue;
     }
 
     let css = csjs.lessToCss(less);
-    return oCache.set(catchKey, css);
+    return oCache.set(cacheKey, css);
 }

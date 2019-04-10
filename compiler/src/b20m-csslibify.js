@@ -72,12 +72,6 @@ bus.on('样式库', function(rs={}){
         let libid = hash( JSON.stringify([pkg, cssfiles]) );                                // 样式库缓存用ID【包名：文件列表】
 
         let csslib = csslibify(pkg, name, libid);
-
-        let pkgjsonfile = `${dir}/${pkg}/package.json`;
-        if ( File.existsFile(pkgjsonfile) ) {
-            let version = JSON.parse(File.read(pkgjsonfile)).version;
-            csslib.version = version;
-        }
         !csslib._imported.length && cssfiles.forEach( cssfile => csslib.imp(cssfile) );     // 未曾导入时，做导入
 
 		return csslib;

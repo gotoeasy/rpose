@@ -27,15 +27,15 @@ bus.on('页面样式后处理', function(){
         let assetsPath = bus.at('页面图片相对路径', srcFile);
         let postcssUrlOpt = {url, basePath, assetsPath, useHash };
 
-        let catchKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, assetsPath, css]);
+        let cacheKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, assetsPath, css]);
         if ( !env.nocache ) {
-            let catchValue = oCache.get(catchKey);
-            if ( catchValue ) {
-                if ( catchValue.indexOf('url(') > 0 ) {
+            let cacheValue = oCache.get(cacheKey);
+            if ( cacheValue ) {
+                if ( cacheValue.indexOf('url(') > 0 ) {
                     plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
-                    postcss(plugins).process(catchValue, {from, to}).sync().root.toResult();
+                    postcss(plugins).process(cacheValue, {from, to}).sync().root.toResult();
                 }
-                return catchValue;
+                return cacheValue;
             }
         }
 
@@ -50,7 +50,7 @@ bus.on('页面样式后处理', function(){
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
 
         pageCss = env.release ? rs.css : csjs.formatCss(rs.css);                    // 非release时格式化
-        return oCache.set(catchKey, pageCss);
+        return oCache.set(cacheKey, pageCss);
     }
 
 }());

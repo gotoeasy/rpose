@@ -28,16 +28,16 @@ module.exports = bus.on('样式统一化整理', function(){
 
         let env = bus.at('编译环境');
         let oCache = bus.at('缓存');
-        let catchKey = JSON.stringify(['样式统一化整理', css, fromPath, toPath, assetsPath]);
+        let cacheKey = JSON.stringify(['样式统一化整理', css, fromPath, toPath, assetsPath]);
         let plugins = [];
         if ( !env.nocache ) {
-            let catchValue = oCache.get(catchKey);
-            if ( catchValue ) {
-                if ( catchValue.indexOf('url(') > 0 ) {
+            let cacheValue = oCache.get(cacheKey);
+            if ( cacheValue ) {
+                if ( cacheValue.indexOf('url(') > 0 ) {
                     plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
-                    postcss(plugins).process(catchValue, {from, to}).sync().root.toResult();
+                    postcss(plugins).process(cacheValue, {from, to}).sync().root.toResult();
                 }
-                return catchValue;
+                return cacheValue;
             }
         }
 
@@ -60,7 +60,7 @@ module.exports = bus.on('样式统一化整理', function(){
 
 
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
-        return oCache.set(catchKey, rs.css);
+        return oCache.set(cacheKey, rs.css);
     }
 
 }());

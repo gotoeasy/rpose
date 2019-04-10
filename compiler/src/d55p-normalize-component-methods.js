@@ -35,10 +35,10 @@ function generateMethods(methods, loc){
 
     let env = bus.at('编译环境');
     let oCache = bus.at('缓存');
-    let catchKey = JSON.stringify(['generateMethods', methods]);
+    let cacheKey = JSON.stringify(['generateMethods', methods]);
     if ( !env.nocache ) {
-        let catchValue = oCache.get(catchKey);
-        if ( catchValue ) return catchValue;
+        let cacheValue = oCache.get(cacheKey);
+        if ( cacheValue ) return cacheValue;
     }
 
     let code = `oFn               = ${methods}`;
@@ -71,5 +71,5 @@ function generateMethods(methods, loc){
     let rs = {src:'', names: names};
     names.forEach(k => rs.src += (map.get(k)+'\n'));
 
-    return oCache.set(catchKey, rs);
+    return oCache.set(cacheKey, rs);
 }

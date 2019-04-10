@@ -10,10 +10,10 @@ bus.on('编译插件', function(){
         if ( !context.result.isPage ) return false;         // 仅针对页面
         let env  = bus.at('编译环境');
         let oCache = bus.at('缓存');
-        let catchKey = JSON.stringify(['page-gen-js-browserify-minformat', bus.at('browserslist'), env.release, context.result.babelJs]);
+        let cacheKey = JSON.stringify(['page-gen-js-browserify-minformat', bus.at('browserslist'), env.release, context.result.babelJs]);
         if ( !env.nocache ) {
-            let catchValue = oCache.get(catchKey);
-            if ( catchValue ) return context.result.browserifyJs = Promise.resolve(catchValue);
+            let cacheValue = oCache.get(cacheKey);
+            if ( cacheValue ) return context.result.browserifyJs = Promise.resolve(cacheValue);
         }
 
         context.result.browserifyJs = new Promise((resolve, reject) => {
@@ -21,7 +21,7 @@ bus.on('编译插件', function(){
             let stime = new Date().getTime();
             csjs.browserify(context.result.babelJs, null).then( js => {
                 js = env.release ? csjs.miniJs(js) : csjs.formatJs(js);
-                oCache.set(catchKey, js);
+                oCache.set(cacheKey, js);
                 resolve(js);
             }).catch(e => {
                 File.write(env.path.build + '/error/browserify.log', context.result.babelJs + '\n\n' + e.stack);

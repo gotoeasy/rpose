@@ -36,10 +36,10 @@ function generateActions(code, loc){
 
     let env = bus.at('编译环境');
     let oCache = bus.at('缓存');
-    let catchKey = JSON.stringify(['generateActions', code]);
+    let cacheKey = JSON.stringify(['generateActions', code]);
     if ( !env.nocache ) {
-        let catchValue = oCache.get(catchKey);
-        if ( catchValue ) return catchValue;
+        let cacheValue = oCache.get(cacheKey);
+        if ( cacheValue ) return cacheValue;
     }
 
 
@@ -50,7 +50,7 @@ function generateActions(code, loc){
         rs = generateFunActions(code, loc);
     }
 
-    return oCache.set(catchKey, rs);
+    return oCache.set(cacheKey, rs);
 }
 
 
