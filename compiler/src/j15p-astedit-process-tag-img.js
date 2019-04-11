@@ -74,7 +74,7 @@ function hashImageName(srcFile, imgFile){
     let distFile = distDir + '/' + name;
     if ( !File.exists(distFile) ) {
         !File.existsDir(distDir) && File.mkdir(distDir);
-        fs.createReadStream(file).pipe(fs.createWriteStream(distFile));
+        fs.copyFileSync(file, distFile);
     }
 
     return name;

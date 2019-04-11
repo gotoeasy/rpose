@@ -24,7 +24,7 @@ const DomAttrHandle = (function(){
 	on('innerTEXT', (el, prop, val) => val===undefined ? el.textContent : (el.textContent=(val==null?'':val)) );
 	on('textcontent', (el, prop, val) => val===undefined ? el.textContent : (el.textContent=(val==null?'':val)) );
 
-	on('image.src', (el, prop, val) => val===undefined ? el.src : (el.src=val) );
+	on('img.src', (el, prop, val) => val===undefined ? el.src : (el.src=val) );
 
 	// class
 	on('class', (el, prop, val) => {

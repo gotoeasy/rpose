@@ -18,16 +18,18 @@ bus.on('编译插件', function(){
         let srcStmt = getSrcRegisterComponents(allreferences);
         let srcComponents = getSrcComponents(allreferences);
 
-        let oCache = bus.at('缓存');
-        // 替换图片相对路径，图片不存在则复制
-        let resourcePath = oCache.path + '/resources';
-        let imgPath = bus.at('页面图片相对路径', context.input.file);
-        srcComponents = srcComponents.replace(/\%imagepath\%([0-9a-z]+\.[0-9a-zA-Z]+)/g, function(match, filename){
-            let from = resourcePath + '/' + filename;
-            let to = env.path.build_dist + '/' + (env.path.build_dist_images ? (env.path.build_dist_images + '/') : '') + filename;
-            File.existsFile(from) && !File.existsFile(to) && File.mkdir(to) > fs.copyFileSync(from, to);
-			return imgPath + filename;
-        });
+        if ( context.result.allstandardtags.includes('img') ) {
+            let oCache = bus.at('缓存');
+            // 替换图片相对路径，图片不存在则复制
+            let resourcePath = oCache.path + '/resources';
+            let imgPath = bus.at('页面图片相对路径', context.input.file);
+            srcComponents = srcComponents.replace(/\%imagepath\%([0-9a-zA-Z]+\.[0-9a-zA-Z]+)/g, function(match, filename){
+                let from = resourcePath + '/' + filename;
+                let to = env.path.build_dist + '/' + (env.path.build_dist_images ? (env.path.build_dist_images + '/') : '') + filename;
+                File.existsFile(from) && !File.existsFile(to) && File.mkdir(to) > fs.copyFileSync(from, to);
+                return imgPath + filename;
+            });
+        }
 
         let tagpkg = context.result.tagpkg;
 

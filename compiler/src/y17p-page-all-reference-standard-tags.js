@@ -7,7 +7,11 @@ bus.on('编译插件', function(){
     return postobject.plugin(/**/__filename/**/, function(root, context){
         if ( !context.result.isPage ) return false;         // 仅针对页面
 
+        // 页面标签，固定添加html、body，便于样式库查询使用
         let oSetAllTag = new Set();
+        oSetAllTag.add('html');
+        oSetAllTag.add('body');
+
         context.result.standardtags.forEach(tag => oSetAllTag.add(tag));
 
         let references = context.result.references;

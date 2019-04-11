@@ -26,7 +26,7 @@ bus.on('编译插件', function(){
 
         let oCsslibPkgs = context.result.oCsslibPkgs;
         let script = context.script;
-        let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\$\s*\(|\$\s*\()/;
+        let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
         if ( script.actions && reg.test(script.actions) ) {
             script.actions = transformJsSelector(script.actions, context.input.file);
@@ -48,24 +48,49 @@ bus.on('编译插件', function(){
             walk.simple(ast, {
                 CallExpression(node) {
 
+                    // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
+
                     // 第一参数不是字符串时，无可修改，忽略
                     if ( !node.arguments || node.arguments[0].type !== 'Literal' ) {
                         return;
                     }
 
-                    // 非特定函数名时，忽略
-                    let fnName = node.callee.name || node.callee.property.name;
-                    if ( !/^(getElementsByClassName|querySelector|querySelectorAll|\$\$)$/.test(fnName) ) {
+                    let fnName;
+                    if ( node.callee.type === 'Identifier' ) {
+                        // 直接函数调用
+                        fnName = node.callee.name;
+                        if ( fnName === '$$' || fnName === '$' ) {
+                            node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile);                              // $$('div > .foo'), $('div > .bar')
+                        }else{
+                            return;
+                        }
+
+                    }else if ( node.callee.type === 'MemberExpression' ) {
+                        // 对象成员函数调用
+                        fnName = node.callee.property.name;
+                        if ( fnName === 'getElementsByClassName' ) {                                                                    // document.getElementsByClassName('foo')
+                            node.arguments[0].value = bus.at('哈希样式类名', srcFile, getClassPkg(node.arguments[0].value));
+                        }else if (fnName === 'querySelector' || fnName === 'querySelectorAll'){                                         // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
+                            node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile);
+                        }else if (fnName === 'addClass' || fnName === 'removeClass'){                                                   // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
+                            let rs = [], ary = node.arguments[0].value.trim().split(/\s+/);
+                            ary.forEach( cls => rs.push( bus.at('哈希样式类名', srcFile, getClassPkg(cls) )) );
+                            node.arguments[0].value = rs.join(' ');
+                        }else if (fnName === 'add' || fnName === 'remove'){                                                             // el.classList.add('foo'), el.classList.remove('bar')
+                            if ( node.callee.object.type === 'MemberExpression' && node.callee.object.property.name === 'classList' ) {
+                                node.arguments[0].value = bus.at('哈希样式类名', srcFile, getClassPkg(node.arguments[0].value));
+                            }else{
+                                return;
+                            }
+                        }else{
+                            return;
+                        }
+
+                    }else{
                         return;
                     }
 
-                    if ( fnName === 'getElementsByClassName' ) {
-                        node.arguments[0].value = bus.at('哈希样式类名', srcFile, getClassPkg(node.arguments[0].value));             // 参数是一个不含点号的类名，直接哈希替换
-                    }else{
-                        node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile);     // 参数是选择器，解析后替换
-                    }
-
-                    node.arguments[0].raw = `'${node.arguments[0].value}'`;                                             // 输出字符串
+                    node.arguments[0].raw = `'${node.arguments[0].value}'`;                                                             // 输出字符串
                     changed = true;
                 }
 
