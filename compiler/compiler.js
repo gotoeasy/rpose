@@ -1,1 +1,6219 @@
-console.time("load"),(()=>{const e=require("@gotoeasy/file"),t=require("@gotoeasy/btf"),o=require("@gotoeasy/bus"),s=(require("@gotoeasy/util"),require("@gotoeasy/err")),n=require("@gotoeasy/npm"),r=require("path");o.on("编译环境",function(o){return function(i){if(o)return o;let a=e.resolve(__dirname,"./package.json");!e.existsFile(a)&&(a=e.resolve(__dirname,"../package.json"));let l=JSON.parse(e.read(a)).version,u=e.path(a)+"/default.rpose.config.btf";return(o=function(o,i,a){let l=a.cwd||process.cwd();if(l=r.resolve(l).replace(/\\/g,"/"),!e.existsDir(l))throw new s("invalid path of cwd: "+a.cwd);let u=l;o=e.resolve(u,o),e.exists(o)||(o=i);let p={path:{}},c=new t(o),f=c.getMap("path");f.forEach((e,t)=>f.set(t,e.split("//")[0].trim()));let g={};return c.getMap("taglib").forEach((e,t)=>g[t]=e.split("//")[0].trim()),p.imports=g,p.path.cwd=l,p.path.root=u,p.path.src=u+"/src",p.path.build=function(e,t,o,s){return t.get(o)?e+"/"+t.get(o).split("/").filter(e=>!!e).join("/"):e+"/"+s.split("/").filter(e=>!!e).join("/")}(u,f,"build","build"),p.path.build_temp=p.path.build+"/temp",p.path.build_dist=p.path.build+"/dist",p.path.build_dist_images=f.get("build_dist_images")||"images",p.path.cache=f.get("cache"),p.theme=null!=c.getText("theme")&&c.getText("theme").trim()?c.getText("theme").trim():"@gotoeasy/theme",p.prerender=null!=c.getText("prerender")&&c.getText("prerender").trim()?c.getText("prerender").trim():"@gotoeasy/pre-render",function(...t){let o=["@gotoeasy/theme","@gotoeasy/pre-render"],s=[...require("find-node-modules")({cwd:__dirname,relative:!1}),...require("find-node-modules")({cwd:process.cwd(),relative:!1})];for(let r,i=0;r=t[i++];){if(o.includes(r))continue;let t=!1;for(let o,n=0;o=s[n++];)e.isDirectoryExists(e.resolve(o,r))&&(t=!0);!t&&n.install(r)}}(p.theme,p.prerender),p}("rpose.config.btf",u,i)).clean=!!i.clean,o.release=!!i.release,o.debug=!!i.debug,o.nocache=!!i.nocache,o.build=!!i.build,o.watch=!!i.watch,o.compilerVersion=l,o.path.cache&&(o.path.cache=e.resolve(o.path.cwd,o.path.cache)),o}}())})(),(()=>{const e=require("@gotoeasy/err"),t=require("@gotoeasy/file"),o=require("@gotoeasy/bus");o.on("clean",()=>{try{let s=o.at("编译环境");s.clean&&(t.remove(s.path.build),console.info("clean:",s.path.build)),t.mkdir(s.path.build_dist)}catch(t){throw e.cat(" clean failed",t)}})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/cache");!function(o={},s){e.on("组件编译缓存",function(e,t){return t?(o[e]=t,t):void 0===t?o[e]:void delete o[e]}),e.on("缓存",function(){if(!s){let o=e.at("编译环境");s=t({name:"rpose-compiler-"+o.compilerVersion,path:o.path.cache})}return s})}()})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/os"),require("@gotoeasy/hash")),o=require("@gotoeasy/file");function s(e){let t=o.name(e);if(!/[^a-zA-Z0-9_\-]/.test(t)&&/^[a-zA-Z]/.test(t))return t.toLowerCase()}function n(t,s){let n=e.at("页面目标HTML文件名",t),r=e.at("页面目标CSS文件名",t),i=e.at("页面目标JS文件名",t);o.existsFile(n)&&(o.write(n,function(e=""){return`<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>Page build failed or src file removed<p/>\n        <pre style="background:#333;color:#ddd;padding:10px;">${e.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</pre>\n    </body>`}(s)),o.remove(r),o.remove(i))}!function(r,i={}){function a(e,s){let n=o.read(e);return{file:e,text:n,hashcode:t(n),tag:s}}function l(t){if(!t)return[];let o=[];for(let s in r){let n=e.at("组件编译缓存",s);if(n){(n.result.allreferences||[]).includes(t)&&o.push(s)}}return o}e.on("标签项目源文件",function(e){let t=i[e];if(t&&t.length)return t[0]}),e.on("源文件对象清单",function(){if(!r){r={};let t=e.at("编译环境");o.files(t.path.src,"**.rpose").forEach(e=>{let t=s(e);if(t){let o=i[t]=i[t]||[];o.push(e),1===o.length&&(r[e]=a(e,t))}else console.error("[src-file-manager]","ignore invalid source file ..........",e)});for(let e in i){let t=i[e];if(t.length>1){console.error("[src-file-manager]","duplicate tag name:",e),console.error(t);for(let e,o=1;e=t[o++];)console.error("  ignore ..........",e)}}}return r}),e.on("源文件添加",function(t){let o=s(t.file);if(!o)return console.error("[src-file-manager]","invalid source file name ..........",t.file);let n=i[o]=i[o]||[];return n.push(t.file),n.length>1?(console.error("[src-file-manager]","duplicate tag name:",o),console.error(n),void console.error("  ignore ..........",t.file)):(r[t.file]=a(t.file,o),e.at("全部编译"))}),e.on("源文件修改",function(t){let o=s(t.file),i=l(o),a=r[t.file];if(o&&a){if(a.hashcode!==t.hashcode)return r[a.file]=Object.assign({},t),i.forEach(t=>{e.at("组件编译缓存",t,!1),n(t,`rebuilding for component [${o}] changed`)}),e.at("组件编译缓存",a.file,!1),e.at("全部编译")}else delete r[t.file]}),e.on("源文件删除",function(t){let o=s(t),u=l(o),p=r[t],c=i[o];if(delete r[t],c){let s=c.indexOf(t);if(s>0)return c.splice(s,1);0===s&&(c.splice(s,1),c.length?(r[c[0]]=a(c[0],o),e.at("组件编译缓存",c[0],!1)):delete i[o])}if(o&&p)return u.forEach(t=>{e.at("组件编译缓存",t,!1),n(t,`rebuilding for component [${o}] removed`)}),e.at("组件编译缓存",p.file,!1),e.at("全部编译")})}()})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/os"),require("@gotoeasy/file")),o=require("@gotoeasy/err"),s=require("@gotoeasy/hash"),n=require("chokidar");async function r(t,s){console.time("build");let n=e.at(t,s);if(n)for(let e,t=0;e=n[t++];)try{await e}catch(e){console.error(o.cat("build failed",e).toString())}console.timeEnd("build")}function i(e){let o=t.name(e);return!(/[^a-zA-Z0-9_\-]/.test(o)||!/^[a-zA-Z]/.test(o))}e.on("文件监视",function(o={}){return function(){let a,l=e.at("编译环境");l.watch&&(e.at("热刷新服务器"),n.watch(l.path.src).on("add",async e=>{if(a&&(e=e.replace(/\\/g,"/"))&&/\.rpose$/i.test(e))if(i(e)){console.info("add ......",e);let n=t.read(e),i={file:e,text:n,hashcode:s(n)};o[e]=i,await r("源文件添加",i)}else console.info("ignored ...... add",e)}).on("change",async e=>{if(a&&(e=e.replace(/\\/g,"/"))&&/\.rpose$/i.test(e))if(i(e)){let n=t.read(e),i=s(n);if(!o[e]||o[e].hashcode!==i){console.info("change ......",e);let t={file:e,text:n,hashcode:i};o[e]=t,await r("源文件修改",t)}}else console.info("ignored ...... change",e)}).on("unlink",async e=>{a&&(e=e.replace(/\\/g,"/"))&&/\.rpose$/i.test(e)&&(i(e)?(console.info("del ......",e),delete o[e],await r("源文件删除",e)):console.info("ignored ...... del",e))}).on("ready",()=>{a=!0}))}}())})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/os"),require("@gotoeasy/file");e.on("全部编译",function(t){let o,s,n=e.at("源文件对象清单"),r=e.at("编译环境"),i=[];for(let t in n){o=(new Date).getTime();let a=e.at("编译组件",n[t]);a.result.browserifyJs&&i.push(a.result.browserifyJs),(s=(new Date).getTime()-o)>100&&console.info("[compile] "+s+"ms -",t.replace(r.path.src+"/",""))}return i})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/file"),o=require("@gotoeasy/hash"),s=require("@gotoeasy/postobject");e.on("编译组件",function(n){let r;if(n.file)r=n;else{let s,i,a;if(s=e.at("标签源文件",n),!t.existsFile(s))throw new Err(`file not found: ${s} (${n})`);r={file:s,text:i=t.read(s),hashcode:a=o(i)}}let i=e.at("编译环境"),a=e.at("组件编译缓存",r.file);if(a&&a.input.hashcode!==r.hashcode&&(a=e.at("组件编译缓存",r.file,!1)),!a){let t=e.on("编译插件");return s(t).process({...r},{log:i.debug})}return a})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/file"),o=require("@gotoeasy/hash"),s=require("fs"),n=require("url"),r=require("path"),i=require("http"),a=require("opn"),l="rebuilding...";e.on("热刷新服务器",function(u){return function(){let p=e.at("编译环境");p.watch&&function(p,c){i.createServer(function(i,a){let c=n.parse(i.url);if(/^\/query$/i.test(c.pathname))return void function(s,n,r){u=!0;let i=e.at("编译环境"),a=r.query.split("&")[0].split("=")[1],p=t.resolve(i.path.src,a.substring(0,a.length-5)+".rpose"),c="";if(t.existsFile(p)){let s=e.at("组件编译缓存",p);if(s&&(c=s.result.hashcode||""),!c){let s=e.at("页面目标HTML文件名",p),n=e.at("页面目标CSS文件名",p),r=e.at("页面目标JS文件名",p);if(t.existsFile(s)){let e=t.read(s);if(e.indexOf("<body>Page build failed or src file removed<p/>")>0)c=l;else{let s=t.existsFile(n)?t.read(n):"",i=t.existsFile(r)?t.read(r):"";c=o(e+s+i)}}}}n.writeHead(200),n.end(c)}(0,a,c);let f=r.join(p,c.pathname).replace(/\\/g,"/");t.existsDir(f)&&(f=t.resolve(f,"index.html")),/\.html$/i.test(f)?t.existsFile(f)?function(s,n,r,i){let a=e.at("编译环境"),u=t.resolve(a.path.src,i.substring(a.path.build_dist.length+1,i.length-5)+".rpose"),p=e.at("组件编译缓存",u),c=p?p.result.hashcode||"":null;if(!c){let s=e.at("页面目标HTML文件名",u),n=e.at("页面目标CSS文件名",u),r=e.at("页面目标JS文件名",u);if(t.existsFile(s)){let e=t.read(s),i=t.existsFile(n)?t.read(n):"",a=t.existsFile(r)?t.read(r):"";c=o(e+i+a)}}let f=`\n        <script>\n            var _times_ = 0;\n            function refresh() {\n                let url = '/query?page=${i.substring(a.path.build_dist.length+1)}&t=' + new Date().getTime();\n                ajaxAsync(url, function(rs){\n                    if ( rs !== '${c}' ) {\n                        if ( rs === '${l}' ) {\n                            _times_++;\n                            _times_ >= 5 ? location.reload() : setTimeout(refresh, 1000);\n                        }else{\n                            location.reload();\n                        }\n                    }else{\n                        _times_ = 0;\n                        setTimeout(refresh, 1000);\n                    }\n                }, function(err){\n                    _times_ = 0;\n                    setTimeout(refresh, 1000);\n                });\n            }\n\n            function ajaxAsync(url, fnCallback, fnError) {\n                var xhr = new XMLHttpRequest();\n                xhr.onreadystatechange = function (xxx, eee) {\n                    if (xhr.readyState === 4 && xhr.status === 200) {\n                        fnCallback(xhr.responseText);\n                    }\n                };\n                xhr.onerror = fnError;\n                xhr.open("GET", url, true);\n                xhr.send();\n            }\n\n            setTimeout(refresh, 3000);\n        <\/script>`,g=t.read(i).replace(/<head>/i,"<head>"+f);n.writeHead(200,{"Content-Type":"text/html;charset=UFT8"}),n.end(g)}(0,a,0,f):(a.writeHead(404),a.end("404 Not Found")):t.existsFile(f)?(/\.css$/i.test(f)?a.writeHead(200,{"Content-Type":"text/css;charset=UFT8"}):a.writeHead(200),s.createReadStream(f).pipe(a)):/favicon\.ico$/i.test(f)?(a.writeHead(200),a.end(null)):(a.writeHead(404),a.end("404 Not Found"))}).listen(c);let f="http://localhost:"+c;console.log("-------------------------------------------"),console.log(` server ready ...... ${f}`),console.log("-------------------------------------------"),setTimeout(()=>{!u&&a(f)},1e3)}(p.path.build_dist,3700)}}())})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("b00p-log",function(e,t){}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("b01p-init-context",function(e,t){t.input={},t.doc={},t.style={},t.script={},t.keyCounter=1,t.result={},e.walk((e,o)=>{t.input.file=o.file,t.input.text=o.text,t.input.hashcode=o.hashcode},{readonly:!0})}))})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/postobject");function t(e){return e.startsWith("[")&&e.indexOf("]")>0}function o(e){return e.startsWith("---------")}function s(e){return e.startsWith("=========")}function n(e){let t,o;for(let s=1;s<e.length;s++)if("\\"!==e.charAt(s-1)&&"]"===e.charAt(s))return o=(t=e.substring(1,s).toLowerCase()).length,{name:t=t.replace(/\\\]/g,"]"),len:o};return o=(t=e.substring(1,e.lastIndexOf("]")).toLowerCase()).length,{name:t=t.replace(/\\\]/g,"]"),len:o}}function r(e,t){let o=0;for(let s=0;s<t;s++)o+=e[s];return o}e.on("项目配置文件解析",function(e,i=!0){let a=e.indexOf("\r\n")>=0?"\r\n":"\n",l=e.split(a),u=l.map(e=>e.length+a.length),p=[];return function(e,i,a,l){let u,p,c,f,g=!1;for(let l=0;l<i.length;l++)if(t(u=i[l])){p={type:"ProjectBtfBlock"},c=n(u),f=u.substring(c.len+2);let t=l+1,o=1,s=r(a,t-1),i={line:t,column:o,pos:s};o=c.len+3,s+=o-1,end={line:t,column:o,pos:s},p.name={type:"ProjectBtfBlockName",value:c.name,loc:{start:i,end}},f&&(o=c.len+3,i={line:t,column:o,pos:s},o=u.length+1,s=r(a,t-1)+o-1,end={line:t,column:o,pos:s},p.comment={type:"ProjectBtfBlockComment",value:f,loc:{start:i,end}}),p.buf=[],e.push(p),g=!0}else if(o(u))g=!1;else{if(s(u))return;if(g){let t=e[e.length-1].buf;"\\"===u.charAt(0)&&(/^\\+\[.*\]/.test(u)||/^\\+\---------/.test(u)||/^\\+\=========/.test(u))?t.push(u.substring(1)):t.push(u)}}}(p,l,u),p.forEach(e=>{if(e.buf.length){let t="ProjectBtfBlockText",o=e.buf.join(a),s=e.name.loc.start.line+1,n=1,i=r(u,s-1),l={line:s,column:n,pos:i};s=e.name.loc.start.line+e.buf.length,n=e.buf[e.buf.length-1].length+1,i=r(u,s-1)+n,1===n&&e.buf.length>1&&(s--,n=e.buf[e.buf.length-2].length+1),end={line:s,column:n,pos:i},e.text={type:t,value:o,loc:{start:l,end}}}delete e.buf,!1===i&&(delete e.name.loc,void 0!==e.comment&&delete e.comment.loc,void 0!==e.text&&delete e.text.loc)}),{nodes:p}})})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/err"),require("@gotoeasy/file")),o=require("@gotoeasy/hash"),s=require("csslibify");e.on("样式库",function(n){let r,i,a,l=[];(r=n.match(/^(.*?)=(.*?):(.*)$/))?(i=r[1].trim(),a=r[2].trim(),cssfilter=r[3],cssfilter.replace(/;/g,",").split(",").forEach(e=>{(e=e.trim())&&l.push(e)})):(r=n.match(/^(.*?)=(.*)$/))?(i=r[1].trim(),a=r[2].trim(),l.push("**.min.css")):(r=n.match(/^(.*?):(.*)$/))?(i="*",a=r[1].trim(),cssfilter=r[2],cssfilter.replace(/;/g,",").split(",").forEach(e=>{(e=e.trim())&&l.push(e)})):(i="*",a=n.trim(),l.push("**.min.css")),a.lastIndexOf("@")>1&&(a=a.substring(0,a.lastIndexOf("@"))),(!i||"*"===i)&&(a="");let u,p=e.at("编译环境");a.startsWith("$")&&(u=p.path.root+"/"+a,!t.existsDir(u)&&(u=p.path.root+"/"+a.substring(1))),(!u||!t.existsDir(u))&&(u=function(o){e.at("自动安装",o);let s=[...require("find-node-modules")({cwd:process.cwd(),relative:!1}),...require("find-node-modules")({cwd:__dirname,relative:!1})];for(let e,n,r=0;e=s[r++];)if(n=t.resolve(e,o),t.existsDir(n))return n;throw new Error("path not found of npm package: "+o)}(a));let c=t.files(u,...l),f=o(JSON.stringify([a,c])),g=s(a,i,f);return!g._imported.length&&c.forEach(e=>g.imp(e)),g})})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/postobject"),require("@gotoeasy/err"));e.on("解析[csslib]",function(e,o,s){let n={},r=(null==e?"":e.trim()).split("\n");for(let e,i=0;i<r.length;i++){let a,l,u=(e=r[i]).indexOf("=");if(!(u<0)){if(a=e.substring(0,u).trim(),(u=(l=e.substring(u+1).trim()).lastIndexOf("//"))>=0&&(l=l.substring(0,u).trim()),!a)throw new t("use * as empty csslib name. etc. * = "+l,{file:o.input.file,text:o.input.text,line:s.start.line+i,column:1});if(n[a])throw new t("duplicate csslib name: "+a,{file:o.input.file,text:o.input.text,line:s.start.line+i,column:1});n[a]=l}}return n})})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/err"),require("@gotoeasy/file")),o=require("@gotoeasy/btf");e.on("标签库定义",function(s={},n={}){let r=[];return e.on("标签库引用",function(t,o){let n,r=e.at("文件所在模块",o),i=t.indexOf("="),a=t.indexOf(":");return n=i<0&&a<0?t.trim():a>0?t.substring(a+1).trim():t.substring(0,i).trim(),s[r+":"+n]}),function(i,a){let l=e.at("normalize-taglib",i);!function(o){if(!n[o]){let r=e.at("模块组件信息",o);for(let e,o=0;e=r.files[o++];)s[r.name+":"+t.name(e)]=e;n[o]=!0}}(l.pkg);let u,p,c,f=e.at("文件所在模块",a);if(u=f+":"+l.astag,p=l.pkg+":"+l.tag,s[p])return s[u]=s[p],r=[],s;r.push(`[${f}] ${l.taglib}`);try{c=require.resolve(l.pkg+"/package.json",{paths:[e.at("编译环境").path.root,__dirname]})}catch(e){r.unshift(e.message);let t=r.join("\n => ");throw r=[],new Error(t)}let g=t.path(c)+"/rpose.config.btf";if(!t.existsFile(g)){r.unshift(`tag [${l.tag}] not found in package [${l.pkg}]`);let e=r.join("\n => ");throw r=[],new Error(e)}let d,h=new o(g).getText("taglib");try{d=e.at("解析[taglib]",h,{input:{file:g}})}catch(e){r.push(`[${l.pkg}] ${l.pkg}:${l.tag}`),r.push(g),r.unshift(e.message);let t=r.join("\n => ");throw r=[],new Error(t)}let b=d[l.tag];if(!b){r.push(g),r.unshift(`tag [${l.tag}] not found in package [${l.pkg}]`);let e=r.join("\n => ");throw r=[],new Error(e)}return e.at("自动安装",b.pkg),e.at("标签库定义",b.taglib,g)}}())})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/postobject"),require("@gotoeasy/err");e.on("normalize-taglib",function(e,t=0){let o,s,n,r;if(r=e.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/))o=r[1],s=r[2],n=r[3];else if(r=e.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*$/))o=r[1],s=r[2],n=r[1];else{if(!(r=e.match(/^\s*([\S]+)\s*:\s*([\S]+)\s*$/)))return null;o=r[2],s=r[1],n=r[2]}return{line:t,astag:o,pkg:s,tag:n,taglib:o+"="+s+":"+n}})})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/postobject"),require("@gotoeasy/err"));e.on("解析[taglib]",function(o,s,n){let r={},i=(null==o?"":o.trim()).split("\n");for(let o,a,l=0;l<i.length;l++)if(o=i[l].split("//")[0].trim()){if(!(a=e.at("normalize-taglib",o,l))){if(n)throw new t("invalid taglib: "+a.taglib,{file:s.input.file,text:s.input.text,line:n.start.line+l,column:1});throw new t(`invalid taglib: ${o}`)}if(/^(if|for)$/i.test(a.astag)){if(n)throw new t("can not use buildin tag name: "+a.astag,{file:s.input.file,text:s.input.text,line:n.start.line+l,column:1});throw new t("can not use buildin tag name: "+a.astag)}if(r[a.astag]){if(n)throw new t("duplicate tag name: "+a.astag,{file:s.input.file,text:s.input.text,line:n.start.line+l,column:1});throw new t("duplicate tag name: "+a.astag)}r[a.astag]=a}return r})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/file"),s=require("@gotoeasy/err");e.on("编译插件",t.plugin("b95p-init-project-config",function(t,o){o.project=e.at("项目配置处理",o.input.file)})),e.on("项目配置处理",function(s={}){return function(n){let r=n.endsWith("/rpose.config.btf")?n:e.at("文件所在项目配置文件",n);if(s[r])return s[r];if(!o.existsFile(r))return{};let i=e.on("项目配置处理插件"),a=t(i).process({file:r});return s[r]=a.result,s[r]}}()),e.on("项目配置处理插件",t.plugin("process-project-config-101",function(t,s){s.input={},s.result={},t.walk((t,n)=>{s.input.file=n.file,s.input.text=o.read(n.file);let r=e.at("项目配置文件解析",s.input.text),i=this.createNode(r);t.replaceWith(...i.nodes)}),t.walk((e,t)=>{if(!t.text||!t.text.value||!t.text.value.trim())return e.remove();let o=t.name.value,s=t.text.value,n=t.text.loc,r=this.createNode({type:o,value:s,loc:n});e.replaceWith(r)})})),e.on("项目配置处理插件",t.plugin("process-project-config-102",function(t,o){let s;if(e.on("哈希样式类名")[0],t.walk("csslib",(t,n)=>{s=e.at("解析[csslib]",n.value,o,n.loc),t.remove()}),!s)return;let n=o.result.oCsslib={},r=o.result.oCsslibPkgs=o.result.oCsslibPkgs||{};for(let t in s)n[t]=e.at("样式库",`${t}=${s[t]}`),r[t]=n[t].pkg})),e.on("项目配置处理插件",function(o){return t.plugin("process-project-config-103",function(t,s){if(!o){let t="@rpose/buildin";if(!e.at("自动安装",t))throw new Error("package install failed: "+t);e.at("标签库定义","@rpose/buildin:```",""),e.at("标签库定义","@rpose/buildin:router",""),e.at("标签库定义","@rpose/buildin:router-link",""),o=!0}})}()),e.on("项目配置处理插件",function(o){return t.plugin("process-project-config-105",function(t,n){let r,i;if(t.walk("taglib",(t,o)=>{r=e.at("解析[taglib]",o.value,n,o.loc),i=o.loc.start.line,t.remove()}),n.result.oTaglib=r||{},!r)return;let a=new Map;for(let e in r)a.set(r[e].pkg,r[e]);a.forEach((t,o)=>{if(!e.at("自动安装",o))throw new s("package install failed: "+o,{file:n.input.file,text:n.input.text,line:i+t.line,column:1})});for(let t in r)try{e.at("标签库定义",r[t].taglib,n.input.file)}catch(e){throw new s.cat(e,{file:n.input.file,text:n.input.text,line:i+r[t].line,column:1})}if(!o){if(pkg="@rpose/buildin",!e.at("自动安装",pkg))throw new Error("package install failed: "+pkg);e.at("标签库定义","@rpose/buildin:```",""),e.at("标签库定义","@rpose/buildin:router",""),e.at("标签库定义","@rpose/buildin:router-link",""),o=!0}})}())})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/postobject");function t(e){return e.startsWith("[")&&e.indexOf("]")>0}function o(e){return e.startsWith("---------")}function s(e){return e.startsWith("=========")}function n(e){let t,o;for(let s=1;s<e.length;s++)if("\\"!==e.charAt(s-1)&&"]"===e.charAt(s))return o=(t=e.substring(1,s).toLowerCase()).length,{name:t=t.replace(/\\\]/g,"]"),len:o};return o=(t=e.substring(1,e.lastIndexOf("]")).toLowerCase()).length,{name:t=t.replace(/\\\]/g,"]"),len:o}}function r(e,t){let o=0;for(let s=0;s<t;s++)o+=e[s];return o}e.on("RPOSE源文件解析",function(e,i=!0){let a=e.indexOf("\r\n")>=0?"\r\n":"\n",l=e.split(a),u=l.map(e=>e.length+a.length),p=[];return function(e,i,a,l){let u,p,c,f,g=!1;for(let l=0;l<i.length;l++)if(t(u=i[l])){p={type:"RposeBlock"},c=n(u),f=u.substring(c.len+2);let t=l+1,o=1,s=r(a,t-1),i={line:t,column:o,pos:s};o=c.len+3,s+=o-1,end={line:t,column:o,pos:s},p.name={type:"RposeBlockName",value:c.name,loc:{start:i,end}},f&&(o=c.len+3,i={line:t,column:o,pos:s},o=u.length+1,s=r(a,t-1)+o-1,end={line:t,column:o,pos:s},p.comment={type:"RposeBlockComment",value:f,loc:{start:i,end}}),p.buf=[],e.push(p),g=!0}else if(o(u))g=!1;else{if(s(u))return;if(g){let t=e[e.length-1].buf;"\\"===u.charAt(0)&&(/^\\+\[.*\]/.test(u)||/^\\+\---------/.test(u)||/^\\+\=========/.test(u))?t.push(u.substring(1)):t.push(u)}}}(p,l,u),p.forEach(e=>{if(e.buf.length){let t="RposeBlockText",o=e.buf.join(a),s=e.name.loc.start.line+1,n=1,i=r(u,s-1),l={line:s,column:n,pos:i};s=e.name.loc.start.line+e.buf.length,n=e.buf[e.buf.length-1].length+1,i=r(u,s-1)+n,1===n&&e.buf.length>1&&(s--,n=e.buf[e.buf.length-2].length+1),end={line:s,column:n,pos:i},e.text={type:t,value:o,loc:{start:l,end}}}delete e.buf,!1===i&&(delete e.name.loc,void 0!==e.comment&&delete e.comment.loc,void 0!==e.text&&delete e.text.loc)}),{nodes:p}})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("c15p-parse-rpose-src-to-blocks",function(t,o){let s=o.result;t.walk((t,o)=>{s.tagpkg=e.at("标签全名",o.file);let n=e.at("RPOSE源文件解析",o.text),r=this.createNode(n);return t.replaceWith(...r.nodes),!1})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("c25p-blocks-to-context-doc",function(e,t){let o=t.doc;e.walk("RposeBlock",(e,t)=>{/^(api|options|state|mount)$/.test(t.name.value)&&(o[t.name.value]=t.text?t.text.value:"",e.remove())})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("c35p-normalize-context-doc",function(e,t){let o=t.doc;o.api=function(e){let t={};return(null==e?"":e.trim()).split("\n").forEach(e=>{let o,s,n=e.indexOf("=");n<0&&(n=e.indexOf(":")),n<0||(o=e.substring(0,n).trim(),(n=(s=e.substring(n+1).trim()).lastIndexOf("//"))>=0&&(s=s.substring(0,n).trim()),/^option[\-]?keys$/i.test(o)?(o="optionkeys",s=s.split(/[,;]/).map(e=>e.trim())):/^state[\-]?keys$/i.test(o)?(o="statekeys",s=s.split(/[,;]/).map(e=>e.trim())):/^pre[\-]?render$/i.test(o)&&(o="prerender"),t[o]=s)}),t}(o.api),o.mount&&(o.mount=o.mount.trim())}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("c45p-is-page",function(e,t){t.result.isPage=t.doc.mount&&!/\/components\//i.test(t.input.file)&&!/\/node_modules\//i.test(t.input.file)}))})(),(()=>{const e=require("@gotoeasy/err"),t=require("@gotoeasy/bus"),o=require("@gotoeasy/btf"),s=require("@gotoeasy/file");function n(t){let o=[...require("find-node-modules")({cwd:__dirname,relative:!1}),...require("find-node-modules")({relative:!1})];for(let e,n,r=0;e=o[r++];)if(n=e.replace(/\\/g,"/")+"/"+t+"/theme.btf",s.exists(n))return n;throw new e("theme file not found: "+t+"/theme.btf")}t.on("样式风格",function(i){return function(){let a=t.at("编译环境");try{let l;if(!i){if(a.theme){l=function t(s){if(r.has(s)){let t=[...r].push(s);throw e.cat(t,new e("theme circular extend"))}r.add(s);btf=new o(s);let i=(btf.getText("extend")||"").trim();let a;let l=btf.getMap("theme");i&&(a=t(n(i)),l.forEach((e,t)=>a.set(t,e)),l=a);return l}(function(){let o,r=t.at("编译环境");if(r.theme.endsWith(".btf")){if(s.exists(o))return o;if(o=s.resolve(r.path.root,r.theme),s.exists(o))return o;throw new e("theme file not found: "+o)}return n(r.theme)}())}else l=new Map;i={less:function(e){let t=[];return e.forEach((e,o)=>t.push("@"+o+" : "+e+";")),t.join("\n")+"\n"}(l),scss:function(e){let t=[];return e.forEach((e,o)=>t.push("$"+o+" : "+e+";")),t.join("\n")+"\n"}(l),css:function(e){if(!e.size)return"";let t=[];return t.push(":root{"),e.forEach((e,o)=>t.push("--"+o+" : "+e+";")),t.push("}"),t.join("\n")+"\n"}(l)}}return i}catch(t){throw e.cat("init theme failed: "+a.theme,t)}}}());const r=new Set})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/csjs");e.on("编译插件",t.plugin("d15p-compile-component-scss",function(t,s){let n=s.style;t.walk("RposeBlock",(t,s)=>{if(/^scss$/.test(s.name.value)){let r=s.text?s.text.value:"";if(r){let t=e.at("样式风格");n.scss=function(t){let s=e.at("编译环境"),n=e.at("缓存"),r=JSON.stringify(["scssToCss",t]);if(!s.nocache){let e=n.get(r);if(e)return e}let i=o.scssToCss(t);return n.set(r,i)}(t.scss+r)}return t.remove(),!1}})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/csjs");e.on("编译插件",t.plugin("d25p-compile-component-less",function(t,s){let n=s.style;t.walk("RposeBlock",(t,s)=>{if(/^less$/.test(s.name.value)){let r=s.text?s.text.value:"";if(r){let t=e.at("样式风格");n.less=function(t){let s=e.at("编译环境"),n=e.at("缓存"),r=JSON.stringify(["lessToCss",t]);if(!s.nocache){let e=n.get(r);if(e)return e}let i=o.lessToCss(t);return n.set(r,i)}(t.less+r)}return t.remove(),!1}})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/hash"),o=require("postcss");module.exports=e.on("样式统一化整理",(s,n,r,i)=>{let a=n+"/from.css",l=r+"/to.css",u={url:"copy",from:a,to:l,basePath:n,assetsPath:i,useHash:!0,hashOptions:{method:e=>t({contents:e})}},p=e.at("编译环境"),c=e.at("缓存"),f=JSON.stringify(["样式统一化整理",s,n,r,i]),g=[];if(!p.nocache){let e=c.get(f);if(e)return e.indexOf("url(")>0&&(g.push(require("postcss-url")(u)),o(g).process(e,{from:a,to:l}).sync().root.toResult()),e}g.push(require("postcss-import-sync")({from:a})),g.push(require("postcss-unprefix")()),g.push(require("postcss-url")(u)),g.push(require("postcss-nested")()),g.push(require("postcss-css-variables")()),g.push(require("postcss-discard-comments")({remove:e=>1})),g.push(require("postcss-minify-selectors")),g.push(require("postcss-minify-params")),g.push(require("postcss-normalize-string")),g.push(require("postcss-normalize-display-values")),g.push(require("postcss-normalize-positions")),g.push(require("postcss-normalize-repeat-style")),g.push(require("postcss-minify-font-values")),g.push(require("postcss-minify-gradients")),g.push(require("postcss-color-hex-alpha")),g.push(require("postcss-merge-longhand"));let d=o(g).process(s,{from:a,to:l}).sync().root.toResult();return c.set(f,d.css)})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/file");e.on("编译插件",t.plugin("d35p-normalize-component-css",function(t,s){let n=s.style;if(t.walk("RposeBlock",(t,o)=>{if(/^css$/.test(o.name.value)){let s=o.text?o.text.value:"";if(s){let t=e.at("样式风格");n.css=t.css+s}return t.remove(),!1}}),!n.css)return;e.at("编译环境");let r=e.at("缓存"),i=o.path(s.input.file),a=r.path+"/resources";n.css=e.at("样式统一化整理",n.css,i,a,".")}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err"),s=require("acorn"),n=require("astring");e.on("编译插件",t.plugin("d45p-normalize-component-actions",function(t,r){let i=r.script;t.walk("RposeBlock",(t,r)=>{if(!/^actions$/.test(r.name.value))return;let a=r.text?r.text.value.trim():"";if(a){let t=function(t,r){let i,a=e.at("编译环境"),l=e.at("缓存"),u=JSON.stringify(["generateActions",t]);if(!a.nocache){let e=l.get(u);if(e)return e}return i=t.startsWith("{")?function(e,t){let r,i=`this.$actions     = ${e}`;try{r=s.parse(i,{ecmaVersion:10,sourceType:"module",locations:!0})}catch(e){throw new o("syntax error in [actions]",e)}let a=[],l=r.body[0].expression.right.properties;l&&l.forEach(e=>{if("ArrowFunctionExpression"==e.value.type)a.push(e.key.name);else if("FunctionExpression"==e.value.type){let t=e.value;t.type="ArrowFunctionExpression",a.push(e.key.name)}});let u={src:"",names:a};return a.length&&(a.sort(),u.src=n.generate(r)),u}(t):function(e,t){let r;try{r=s.parse(e,{ecmaVersion:10,sourceType:"module",locations:!0})}catch(e){throw new o("syntax error in [actions]",e)}let i=new Map;r.body.forEach(e=>{let t;"FunctionDeclaration"==e.type?(e.type="ArrowFunctionExpression",i.set(e.id.name,n.generate(e))):"VariableDeclaration"==e.type?"FunctionDeclaration"!=(t=e.declarations[0].init).type&&"ArrowFunctionExpression"!=t.type||(t.type="ArrowFunctionExpression",i.set(e.declarations[0].id.name,n.generate(t))):"ExpressionStatement"==e.type&&("FunctionDeclaration"!=(t=e.expression.right).type&&"ArrowFunctionExpression"!=t.type||(t.type="ArrowFunctionExpression",i.set(e.expression.left.name,n.generate(t))))});let a=[...i.keys()],l={src:"",names:a};if(a.length){let e=[];e.push("this.$actions = {"),a.forEach(t=>{e.push('"'+t+'": '+i.get(t)+",")}),e.push("}"),l.src=e.join("\n")}return l}(t),l.set(u,i)}(a,r.text.loc);i.actions=t.src,i.$actionkeys=t.names}return t.remove(),!1})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("acorn"),s=require("astring");e.on("编译插件",t.plugin("d55p-normalize-component-methods",function(t,n){let r=n.script;t.walk("RposeBlock",(t,n)=>{if(!/^methods$/.test(n.name.value))return;let i=n.text?n.text.value.trim():"";if(i){let t=function(t,n){let r=e.at("编译环境"),i=e.at("缓存"),a=JSON.stringify(["generateMethods",t]);if(!r.nocache){let e=i.get(a);if(e)return e}let l,u=`oFn               = ${t}`;try{l=o.parse(u,{ecmaVersion:10,sourceType:"module",locations:!0})}catch(e){throw new Err("syntax error in [methods]",e)}let p=new Map,c=l.body[0].expression.right.properties;c&&c.forEach(e=>{if("ArrowFunctionExpression"==e.value.type)p.set(e.key.name,"this."+e.key.name+"="+s.generate(e.value));else if("FunctionExpression"==e.value.type){let t=e.value;t.type="ArrowFunctionExpression",p.set(e.key.name,"this."+e.key.name+"="+s.generate(t))}});let f=[...p.keys()];f.sort();let g={src:"",names:f};return f.forEach(e=>g.src+=p.get(e)+"\n"),i.set(a,g)}(i,n.text.loc);r.methods=t.src}return t.remove(),!1})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("d75p-init-component-[csslib]",function(t,s){let n=e.at("项目配置处理",s.input.file),r=s.result.oCsslib=Object.assign({},n.oCsslib||{}),i=s.result.oCsslibPkgs=Object.assign({},n.oCsslibPkgs||{});t.walk("RposeBlock",(t,n)=>{if("csslib"!==n.name.value)return;if(!n.text||!n.text.value||!n.text.value.trim())return;let a=e.at("解析[csslib]",n.text.value,s,n.text.loc);for(let t in a){if(r[t])throw new o("duplicate csslib name: "+t,{file:s.input.file,text:s.input.text,line:n.text.loc.start.line,column:1});r[t]=e.at("样式库",`${t}=${a[t]}`),i[t]=r[t].pkg}return t.remove(),!1})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("d85p-init-component-[taglib]",function(t,s){let n=e.at("项目配置处理",s.input.file),r=s.result.oTaglib=Object.assign({},n.oTaglib||{});t.walk("RposeBlock",(t,n)=>{if("taglib"!==n.name.value)return;if(!n.text||!n.text.value||!n.text.value.trim())return;let i=e.at("解析[taglib]",n.text.value,s,n.text.loc);for(let e in i)if(r[e])throw new o("duplicate taglib name: "+e,{file:s.input.file,text:s.input.text,line:n.text.loc.start.line+r[e].line,column:1});let a=new Map;for(let e in i)a.set(i[e].pkg,i[e]);a.forEach((t,r)=>{if(!e.at("自动安装",r))throw new o("package install failed: "+r,{file:s.input.file,text:s.input.text,line:n.text.loc.start.line+t.line,column:1})});for(let t in i)try{e.at("标签库定义",i[t].taglib,s.input.file)}catch(e){throw new o.cat(e,{file:s.input.file,text:s.input.text,line:n.text.loc.start.line+i[t].line,column:1})}return t.remove(),!1})}))})(),(()=>{const e=require("@gotoeasy/bus");module.exports=e.on("视图编译选项",function(e={},t){return e.CodeBlockStart="{%",e.CodeBlockEnd="%}",e.ExpressionStart="{",e.ExpressionEnd="}",e.TypeHtmlComment="HtmlComment",e.TypeCodeBlock="JsCode",e.TypeExpression="Expression",e.TypeTagOpen="TagOpen",e.TypeTagClose="TagClose",e.TypeTagSelfClose="TagSelfClose",e.TypeAttributeName="AttributeName",e.TypeAttributeValue="AttributeValue",e.TypeEqual="=",e.TypeText="Text",function(o){return!t&&o&&(t=!0,e.CodeBlockStart=o.CodeBlockStart||e.CodeBlockStart,e.CodeBlockEnd=o.CodeBlockEnd||e.CodeBlockEnd,e.ExpressionStart=o.ExpressionStart||e.ExpressionStart,e.ExpressionEnd=o.ExpressionEnd||e.ExpressionEnd,e.TypeHtmlComment=o.TypeHtmlComment||e.TypeHtmlComment,e.TypeCodeBlock=o.TypeCodeBlock||e.TypeCodeBlock,e.TypeExpression=o.TypeExpression||e.TypeExpression,e.TypeTagOpen=o.TypeTagOpen||e.TypeTagOpen,e.TypeTagClose=o.TypeTagClose||e.TypeTagClose,e.TypeTagSelfClose=o.TypeTagSelfClose||e.TypeTagSelfClose,e.TypeAttributeName=o.TypeAttributeName||e.TypeAttributeName,e.TypeAttributeValue=o.TypeAttributeValue||e.TypeAttributeValue,e.TypeEqual=o.TypeEqual||e.TypeEqual,e.TypeText=o.TypeText||e.TypeText),e}}())})(),(()=>{const e=require("@gotoeasy/bus");e.on("是否表达式",function(){e.at("视图编译选项");return function(e){if(!e)return!1;let t=e.replace(/\\\{/g,"").replace(/\\\}/g,"");return/\{.*\}/.test(t)}}())})(),(()=>{const e=require("@gotoeasy/bus"),t="\0",o="￿";module.exports=e.on("字符阅读器",function(e){return new class{constructor(e){this.ary=e.split(""),this.maxLength=this.ary.length,this.pos=0}skip(e){return e>0&&(this.pos=this.pos+e,this.pos>this.maxLength&&(this.pos=this.maxLength)),this.pos}skipBlank(){let e="";for(;/\s/.test(this.getCurrentChar())&&!this.eof();)e+=this.readChar();return e}getPos(){return this.pos}eof(){return this.pos>=this.maxLength}readChar(){let e=this.getCurrentChar();return this.pos<this.maxLength&&(this.pos+=1),e}getPrevChar(){return 0==this.pos?t:this.ary[this.pos-1]}getCurrentChar(){return this.pos>=this.maxLength?o:this.ary[this.pos]}getNextChar(e=1){let t=e<1?1:e;return this.pos+t>=this.maxLength?o:this.ary[this.pos+t]}getChar(e=0){return e<0?t:e>=this.maxLength?o:this.ary[e]}getPrevString(e){return this.getString(this.pos-e,this.pos)}getString(e,t){let o=e<0?0:e>=this.maxLength?this.maxLength-1:e,s=t<0?0:t>this.maxLength?this.maxLength:t,n="";for(let e=o;e<s;e++)n+=this.ary[e];return n}getNextString(e){return this.getString(this.pos,this.pos+e)}}(e)})})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/file"),require("@gotoeasy/err")),o="br,hr,input,img,meta,link,area,base,basefont,bgsound,col,command,isindex,frame,embed,keygen,menuitem,nextid,param,source,track,wbr".split(",");function s(e){return null==e?null:e.replace(/\\{/g,"\0").replace(/\\}/g,"￾￿")}function n(e){return null==e?null:e.replace(/\u0000\u0001/g,"{").replace(/\ufffe\uffff/g,"}")}function r(r,i,a,l){let u=s(i),p=e.at("视图编译选项"),c=e.at("字符阅读器",u),f=[];function g(){let e=c.getPos();if("<"!==c.getCurrentChar()||c.eof()||"\x3c!--"===c.getNextString(4)||"<![CDATA["===c.getNextString(9)||u.indexOf(p.CodeBlockStart,e)==e||u.indexOf(p.ExpressionStart,e)==e)return 0;let s,i,g="";if("</"===c.getNextString(2)){if(u.indexOf(">",e+3)<0)return 0;for((i={}).start=c.getPos(),c.skip(2);">"!==c.getCurrentChar()&&!c.eof();)g+=c.readChar();return c.skip(1),i.end=c.getPos(),s={type:p.TypeTagClose,value:g.trim(),pos:i},f.push(s),1}if("<"===c.getCurrentChar()&&u.indexOf(">",e+2)<0)return 0;if(!/[a-z]/i.test(c.getNextChar()))return 0;for((i={}).start=c.getPos(),c.skip(1);/[^\s\/>]/.test(c.getCurrentChar());)g+=c.readChar();let h={type:"",value:n(g).trim(),pos:i};for(f.push(h);d(););if(c.skipBlank(),"/>"===c.getNextString(2))return h.type=p.TypeTagSelfClose,c.skip(2),i.end=c.getPos(),1;if(">"===c.getCurrentChar())return o.includes(g.toLowerCase())?h.type=p.TypeTagSelfClose:h.type=p.TypeTagOpen,c.skip(1),i.end=c.getPos(),1;throw new t('tag missing ">"',"file="+a,{text:r,start:i.start+l})}function d(){if(c.eof())return 0;c.skipBlank();let e={};e.start=c.getPos();let o="",s="";if("{"===c.getCurrentChar()){let e=[];for(o+=c.readChar();!c.eof();){if("{"===c.getCurrentChar()&&"\\"!==c.getPrevChar()&&e.push("{"),"}"===c.getCurrentChar()&&"\\"!==c.getPrevChar()){if(!e.length){o+=c.readChar();break}e.pop()}o+=c.readChar()}if(!o)return 0}else{for(;/[^\s=\/>]/.test(c.getCurrentChar());)o+=c.readChar();if(!o)return 0}e.end=c.getPos();let i={type:p.TypeAttributeName,value:n(o),pos:e};if(f.push(i),c.skipBlank(),(e={}).start=c.getPos(),"="===c.getCurrentChar()){e.end=c.getPos()+1,i={type:p.TypeEqual,value:"=",pos:e},f.push(i);let o=c.getPos()+l+1;if(c.skip(1),c.skipBlank(),(e={}).start=c.getPos(),'"'===c.getCurrentChar()){c.skip(1);let u=c.getPos();for(;!c.eof()&&'"'!==c.getCurrentChar();){let e=c.readChar();"\r"!==e&&"\n"!==e&&(s+=e)}if(c.eof()||'"'!==c.getCurrentChar())throw new t('invalid attribute value format (missing ")',"file="+a,{text:r,start:o,end:u+l});c.skip(1),e.end=c.getPos(),i={type:p.TypeAttributeValue,value:n(s),pos:e},f.push(i)}else if("'"===c.getCurrentChar()){c.skip(1);let u=c.getPos();for(;!c.eof()&&"'"!==c.getCurrentChar();){let e=c.readChar();"\r"!=e&&"\n"!=e&&(s+=e)}if(c.eof()||"'"!==c.getCurrentChar())throw new t("invalid attribute value format (missing ')","file="+a,{text:r,start:o,end:u+l});c.skip(1),e.end=c.getPos(),i={type:p.TypeAttributeValue,value:n(s),pos:e},f.push(i)}else if("{"===c.getCurrentChar()){let u=[],g=c.getPos()+1;for(;!c.eof();){if("{"===c.getCurrentChar())u.push("{");else if("}"===c.getCurrentChar()){if(!u.length)break;if(1===u.length){s+=c.readChar();break}u.pop()}s+=c.readChar()}if(c.eof())throw new t("invalid attribute value format (missing })","file="+a,{text:r,start:o,end:g+l});e.end=c.getPos(),i={type:p.TypeAttributeValue,value:n(s),pos:e},f.push(i)}else{for(;/[^\s\/>]/.test(c.getCurrentChar());)s+=c.readChar();if(!s)throw new t("missing attribute value","file="+a,{text:r,start:o,end:o+1});if(!/^(\d+|\d+\.?\d+)$/.test(s))throw new t("invalid attribute value","file="+a,{text:r,start:o,end:c.getPos()+l});e.end=c.getPos(),i={type:p.TypeAttributeValue,value:s-0,pos:e},f.push(i)}}return 1}function h(){let e,t=c.getPos(),o=u.indexOf("\x3c!--",t),s=u.indexOf("--\x3e",t+4);if(o===t&&s>t){let r={};return r.start=o,r.end=s+3,e={type:p.TypeHtmlComment,value:n(u.substring(t+4,s)),pos:r},c.skip(s+3-t),f.push(e),1}return 0}function b(){let e,t=c.getPos(),o=u.indexOf("<![CDATA[",t),r=u.indexOf("]]>",t+9);if(o===t&&r>t){let i={};i.start=o,i.end=r+3;let a=s(u.substring(t+9,r));if(c.skip(r+3-t),/\{.*?}/.test(a)){let t,s,r,i,l=o+9;for(;(t=a.indexOf("{"))>=0&&(s=a.indexOf("}",t))>0;)t>0&&(l=(i={start:l,end:l+(r=n(a.substring(0,t))).length}).end,e={type:p.TypeText,value:r,pos:i},f.push(e)),l=(i={start:l,end:l+(r=n(a.substring(t,s+1))).length}).end,e={type:p.TypeExpression,value:r,pos:i},f.push(e),a=a.substring(s+1);a&&(l=(i={start:l,end:l+(r=n(a)).length}).end,e={type:p.TypeText,value:r,pos:i},f.push(e))}else e={type:p.TypeText,value:a,pos:i},f.push(e);return 1}return 0}function y(){let e,t,o=c.getPos();if(0!==o&&"\n"!==c.getPrevChar()||u.indexOf("```",o)!==o||!(u.indexOf("\n```",o+3)>0))return 0;let s,n=u.substring(o),r=/(^```[\s\S]*?\r?\n)([\s\S]*?)\r?\n```[\s\S]*?\r?(\n|$)/.exec(n),i=r[0].length;e=o,t=o+i,s={type:p.TypeTagSelfClose,value:"```",pos:{start:e,end:t}},f.push(s);let a,l=r[1].match(/\b\w*\b/),g=l?l[0].toLowerCase():"";g&&(t=(e=o+l.index)+g.length,s={type:p.TypeAttributeName,value:"lang",pos:{start:e,end:t}},f.push(s),s={type:p.TypeEqual,value:"=",pos:{start:e,end:t}},f.push(s),s={type:p.TypeAttributeValue,value:g,pos:{start:e,end:t}},f.push(s)),(l=r[1].match(/\b\d+(\%|px)/i))?a=l[0]:(l=r[1].match(/\b\d+/i))&&(a=l[0]),a&&(t=(e=o+l.index)+a.length,s={type:p.TypeAttributeName,value:"height",pos:{start:e,end:t}},f.push(s),s={type:p.TypeEqual,value:"=",pos:{start:e,end:t}},f.push(s),a=/^\d+$/.test(a)?a+"px":a,s={type:p.TypeAttributeValue,value:a,pos:{start:e,end:t}},f.push(s));let d=(l=r[1].match(/\bref\s?=\s?"(.*?)"/i))&&l[0]?l[0]:"";d&&(s={type:p.TypeAttributeName,value:"ref",pos:{start:e,end:t}},f.push(s),s={type:p.TypeEqual,value:"=",pos:{start:e,end:t}},f.push(s),s={type:p.TypeAttributeValue,value:d,pos:{start:e,end:t}},f.push(s));let h=r[2].replace(/\u0000\u0001/g,"\\{").replace(/\ufffe\uffff/g,"\\}");return h=h.replace(/\n\\+```/g,e=>"\n"+e.substring(2)),/^\\+```/.test(h)&&(h=h.substring(1)),h=h.replace(/\{/g,"\\{").replace(/\}/g,"\\}"),t=(e=o+r[1].length)+r[2].length,s={type:p.TypeAttributeName,value:"$CODE",pos:{start:e,end:t}},f.push(s),s={type:p.TypeEqual,value:"=",pos:{start:e,end:t}},f.push(s),s={type:p.TypeAttributeValue,value:h,pos:{start:e,end:t}},f.push(s),c.skip(i),1}function m(){let e,t=c.getPos(),o=u.indexOf(p.CodeBlockStart,t),s=u.indexOf(p.CodeBlockEnd,t+p.CodeBlockStart.length);if(o===t&&s>0){let r={};return r.start=o,r.end=s+p.CodeBlockEnd.length,e={type:p.TypeCodeBlock,value:n(u.substring(t+p.CodeBlockStart.length,s)),pos:r},c.skip(s+p.CodeBlockEnd.length-t),f.push(e),1}return 0}function x(){if(c.eof())return 0;let e={};e.start=c.getPos();let t,o,s="";for(;!c.eof()&&(s+=c.readChar(),o=c.getPos(),"<"!==c.getCurrentChar()&&"```"!==c.getNextString(3)&&u.indexOf(p.CodeBlockStart,o)!==o&&u.indexOf(p.ExpressionStart,o)!==o););return s?(e.end=c.getPos(),t={type:p.TypeText,value:n(s),pos:e},f.push(t),1):0}function w(){if(c.eof())return 0;let e,t={};return t.start=c.getPos(),(e=function(){let e=c.getPos(),t=u.indexOf(p.ExpressionStart,e),o=u.indexOf(p.ExpressionEnd,e+p.ExpressionStart.length);if(t===e&&o>0){let t={type:p.TypeExpression,value:n(u.substring(e,o+p.ExpressionEnd.length))};return c.skip(o+p.ExpressionEnd.length-e),t}return null}())?(t.end=c.getPos(),e.pos=t,f.push(e),1):0}this.parse=function(){for(;g()||h()||b()||m()||w()||y()||x(););return f.forEach(e=>{e.loc=function(e,t,o,s){let n,r,i={},a={};return n=e.substring(0,t+s).split("\n"),i.line=n.length,r=n.pop(),i.column=r.length+1,i.pos=s+t,n=e.substring(0,o+s).split("\n"),a.line=n.length,r=n.pop(),a.column=r.length,a.pos=s+o,r.length||(a.line--,a.column=n.pop().length+1),{start:i,end:a}}(r,e.pos.start,e.pos.end,l),delete e.pos}),f}}e.on("视图TOKEN解析器",function(e,t,o,s){return new r(e,t,o,s)})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("e15p-parse-view-tokens-to-ast",function(t,o){t.walk("RposeBlock",(t,s)=>{if(!/^view$/.test(s.name.value))return;let n=s.text?s.text.value:"";if(!n)return t.remove();let r=e.at("视图TOKEN解析器",o.input.text,n,o.input.file,s.text.loc.start.pos),i={type:"View",src:n,loc:s.text.loc,nodes:r.parse()},a=this.createNode(i);t.replaceWith(a)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("f15p-astedit-normalize-group-attribute",function(t,s){const n=e.at("视图编译选项");t.walk(n.TypeAttributeName,(t,r)=>{let i=t.after();if(i&&i.type===n.TypeEqual){let a=i.after();if(!a||!a.type===n.TypeAttributeValue)throw new o("missing attribute value");if(e.at("是否表达式",r.value))throw new o("unsupport expression on attribute name",{file:s.input.file,text:s.input.text,start:r.loc.start.pos,end:r.loc.end.pos});if(/^\s*\{\s*\}\s*$/.test(a.object.value))throw new o("invalid empty expression",{file:s.input.file,text:s.input.text,start:a.object.loc.start.pos,end:a.object.loc.end.pos});let l={type:"Attribute",name:r.value,value:a.object.value,isExpression:e.at("是否表达式",a.object.value),loc:{start:r.loc.start,end:a.object.loc.end}},u=this.createNode(l);t.replaceWith(u),i.remove(),a.remove()}else{let o={type:"Attribute",name:r.value,value:!0,isExpression:!1,loc:r.loc};e.at("是否表达式",r.value)&&(o.isExpression=!0,o.isObjectExpression=!0,delete o.value);let s=this.createNode(o);t.replaceWith(s)}}),t.walk("Attribute",(e,t)=>{if(!e.parent)return;let o=[e],s=e.after();for(;s&&"Attribute"===s.type;)o.push(s),s=s.after();let n=this.createNode({type:"Attributes"});e.before(n),o.forEach(e=>{n.addChild(e.clone()),e.remove()})})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("f25p-astedit-normolize-tag-of-self-close",function(t,o){const s=e.at("视图编译选项");t.walk(s.TypeTagSelfClose,(e,t)=>{let o=t.value,s=t.loc,n=this.createNode({type:"Tag",value:o,loc:s}),r=e.after();r&&"Attributes"===r.type&&(n.addChild(r.clone()),r.remove()),e.replaceWith(n)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("f35p-astedit-normolize-tag-of-open-close",function(t,s){const n=e.at("视图编译选项");let r=(e,t)=>{let i=t.after();for(;i&&i.type!==n.TypeTagClose;){if(i.type===n.TypeTagOpen){let t="Tag",o=i.object.value,s=i.object.loc,n=this.createNode({type:t,value:o,loc:s});r(n,i),e.addChild(n)}else e.addChild(i.clone());i.remove(),i=t.after()}if(!i)throw new o("missing close tag","file="+s.input.file,{text:s.input.text,start:e.object.loc.start.pos});if(i.type===n.TypeTagClose){if(t.object.value!==i.object.value)throw new o(`unmatch close tag: ${t.object.value}/${i.object.value}`,"file="+s.input.file,{text:s.input.text,start:e.object.loc.start.pos,end:i.object.loc.end.pos});return e.object.loc.end=i.object.loc.end,i.remove(),e}throw new Error("todo unhandle type")};t.walk(n.TypeTagOpen,(e,t)=>{if(!e.parent)return;let o=t.value,s=t.loc,n=this.createNode({type:"Tag",value:o,loc:s});r(n,e),e.replaceWith(n)})}))})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/postobject");function t(e){return e.startsWith("[")&&e.indexOf("]")>0}function o(e){return e.startsWith("---------")}function s(e){return e.startsWith("=========")}function n(e){let t,o;for(let s=1;s<e.length;s++)if("\\"!==e.charAt(s-1)&&"]"===e.charAt(s))return{name:t=e.substring(1,s).toLowerCase(),len:o=t.length};return{name:t=e.substring(1,e.lastIndexOf("]")).toLowerCase(),len:o=t.length}}e.on("BTF内容解析",function(e){let r=e.indexOf("\r\n")>=0?"\r\n":"\n",i=[];return function(e,r){let i,a,l,u=!1;for(let p=0;p<r.length;p++)if(t(i=r[p]))a=n(i),l=i.substring(a.len+2),e.push({type:"BlockName",name:a.name,comment:l}),u=!0;else if(o(i))e.push({type:"Comment",value:i}),u=!1;else if(s(i))e.push({type:"Comment",value:i}),u=!1;else if(u){"BlockText"!==e[e.length-1].type&&e.push({type:"BlockText",name:e[e.length-1].name,value:[]});let t=e[e.length-1];t.value.push(i)}else e.push({type:"Comment",value:i})}(i,e.split(r)),i.forEach(e=>{"BlockText"===e.type&&(e.value=e.value.join(r))}),i})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("refractor"),o=require("rehype");function s(e){e.languages.inilike={constant:/^[ \t]*[^\s=:]+?(?=[ \t]*[=:])/m,"attr-value":{pattern:/(=|:).*/,inside:{punctuation:/^(=|:)/}}}}s.displayName="inilike",s.aliases=[],t.register(s),e.on("语法高亮转换",function(s="@rpose/buildin:```",n){return function(o="",a="clike"){if(n||((n={}).token=e.at("哈希样式类名",s,"token"),n.comment=e.at("哈希样式类名",s,"comment"),n.selector=e.at("哈希样式类名",s,"selector")),/^(btf|rpose)$/i.test(a)){return"<ol><li>"+function(o){let s=[];return e.at("BTF内容解析",o).forEach(e=>{if("BlockName"===e.type)s.push(function(e){return e.replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/(.*)/g,`<span class="${n.token} ${n.selector}">$1</span>`)}("["+e.name+"]")+r(e.comment));else if("BlockText"===e.type){let o=e.name;t.registered(o)||(o=/^(actions|methods|options|state)$/i.test(o)?"js":/^view$/i.test(o)?"markup":"inilike"),s.push(i(e.value,o))}else{if("Comment"!==e.type)throw new Error("unknow type");s.push(r(e.value))}}),s.join("\n")}(o).split(/\r?\n/).join("</li><li>")+"</li></ol>"}return!t.registered(a)&&(a="clike"),"<ol><li>"+i(o,a).split(/\r?\n/).join("</li><li>")+"</li></ol>"};function r(e){return e.replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/(\S+.*)/g,`<span class="${n.token} ${n.comment}">$1</span>`)}function i(r,i){let a=t.highlight(r,i);return function t(o){o&&o.forEach(o=>{if(o.properties&&o.properties.className){let t=[];o.properties.className.forEach(o=>{!n[o]&&(n[o]=e.at("哈希样式类名",s,o)),t.push(n[o])}),o.properties.className=t}t(o.children)})}(a),o().stringify({type:"root",children:a}).toString()}}())})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");require("@gotoeasy/err");e.on("编译插件",t.plugin("f45p-astedit-transform-tag-```",function(t,o){t.walk("Tag",(t,o)=>{if("```"!==o.value)return;let s,n,r;for(let e,o=0;e=t.nodes[o++];)if("Attributes"===e.type){s=e;break}for(let e,t=0;e=s.nodes[t++];)"$CODE"===e.object.name?(n=e,e.object.value=e.object.value.replace(/\\\{/g,"{").replace(/\\\}/g,"}")):"lang"===e.object.name&&(r=e.object.value);n.object.value=e.at("语法高亮转换",n.object.value,r);let i=this.createNode({type:"Attribute"});i.object.name="@taglib",i.object.value="@rpose/buildin:```";let a=Object.assign({},o.loc);a.end.line=a.start.line,a.end.column=3,a.end.pos=a.start.pos+3,i.object.loc=a,s.addChild(i)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("f55p-astedit-normolize-flag-is-svg-tag",function(e,t){e.walk("Tag",(e,t)=>{/^svg$/i.test(t.value)&&(t.svg=!0,e.walk("Tag",(e,t)=>{t.svg=!0},{readonly:!0}))},{readonly:!0})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=/^(html|link|meta|style|title|address|article|aside|footer|header|h1|h2|h3|h4|h5|h6|hgroup|main|nav|section|blockquote|dd|dir|div|dl|dt|figcaption|figure|hr|li|ol|p|pre|ul|a|abbr|b|bdi|bdo|br|cite|code|data|dfn|em|i|kbd|mark|q|rb|rbc|rp|rt|rtc|ruby|s|samp|small|span|strong|sub|sup|time|tt|u|var|wbr|area|audio|img|map|track|video|applet|embed|iframe|noembed|object|param|picture|source|canvas|noscript|script|del|ins|caption|col|colgroup|table|tbody|td|tfoot|th|thead|tr|button|datalist|fieldset|form|input|label|legend|meter|optgroup|option|output|progress|select|textarea|details|dialog|menu|menuitem|summary|content|element|shadow|slot|template|acronym|basefont|bgsound|big|blink|center|command|font|frame|frameset|image|isindex|keygen|listing|marquee|multicol|nextid|nobr|noframes|plaintext|spacer|strike|xmp|head|base|body|math|svg)$/i;e.on("编译插件",t.plugin("f65p-astedit-normolize-flag-is-standard-tag",function(e,t){e.walk("Tag",(e,t)=>{t.standard=!!t.svg||o.test(t.value)},{readonly:!0})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("g15p-astedit-group-attribtue-{prop}",function(e,t){e.walk("Tag",(e,t)=>{if(!e.nodes||!e.nodes.length)return;let o;for(let t,s=0;t=e.nodes[s++];)if("Attributes"===t.type){o=t;break}if(!o||!o.nodes||!o.nodes.length)return;let s=[];if(o.nodes.forEach(e=>{e.object.isObjectExpression&&s.push(e)}),!s.length)return;let n=this.createNode({type:"ObjectExpressionAttributes"});s.forEach(e=>{let t=e.clone();t.type="ObjectExpressionAttribute",t.object.type="ObjectExpressionAttribute",n.addChild(t),e.remove()}),e.addChild(n)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=/^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;e.on("编译插件",t.plugin("g25p-astedit-group-attribtue-events",function(e,t){e.walk("Tag",(e,t)=>{if(!e.object.standard)return;if(!e.nodes||!e.nodes.length)return;let s;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){s=t;break}if(!s||!s.nodes||!s.nodes.length)return;let n=[];if(s.nodes.forEach(e=>{o.test(e.object.name)&&n.push(e)}),!n.length)return;let r=this.createNode({type:"Events"});n.forEach(e=>{let t=e.clone();t.type="Event",t.object.type="Event",r.addChild(t),e.remove()}),e.addChild(r)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("g35p-astedit-process-attribtue-style",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^style$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of style",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});let i=r[0].clone();i.type="Style",i.object.type="Style",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("g45p-astedit-process-attribtue-class",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^class$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of class",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});let i=r[0].clone();i.type="Class",i.object.type="Class",i.object.classes=function(e){let t=[],o=(e=e.replace(/\{.*?\}/g,function(e){let o,s,n,r=e.substring(1,e.length-1);for(;r.indexOf(":")>0;){o=r.indexOf(":"),s=r.substring(0,o).replace(/['"]/g,"").trim();let e=(n=r.substring(o+1)).indexOf(":");e>0?(n=(n=n.substring(0,e)).substring(0,n.lastIndexOf(",")),r=r.substring(o+1+n.length+1)):r="",s&&t.push(s)}return""})).split(/\s+/);for(let e=0;e<o.length;e++)o[e].trim()&&t.push(o[e].trim());return t}(i.object.value),e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("h15p-astedit-process-attribtue-@ref",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^@ref$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of @ref",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});if(/^(if|for)$/.test(s.value))throw new o(`unsupport attribute @ref on tag <${s.value}>`,{file:t.input.file,text:t.input.text,start:r[0].object.loc.start.pos,end:r[0].object.loc.end.pos});let i=r[0].clone();i.type="@ref",i.object.type="@ref",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("h25p-astedit-process-attribtue-@if",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^@if$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of @if",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});let i=r[0].clone();i.type="@if",i.object.type="@if",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("h35p-astedit-process-attribtue-@show",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^@show$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of @show",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});if(/^(if|for)$/.test(s.value))throw new o(`unsupport attribute @show on tag <${s.value}>`,{file:t.input.file,text:t.input.text,start:r[0].object.loc.start.pos,end:r[0].object.loc.end.pos});let i=r[0].clone();i.type="@show",i.object.type="@show",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("h45p-astedit-process-attribtue-@for",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^@for$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of @for",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});let i=r[0].clone();i.type="@for",i.object.type="@for",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("h55p-astedit-process-attribtue-@csslib",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^@csslib$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of @csslib",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});if(/^(if|for)$/.test(s.value))throw new o(`unsupport attribute @csslib on tag <${s.value}>`,{file:t.input.file,text:t.input.text,start:r[0].object.loc.start.pos,end:r[0].object.loc.end.pos});let i=r[0].clone();i.type="@csslib",i.object.type="@csslib",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("h65p-astedit-process-attribtue-@taglib",function(e,t){e.walk("Tag",(e,s)=>{if(!e.nodes||!e.nodes.length)return;let n;for(let t,o=0;t=e.nodes[o++];)if("Attributes"===t.type){n=t;break}if(!n||!n.nodes||!n.nodes.length)return;let r=[];if(n.nodes.forEach(e=>{/^@taglib$/i.test(e.object.name)&&r.push(e)}),!r.length)return;if(r.legnth>1)throw new o("duplicate attribute of @taglib",{file:t.input.file,text:t.input.text,start:r[1].object.loc.start.pos,end:r[1].object.loc.end.pos});if(/^(if|for)$/.test(s.value))throw new o(`unsupport @taglib on tag <${s.value}>`,{file:t.input.file,text:t.input.text,start:r[0].object.loc.start.pos,end:r[0].object.loc.end.pos});let i=r[0].clone();i.type="@taglib",i.object.type="@taglib",e.addChild(i),r[0].remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/hash"),o=require("@gotoeasy/file"),s=require("@gotoeasy/err"),n=require("@gotoeasy/postobject"),r=require("fs");e.on("编译插件",n.plugin("j15p-astedit-process-tag-img",function(n,i){n.walk("Tag",(n,a)=>{if(!/^img$/i.test(a.value))return;let l,u;i.result.hasImg=!0;for(let e,t=0;e=n.nodes[t++];)if("Attributes"===e.type){l=e;break}if(!l||!l.nodes||!l.nodes.length)return;for(let e,t=0;e=l.nodes[t++];)if(/^src$/i.test(e.object.name)){u=e;break}if(!u)return;let p=function(s,n){let i;if(o.exists(n))i=n;else if(i=o.resolve(s,n),!o.exists(i))return!1;let a=t({file:i})+o.extname(i),l=e.at("缓存").path+"/resources",u=l+"/"+a;return o.exists(u)||(!o.existsDir(l)&&o.mkdir(l),r.createReadStream(i).pipe(r.createWriteStream(u))),a}(i.input.file,u.object.value);if(!p)throw new s("image file not found",{file:i.input.file,text:i.input.text,start:u.object.loc.start.pos,end:u.object.loc.end.pos});u.object.value="%imagepath%"+p},{readonly:!0})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("k15p-astedit-transform-attribtue-@ref",function(t,s){t.walk("@ref",(t,n)=>{let r,i=t.parent;if(e.at("是否表达式",n.value))throw new o("@ref unsupport the expression",{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});for(let e,t=0;e=i.nodes[t++];)if("Attributes"===e.type){r=e;break}let a=t.clone();a.type="Attribute",a.object.type="Attribute",a.object.name="ref";let l=t.clone();l.type="Attribute",l.object.type="Attribute",l.object.name="$context",l.object.value="{$this}",l.object.isExpression=!0,r||(r=this.createNode({type:"Attributes"}),i.addChild(r)),r.addChild(a),r.addChild(l),t.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");require("@gotoeasy/err");e.on("编译插件",t.plugin("k25p-astedit-transform-attribtue-@if",function(t,o){const s=e.at("视图编译选项");t.walk("@if",(e,t)=>{let o=e.parent;/^if$/i.test(o.object.value)&&(o.ok=!0);let n=s.TypeCodeBlock,r="if ("+t.value.replace(/^\s*\{=?/,"").replace(/\}\s*$/,"")+") {",i=this.createNode({type:n,value:r});o.before(i),r="}",i=this.createNode({type:n,value:r}),o.after(i),e.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");require("@gotoeasy/err");e.on("编译插件",t.plugin("k35p-astedit-transform-attribtue-@show",function(t,o){const s=e.at("视图编译选项");t.walk("@show",(e,t)=>{let o,n=e.parent;for(let e,t=0;e=n.nodes[t++];)if("Style"===e.type){o=e;break}let r=s.ExpressionStart+"("+t.value.replace(/^\{/,"").replace(/\}$/,"")+') ? "display:block;" : "display:none;"'+s.ExpressionEnd;o?o.object.value.endsWith(";")?o.object.value+=r:o.object.value+=";"+r:(o=this.createNode({type:"Style",value:r}),n.addChild(o)),o.object.isExpression=!0,e.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");function s(e,t,s="invalid format of @for"){return new o(s,{file:e.input.file,text:e.input.text,start:t.loc.start.pos,end:t.loc.end.pos})}e.on("编译插件",t.plugin("k45p-astedit-transform-attribtue-@for",function(t,o){const n=e.at("视图编译选项");t.walk("@for",(e,t)=>{let r=e.parent;/^for$/i.test(r.object.value)&&(r.ok=!0);let i=n.TypeCodeBlock,a=function(e,t){if(!t.value)throw s(e,t);let o,n,r,i,a,l;if(l=t.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+from\s+(\w+)\s+max\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n=l[2],r=l[3],i=l[4],a=l[5],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(n))throw s(e,t,`invalid index name: [${n}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=${r},ARY_=(${a}),MAX_=Math.min(${i},ARY_.length),${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=${r},MAX_=Math.min(${i},${a}.length),${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}if(l=t.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+max\s+(\w+)\s+from\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n=l[2],r=l[4],i=l[3],a=l[5],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(n))throw s(e,t,`invalid index name: [${n}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=${r},ARY_=(${a}),MAX_=Math.min(${i},ARY_.length),${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=${r},MAX_=Math.min(${i},${a}.length),${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}if(l=t.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+from\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n=l[2],r=l[3],a=l[4],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(n))throw s(e,t,`invalid index name: [${n}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=${r},ARY_=(${a}),MAX_=ARY_.length,${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=${r},MAX_=${a}.length,${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}if(l=t.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+max\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n=l[2],i=l[3],a=l[4],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(n))throw s(e,t,`invalid index name: [${n}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=0,ARY_=(${a}),MAX_=Math.min(${i},ARY_.length),${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=0,MAX_=Math.min(${i},${a}.length),${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}if(l=t.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n=l[2],a=l[3],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(n))throw s(e,t,`invalid index name: [${n}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=0,ARY_=(${a}),MAX_=ARY_.length,${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=0,MAX_=${a}.length,${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}if(l=t.value.match(/^\s*\{*\s*\(\s*(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n="J_",a=l[2],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(n))throw s(e,t,`invalid index name: [${n}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=0,ARY_=(${a}),MAX_=ARY_.length,${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=0,MAX_=${a}.length,${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}if(l=t.value.match(/^\s*\{*\s*(\w+)\s+in\s+(\S+?)\s*\}*\s*$/)){if(o=l[1],n="J_",a=l[2],/^\d+/.test(o))throw s(e,t,`invalid value name: [${o}]`);if(/^\d+/.test(a))throw s(e,t,`invalid array name: [${a}]`);return/[^a-zA-Z\d_]/.test(a)?` for ( let ${n}=0,ARY_=(${a}),MAX_=ARY_.length,${o}; ${n}<MAX_; ${n}++) {\n                        ${o} = ARY_[${n}]; `:` for ( let ${n}=0,MAX_=${a}.length,${o}; ${n}<MAX_; ${n}++) {\n                    ${o} = ${a}[${n}]; `}throw s(e,t)}(o,t),l=t.loc,u=this.createNode({type:i,value:a,loc:l});r.before(u),a="}",u=this.createNode({type:i,value:a,loc:l}),r.after(u),e.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("k55p-astedit-transform-tag-name-by-@taglib",function(t,s){t.walk("@taglib",(t,n)=>{let r=t.parent;if(r.object.standard)throw new o("unsupport @taglib on standard tag",{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});let i=e.at("标签项目源文件",r.object.value);if(i)throw new o(`unsupport @taglib on existed component: ${r.object.value}(${i})`,{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});let a,l,u,p=n.value;if(u=p.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/))a=u[1],l=u[2];else if(u=p.match(/^\s*.+?\s*=\s*(.+?)\s*$/))a=u[1],l=r.object.value;else{if(p.indexOf("=")>=0)throw new o("invalid attribute value of @taglib",{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});if(u=p.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/))a=u[1],l=u[2];else{if(!(u=p.match(/^\s*(.+?)\s*$/)))throw new o("invalid attribute value of @taglib",{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});a=u[1],l=r.object.value}}if(!e.at("自动安装",a))throw new o("package install failed: "+a,{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});let c=e.at("模块组件信息",a),f=e.at("标签库引用",`${a}:${l}`,c.config);if(!f)throw new o("component not found: "+n.value,{file:s.input.file,text:s.input.text,start:n.loc.start.pos,end:n.loc.end.pos});let g=e.at("标签全名",f);r.object.value=g,t.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("k65p-astedit-transform-tag-name-by-[taglib]",function(t,s){let n=Object.assign({},s.result.oTaglib);t.walk("Tag",(t,r)=>{if(r.standard)return;let i=n[r.value];if(!i)return;let a,l,u=i.split(":");if(u.length>1?(a=u[0].trim(),l=u[1].trim()):(a=i.trim(),l=r.value),!e.at("自动安装",a))throw new o("package install failed: "+a,{file:s.input.file,text:s.input.text,start:r.loc.start.pos,end:r.loc.end.pos});let p=e.at("模块组件信息",a),c=e.at("标签库引用",`${a}:${l}`,p.config);if(!c)throw new o("component not found: "+r.value,{file:s.input.file,text:s.input.text,start:r.loc.start.pos,end:r.loc.end.pos});let f=e.at("标签全名",c);r.value=f})},{readonly:!0}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("k75p-astedit-transform-tag-if-for",function(e,t){e.walk("Tag",(e,s)=>{if(/^(if|for)$/i.test(s.value)){if(!e.ok)throw new o(`missing attribute @${s.value} of tag <${s.value}>`,{file:t.input.file,text:t.input.text,start:s.loc.start.pos});e.nodes.forEach(t=>{"Attributes"!==t.type&&e.before(t.clone())}),e.remove()}})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err"),s=require("@gotoeasy/hash");e.on("编译插件",t.plugin("k85p-astedit-transform-tag-slot",function(t,n){let r=[],i=e.at("视图编译选项");t.walk("Tag",(t,s)=>{if(!/^slot$/i.test(s.value))return;let i,a=n.result.slots=n.result.slots||[];if(t.nodes)for(let e,o=0;e=t.nodes[o++];)if("Attributes"===e.type){i=e;break}if(!i||!i.nodes||!i.nodes.length){if(a.length)throw new o("missing attribute 'name' of tag <slot>",{file:n.input.file,text:n.input.text,start:s.loc.start.pos,end:s.loc.end.pos});return a.push(""),r.push(t),void(t.slotName="")}let l=[];if(i.nodes&&i.nodes.forEach(e=>{/^name$/i.test(e.object.name)&&l.push(e)}),0===l.length){if(a.length)throw new o("missing attribute 'name' of tag <slot>",{file:n.input.file,text:n.input.text,start:s.loc.start.pos,end:s.loc.end.pos});return a.push(""),r.push(t),void(t.slotName="")}if(l.length>1)throw new o("duplicate attribute of name",{file:n.input.file,text:n.input.text,start:l[1].object.loc.start.pos,end:l[1].object.loc.end.pos});if(e.at("是否表达式",l[0].object.value))throw new o("slot name unsupport the expression",{file:n.input.file,text:n.input.text,start:l[0].object.loc.start.pos,end:l[0].object.loc.end.pos});let u=l[0].object.value+"";if(a.includes(u))throw new o("duplicate slot name: "+u,{file:n.input.file,text:n.input.text,start:l[0].object.loc.start.pos,end:l[0].object.loc.end.pos});a.push(u),!u&&r.push(t),t.slotName=u});let a=n.result.slots=n.result.slots||[];if(a.length>1&&r.length)throw new o("missing slot name on tag <slot>",{file:n.input.file,text:n.input.text,start:r[0].object.loc.start.pos,end:r[0].object.loc.end.pos});if(n.result.slots){let e=n.doc.api.statekeys=n.doc.api.statekeys||[];!e.includes("$SLOT")&&e.push("$SLOT")}if(a.length){t.walk("Tag",(e,t)=>{if(!/^slot$/i.test(t.value))return;let o=i.TypeCodeBlock,n=`_Ary.push( ...slotVnodes_${s(e.slotName)} );`;e.object.loc,e.replaceWith(this.createNode({type:o,value:n}))});let e=[],o=1===a.length&&""===a[0],n=[];o&&n.push(" _hasDefinedSlotTemplate "),a.forEach(e=>{n.push(` slotVnodes_${s(e)} = [] `)}),e.push("let "+n.join(",")+";"),e.push(" ($state.$SLOT || []).forEach(vn => { "),e.push("     if (vn.a) { "),o&&e.push("     vn.a.slot !== undefined && (_hasDefinedSlotTemplate = 1); "),a.forEach(t=>{e.push(`     vn.a.slot === '${t}' && (slotVnodes_${s(t)} = vn.c || []); `)}),e.push("     } "),e.push(" }); "),o&&e.push(` !_hasDefinedSlotTemplate && !slotVnodes_${s("")}.length && (slotVnodes_${s("")} = $state.$SLOT || []); `),t.walk("View",(t,o)=>{let s=i.TypeCodeBlock,n=e.join("\n");return t.addChild(this.createNode({type:s,value:n}),0),!1})}}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("m15p-csslibify-check-@csslib",function(t,s){let n=s.result.oCsslib,r=new Set;t.walk("@csslib",(t,i)=>{if(e.at("是否表达式",i.value))throw new o("@csslib unsupport the expression",{file:s.input.file,text:s.input.text,start:i.loc.start.pos,end:i.loc.end.pos});let a=i.value.split("="),l=a.length>1?a[0].trim():"*";if(!l)throw new o("use * as empty csslib name. etc. * = "+a[1],{file:s.input.file,text:s.input.text,start:i.loc.start.pos,end:i.loc.end.pos});if(n[l])throw new o("duplicate csslib name: "+l,{file:s.input.file,text:s.input.text,start:i.loc.start.pos,end:i.loc.end.pos});if(r.has(l))throw new o("duplicate csslib name: "+l,{file:s.input.file,text:s.input.text,start:i.loc.start.pos,end:i.loc.end.pos});r.add(l)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("m17p-csslibify-gen-css-@csslib",function(t,s){let n,r,i,a=s.style,l=a.csslibset=a.csslibset||new Set,u=Object.assign({},s.result.oCsslib),p=s.result.oCsslibPkgs,c=e.on("哈希样式类名")[0],f={rename:(e,t)=>c(s.input.file,e?t+"@"+e:t)},g=s.result.atcsslibtagcss=s.result.atcsslibtagcss||[];t.walk("Class",(t,a)=>{let c;for(let e,o=0;e=t.parent.nodes[o++];)if("@csslib"===e.type){c=e;break}if(c){let o=e.at("样式库",c.object.value);u[o.name]=o,p[o.name]=o.pkg,t.parent.object.standard&&g.push(o.get(t.parent.object.value))}let d=u["*"];for(let e,t,p,c=0;e=a.classes[c++];)if(t="."+(n=e.split("@"))[0],p=n.length>1?n[1]:""){if(!(r=u[p]))throw new o("csslib not found: "+p,{file:s.input.file,text:s.input.text,start:a.loc.start.pos,end:a.loc.end.pos});if(!(i=r.get(t,f)))throw new o("css class not found: "+t,{file:s.input.file,text:s.input.text,start:a.loc.start.pos,end:a.loc.end.pos});l.add(i)}else d&&l.add(d.get(t,f))})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("n15p-astedit-remove-blank-text",function(t,o){const s=e.at("视图编译选项");t.walk(s.TypeText,(e,t)=>{if(!/^\s*$/.test(t.value)||"pre"===e.parent.object.name)return;let o=e.before(),n=e.after();o&&n&&"Tag"!==o.type&&"Tag"!==n.type&&o.type!==s.TypeHtmlComment&&n.type!==s.TypeHtmlComment&&o.type!==s.TypeCodeBlock&&n.type!==s.TypeCodeBlock||e.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("n25p-astedit-remove-html-comment",function(t,o){const s=e.at("视图编译选项");t.walk(s.TypeHtmlComment,(e,t)=>{e.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("n35p-astedit-join-text-node",function(t,o){const s=e.at("视图编译选项");var n;t.walk(/^(Text|Expression)$/,(e,t)=>{let o=[e],r=e.after();for(;r&&(r.type===s.TypeText||r.type===s.TypeExpression);)o.push(r),r=r.after();if(o.length<2)return;let i=[];o.forEach(e=>{e.type===s.TypeText?i.push('"'+function(e,t='"'){if(null==e)return e;let o=e.replace(/\\/g,"\\\\").replace(/\r/g,"\\r").replace(/\n/g,"\\n");return'"'==t?o=o.replace(/"/g,'\\"'):"'"==t&&(o=o.replace(/'/g,"\\'")),o}(e.object.value)+'"'):((n=(n=e.object.value).trim()).startsWith("{")&&n.endsWith("}")&&(n=n.substring(1,n.length-1).trim()),!n||/^\/\/.*$/.test(n)&&n.indexOf("\n")<0||n.startsWith("/*")&&n.endsWith("*/")&&n.indexOf("*/")===n.length-2||i.push(e.object.value.replace(/^\s*\{/,"(").replace(/\}\s*$/,")")))});let a=s.ExpressionStart+i.join(" + ")+s.ExpressionEnd,l={start:o[0].object.loc.start,end:o[o.length-1].object.loc.end},u=this.createNode({type:s.TypeExpression,value:a,loc:l});e.before(u),o.forEach(e=>e.remove())})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("n45p-astedit-remove-jscode-blank-comment",function(t,o){const s=e.at("视图编译选项");var n;t.walk(s.TypeCodeBlock,(e,t)=>{(!(n=(n=t.value).trim())||/^\/\/.*$/.test(n)&&n.indexOf("\n")<0||n.startsWith("/*")&&n.endsWith("*/")&&n.indexOf("*/")===n.length-2)&&e.remove()})}))})(),(()=>{const e=require("@gotoeasy/bus");e.on("编译模板JS",function(e){return function(){if(!e){let t=new class{constructor(e="",t){let o=function(e,t,n){let r,i=t.indexOf("<%");i<0?e.push(s(e,t,n)):0==i?t.indexOf("<%=")==i?(i=(t=t.substring(3)).indexOf("%>"),r=t.substring(0,i),e.push(e.pop()+"+"+r),o(e,t.substring(i+2),!1)):(i=(t=t.substring(2)).indexOf("%>"),r=t.substring(0,i),n?e.push(r):e.push(e.pop()+";")&&e.push(r),o(e,t.substring(i+2),!0)):(r=t.substring(0,i),e.push(s(e,r,n)),o(e,t.substring(i),!1))},s=function(e,t,o){let s=t.replace(/\r/g,"\\r").replace(/\n/g,"\\n").replace(/\'/g,"\\'");return o?"s+='"+s+"'":e.pop()+"+'"+s+"'"},n=[];n.push("let s=''"),o(n,e,!0),n.push("return s"),this.toString=t?new Function(t,n.join("\n")):new Function(n.join("\n"))}}("\n\n// ------------------------------------------------------------------------------------------------------\n// 组件 <%= $data['COMPONENT_NAME'] %>\n// 注:应通过rpose.newComponentProxy方法创建组件代理对象后使用，而不是直接调用方法或用new创建\n// ------------------------------------------------------------------------------------------------------\n<% if ( $data['singleton'] ){ %>\n    // 这是个单例组件\n    <%= $data['COMPONENT_NAME'] %>.Singleton = true;\n<% } %>\n\n// 属性接口定义\n<%= $data['COMPONENT_NAME'] %>.prototype.$OPTION_KEYS = <%= JSON.stringify($data['optionkeys']) %>;  // 可通过标签配置的属性，未定义则不支持外部配置\n<%= $data['COMPONENT_NAME'] %>.prototype.$STATE_KEYS = <%= JSON.stringify($data['statekeys']) %>;    // 可更新的state属性，未定义则不支持外部更新state\n\n// 组件函数\nfunction <%= $data['COMPONENT_NAME'] %>(options={}) {\n\n    <% if ( $data['optionkeys'] != null ){ %>\n    // 组件默认选项值\n    this.$options = <%= $data['options'] %>;\n    rpose.extend(this.$options, options, this.$OPTION_KEYS);    // 按属性接口克隆配置选项\n    <% }else{ %>\n    // 组件默认选项值\n    this.$options = <%= $data['options'] %>;\n    <% } %>\n\n    <% if ( $data['statekeys'] != null ){ %>\n    // 组件默认数据状态值\n    this.$state = <%= $data['state'] %>;\n    rpose.extend(this.$state, options, this.$STATE_KEYS);       // 按属性接口克隆数据状态\n    <% }else{ %>\n    // 组件默认数据状态值\n    this.$state = <%= $data['state'] %>;\n    <% } %>\n\n    <% if ( $data['actions'] ){ %>\n    // 事件处理器\n    <%= $data['actions'] %>\n    <% } %>\n\n    <% if ( $data['methods'] ){ %>\n    // 自定义方法\n    <%= $data['methods'] %>;\n    <% } %>\n\n    <% if ( $data['updater'] ){ %>\n    // 组件更新函数\n    this.$updater = <%= $data['updater'] %>;\n    <% } %>\n}\n\n/**\n * 节点模板函数\n */\n<%= $data['COMPONENT_NAME'] %>.prototype.nodeTemplate = <%= $data['vnodeTemplate'] %>\n\n".replace(/\\/g,"\\\\"),"$data");e=t.toString}return e}}())})(),require("@gotoeasy/bus").on("表达式代码转换",function(e){let t=e.trim();return t.startsWith("{")&&t.endsWith("}")&&(t=t.substring(1,t.length-1)),`(${t})`}),(()=>{const e=require("@gotoeasy/bus");e.on("astgen-node-text",function(t,o){const s=e.at("视图编译选项");return t.type===s.TypeText?function(e,t){let o=[],s='"'+function(e,t='"'){if(null==e)return e;let o=e.replace(/\\/g,"\\\\").replace(/\r/g,"\\r").replace(/\n/g,"\\n");return'"'==t?o=o.replace(/"/g,'\\"'):"'"==t&&(o=o.replace(/'/g,"\\'")),o}(e.object.value)+'"';return o.push("{ "),o.push(`  s: ${s} `),o.push(` ,k: ${t.keyCounter++} `),o.push("}"),o.join("\n")}(t,o):t.type===s.TypeExpression?function(e,t){let o=[],s=e.object.value.replace(/^\s*\{/,"(").replace(/\}\s*$/,")");return o.push("{ "),o.push(`  s: ${s} `),o.push(` ,k: ${t.keyCounter++} `),o.push("}"),o.join("\n")}(t,o):""})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/err");e.on("编译插件",t.plugin("p15p-reference-components",function(t,s){let n=s.result,r=new Set;t.walk("Tag",(t,n)=>{if(!n.standard&&(r.add(n.value),!e.at("标签源文件",n.value)))throw new o("file not found of tag: "+n.value,{file:s.input.file,text:s.input.text,start:n.loc.start.pos})},{readonly:!0}),n.references=[...r]}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");require("@gotoeasy/err");e.on("编译插件",t.plugin("p17p-components-reference-standard-tags",function(e,t){let o=t.result,s=new Set;e.walk("Tag",(e,t)=>{t.standard&&s.add(t.value)},{readonly:!0}),o.standardtags=[...s]}))})(),(()=>{const e=require("@gotoeasy/bus"),t=/^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;function o(e,t='"'){if(null==e)return e;let o=e.replace(/\\/g,"\\\\").replace(/\r/g,"\\r").replace(/\n/g,"\\n");return'"'==t?o=o.replace(/"/g,'\\"'):"'"==t&&(o=o.replace(/'/g,"\\'")),o}e.on("astgen-node-attributes",function(s,n){if(!s.nodes)return"";let r;for(let e,t=0;e=s.nodes[t++];)if("Attributes"===e.type){r=e;break}if(!r||!r.nodes||!r.nodes.length)return"";let i,a,l="",u=[];return u.push("{ "),r.nodes.forEach(r=>{if(i='"'+o(r.object.name)+'"',r.object.isExpression)a=e.at("表达式代码转换",r.object.value);else if("string"==typeof r.object.value)if(!s.object.standard&&t.test(r.object.name)&&!r.object.isExpression&&n.script.$actionkeys){let e=r.object.value.trim(),t=e.startsWith("$actions.")?e.substring(9):e;a=n.script.$actionkeys.includes(t)?`$actions['${t}']`:'"'+o(r.object.value)+'"'}else a='"'+o(r.object.value)+'"';else a=r.object.value;u.push(` ${l} ${i}: ${a} `),!l&&(l=",")}),u.push(" } "),u.join("\n")})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/err");e.on("astgen-node-events",function(o,s){if(!o.nodes)return"";let n;for(let e,t=0;e=o.nodes[t++];)if("Events"===e.type){n=e;break}if(!n||!n.nodes||!n.nodes.length)return"";let r,i,a="",l=[];return l.push("{ "),n.nodes.forEach(o=>{if(r=o.object.name.substring(2),i=o.object.value,o.object.isExpression)i=e.at("表达式代码转换",i);else{let e=(i=i.trim()).startsWith("$actions.")?i.substring(9):i;if(!s.script.$actionkeys||!s.script.$actionkeys.includes(e))throw new t("action not found: "+e,{file:s.input.file,text:s.input.text,start:o.object.loc.start.pos,end:o.object.loc.end.pos});i="$actions."+i}l.push(` ${a} ${r}: ${i} `),!a&&(a=",")}),l.push(" } "),l.join("\n")})})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/err");function t(e,t='"'){if(null==e)return e;let o=e.replace(/\\/g,"\\\\").replace(/\r/g,"\\r").replace(/\n/g,"\\n");return'"'==t?o=o.replace(/"/g,'\\"'):"'"==t&&(o=o.replace(/'/g,"\\'")),o}e.on("astgen-node-style",function(e,o){if(!e.nodes)return"";let s;for(let t,o=0;t=e.nodes[o++];)if("Style"===t.type){s=t;break}if(!s||!s.object.value)return"";if(!s.object.isExpression)return'"'+t(s.object.value)+'"';let n=[];return function e(o,s){if(/^\{\s*\{[\s\S]*?\}\s*\}$/.test(s))return void o.push(s.replace(/^\{/,"").replace(/\}$/,""));let n=s.indexOf("{");if(n<0)return void o.push('"'+t(s)+'"');let r=s.indexOf("}",n);if(r<0)return void o.push('"'+t(s)+'"');n>0&&o.push('"'+t(s.substring(0,n))+'"'),o.push("("+s.substring(n+1,r)+")");let i=s.substring(r+1);i&&e(o,i)}(n,s.object.value),"("+n.join(" + ")+")"})})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/err");function t(e,t){let o=e.trim().split("@");return o.length>1?o[0]+"@"+t[o[1]]:o[0]}e.on("astgen-node-class",function(o,s){if(!o.nodes)return"";let n;for(let e,t=0;e=o.nodes[t++];)if("Class"===e.type){n=e;break}return n&&n.object.value?function(o,s){let n=s.result.oCsslibPkgs,r={},i=(o=o.replace(/\{.*?\}/g,function(o){let i,a,l,u=o.substring(1,o.length-1);for(;u.indexOf(":")>0;){i=u.indexOf(":"),a=u.substring(0,i).replace(/['"]/g,"");let o=(l=u.substring(i+1)).indexOf(":");o>0?(l=(l=l.substring(0,o)).substring(0,l.lastIndexOf(",")),u=u.substring(i+1+l.length+1)):u="",r[e.at("哈希样式类名",s.input.file,t(a,n))]="@("+l+")@"}return""})).split(/\s/);for(let o=0;o<i.length;o++)i[o].trim()&&(r[e.at("哈希样式类名",s.input.file,t(i[o],n))]=1);return JSON.stringify(r).replace(/('@|@'|"@|@")/g,"")}(n.object.value,s):""})})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/err");e.on("astgen-node-{prop}",function(e,t){if(!e.nodes)return"";let o;for(let t,s=0;t=e.nodes[s++];)if("ObjectExpressionAttributes"===t.type){o=t;break}if(!o||!o.nodes||!o.nodes.length)return"";let s,n=[];return o.nodes.forEach(e=>{s=e.object.name.replace(/^\s*\{=?/,"(").replace(/\}\s*$/,")"),n.push(s)}),n.join(",")})})(),(()=>{const e=require("@gotoeasy/bus");require("@gotoeasy/hash");function t(t,o){if("Tag"!==t.type)return"";let s=t.object,n="View"===t.parent.type,r=!t.object.standard,i=e.at("astgen-node-tag-nodes",t.nodes,o),a=e.at("astgen-node-attributes",t,o),l=e.at("astgen-node-events",t,o),u=t.object.svg,p=e.at("astgen-node-style",t,o);p&&(a=a?a.replace(/\}\s*$/,`,style: ${p}}`):`{style: ${p}}`);let c=e.at("astgen-node-class",t,o);c&&(a=a?a.replace(/\}\s*$/,`,class: ${c}}`):`{class: ${c}}`);let f=e.at("astgen-node-{prop}",t,o);f&&(a=`rpose.assign( ${a}, ${f})`);let g=[];return g.push("{ "),g.push(`  t: '${s.value}' `),n&&g.push(" ,r: 1 "),r&&g.push(" ,m: 1 "),u&&g.push(" ,g: 1 "),g.push(` ,k: ${o.keyCounter++} `),i&&g.push(` ,c: ${i} `),a&&g.push(` ,a: ${a} `),l&&g.push(` ,e: ${l} `),g.push("}"),g.join("\n")}e.on("astgen-node-tag",t)})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/err"),o="_Ary";function s(s=[],n){return s.length?function(e){for(let t,o=0;t=e[o++];)if("JsCode"===t.type)return!0;return!1}(s)?function(s=[],n){let r,i=[];i.push(` ((${o}) => { `);for(let a,l=0;a=s[l++];)if("JsCode"===a.type)i.push(a.object.value);else if(r=e.at("astgen-node-tag",a,n))i.push(` ${o}.push( ${r} ); `);else if(r=e.at("astgen-node-text",a,n))i.push(` ${o}.push( ${r} ); `);else if("Attributes"===a.type||"Events"===a.type||"ObjectExpressionAttributes"===a.type);else if("Class"!==a.type&&"Style"!==a.type)throw new t("unhandle node type: "+a.type);return i.push(` return ${o}; `),i.push(" })([]) "),i.join("\n")}(s,n):function(t=[],o){let s,n=[];return t.forEach(t=>{(s=e.at("astgen-node-tag",t,o))&&n.push(s),(s=e.at("astgen-node-text",t,o))&&n.push(s)}),"["+n.join(",\n")+"]"}(s,n):""}e.on("astgen-node-tag-nodes",s)})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/file"),s=require("@gotoeasy/csjs");require("@gotoeasy/err");e.on("编译插件",t.plugin("s15p-component-ast-jsify-writer",function(e,t){t.writer=new class{constructor(){this.ary=[]}push(e){void 0!==e&&this.ary.push(e)}write(e){void 0!==e&&this.ary.push(e)}out(e){o.write(e,this.toString())}getArray(){return this.ary}toString(){let e=this.ary.join("\n");try{return s.formatJs(e)}catch(t){throw o.write(process.cwd()+"/build/error/format-error.js",e),t}}}}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=(require("@gotoeasy/file"),require("@gotoeasy/csjs"),require("@gotoeasy/err")),s="v_Array";e.on("编译插件",t.plugin("s25p-component-ast-jsify-root",function(t,n){let r=n.writer,i=n.script;t.walk("View",(t,a)=>!t.nodes||t.nodes.length<1?r.write("// 没有节点，无可生成"):(r.write("function nodeTemplate($state, $options, $actions, $this) {"),function(e){for(let t,o=0;t=e[o++];)if("JsCode"===t.type)return!0;return!1}(t.nodes)?r.write(`${function(t=[],n){let r,i=[];i.push(` let ${s} = []; `);for(let a,l=0;a=t[l++];)if("JsCode"===a.type)i.push(a.object.value);else if(r=e.at("astgen-node-tag",a,n))i.push(` ${s}.push( ${r} ); `);else{if(!(r=e.at("astgen-node-text",a,n)))throw new o("unhandle node type");i.push(` ${s}.push( ${r} ); `)}return i.push(` ${s}.length > 1 && console.warn("invlid tag count"); `),i.push(` return ${s}.length ? v_Array[0] : null; `),i.join("\n")}(t.nodes,n)}`):r.write(`${function(t=[],s){if(t.length>1){let e=s.input.text,n=s.input.file,r=t[1].object.loc.start.pos;throw"Tag"!==t[0].type&&(r=t[0].object.loc.start.pos),new o("invalid top tag",{text:e,file:n,start:r})}let n,r=t[0];if("Tag"!==r.type){let e=s.input.text,n=s.input.file,r=t[0].object.loc.start.pos;throw new o("missing top tag",{text:e,file:n,start:r})}if(n=e.at("astgen-node-tag",r,s))return`return ${n}`;if(n=e.at("astgen-node-text",r,s))return`return ${n}`;throw new o("unhandle node type")}(t.nodes,n)}`),r.write("}"),i.vnodeTemplate=r.toString(),!1))}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=(require("@gotoeasy/csjs"),require("@gotoeasy/file"),require("@gotoeasy/hash"),require("acorn")),s=require("acorn-walk"),n=require("astring"),r=require("css-selector-tokenizer");e.on("编译插件",t.plugin("s35p-component-script-selector-rename",function(t,i){let a=i.result.oCsslibPkgs,l=i.script,u=/(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\$\s*\()/;function p(t,i){let a,l;try{a=o.parse(t,{ecmaVersion:10,sourceType:"module",locations:!1})}catch(e){throw new Err("syntax error",e)}return s.simple(a,{CallExpression(t){if(!t.arguments||"Literal"!==t.arguments[0].type)return;let o=t.callee.name||t.callee.property.name;/^(getElementsByClassName|querySelector|querySelectorAll|\$\$)$/.test(o)&&(t.arguments[0].value="getElementsByClassName"===o?e.at("哈希样式类名",i,c(t.arguments[0].value)):function(t,o){t=t.replace(/@/g,"鬱");let s=r.parse(t);return(s.nodes||[]).forEach(t=>{"selector"===t.type&&(t.nodes||[]).forEach(t=>{"class"===t.type&&(t.name=e.at("哈希样式类名",o,c(t.name)))})}),r.stringify(s).replace(/鬱/g,"@")}(t.arguments[0].value,i),t.arguments[0].raw=`'${t.arguments[0].value}'`,l=!0)}}),l?n.generate(a):t}function c(e){let t=e.trim().split("鬱");if(t.length>1){let e=t[1];if(!a[e])throw new Error("csslib not found: "+t[0]+"@"+t[1]+"\nfile: "+i.input.file);return t[0]+"@"+e}return t[0]}l.actions&&u.test(l.actions)&&(l.actions=p(l.actions,i.input.file)),l.methods&&u.test(l.methods)&&(l.methods=p(l.methods,i.input.file))}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/csjs"),o=require("@gotoeasy/file"),s=require("@gotoeasy/postobject"),n=require("@gotoeasy/err"),r=require("acorn-globals"),i="$$,require,window,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(",");e.on("编译插件",s.plugin("s45p-component-gen-js",function(s,a){let l=e.at("编译环境"),u=a.result,p=a.script,c=(a.writer,e.at("编译模板JS")),f={};if(f.COMPONENT_NAME=e.at("组件类名",a.input.file),f.options=a.doc.options||"{}",f.state=a.doc.state||"{}",a.doc.api&&(f.optionkeys=a.doc.api.optionkeys,f.statekeys=a.doc.api.statekeys),f.actions=p.actions,f.methods=p.methods,f.updater=p.updater,f.vnodeTemplate=p.vnodeTemplate,u.componentJs=c(f),u.componentJs=function(e,t){let o,s=t.doc.api.optionkeys||[],a=t.doc.api.statekeys||[];try{if(!(o=r(e)).length)return e}catch(o){throw n.cat("source syntax error","\n-----------------",e,"\n-----------------","file="+t.input.file,o)}let l=[];for(let e,r=0;r<o.length;r++){e=o[r];let u=s.includes(e.name),p=a.includes(e.name),c=i.includes(e.name);if(!u&&!p&&!c){let o="template variable undefined: "+e.name;throw o+="\n  file: "+t.input.file,new n(o)}if(u&&p){let o="template variable uncertainty: "+e.name;throw o+="\n  file: "+t.input.file,new n(o)}p?l.push(`let ${e.name} = $state.${e.name};`):u&&l.push(`let ${e.name} = $options.${e.name};`)}return e.replace(/(\n.+?prototype\.nodeTemplate\s*=\s*function\s+.+?\r?\n)/,"$1"+l.join("\n"))}(u.componentJs,a),!l.release){let s=l.path.build_temp+"/"+e.at("组件目标文件名",a.input.file)+".js";o.write(s,t.formatJs(u.componentJs))}}))})(),(()=>{require("@gotoeasy/err");const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/hash"),require("postcss")),o=require("css-selector-tokenizer");e.on("组件样式类名哈希化",function(s,n){return t([(t,n)=>{t.walkRules(t=>{let n=o.parse(t.selector);(n.nodes||[]).forEach(t=>{"selector"===t.type&&(t.nodes||[]).forEach(t=>{"class"===t.type&&(t.name=e.at("哈希样式类名",s,t.name))})}),t.selector=o.stringify(n)})}]).process(n,{from:"from.css"}).sync().root.toResult().css})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/file");require("@gotoeasy/csjs"),require("@gotoeasy/err");e.on("编译插件",t.plugin("s55p-component-gen-css",function(t,s){let n=s.style,r=[];n.csslibset&&r.push(...n.csslibset),n.less&&r.push(n.less),n.scss&&r.push(n.scss),n.css&&r.push(n.css),s.result.css=e.at("组件样式类名哈希化",s.input.file,r.join("\n"));let i=e.at("编译环境"),a=i.path.build_temp+"/"+e.at("组件目标文件名",s.input.file)+".css";i.release||(s.result.css?o.write(a,s.result.css):o.remove(a))}))})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/csjs"),require("@gotoeasy/file"),require("@gotoeasy/postobject"));require("@gotoeasy/err");e.on("编译插件",t.plugin("w15p-component-complie-result-cache",function(t,o){e.at("组件编译缓存",o.input.file,o)}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("y15p-page-all-reference-components",function(t,o){if(!o.result.isPage)return!1;let s=new Set,n={};if(o.result.references.forEach(t=>{!function t(o,s,n){if(n[o])return;s.add(o),n[o]=!0;let r=e.at("标签源文件",o),i=e.at("组件编译缓存",r);i||(i=e.at("编译组件",r));let a=i.result.references;a.forEach(e=>{t(e,s,n)})}(t,s,n)}),s.has(o.result.tagpkg))throw new Err("circular reference: "+o.result.tagpkg);let r=[...s];r.sort(),r.push(o.result.tagpkg),o.result.allreferences=r}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("y17p-page-all-reference-standard-tags",function(t,o){if(!o.result.isPage)return!1;let s=new Set;o.result.standardtags.forEach(e=>s.add(e)),o.result.references.forEach(t=>{let o=e.at("标签源文件",t),n=e.at("组件编译缓存",o);!n&&(n=e.at("编译组件",o)),n.result.standardtags.forEach(e=>s.add(e))});let n=[...s];n.sort(),o.result.allstandardtags=n}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/csjs"),o=require("postcss");e.on("页面样式后处理",(s,n)=>{if(!s)return"";let r,i=e.at("编译环境"),a=e.at("缓存"),l=a.path+"/from.css",u=e.at("页面目标CSS文件名",n),p=[],c=a.path+"/resources",f=e.at("页面图片相对路径",n),g={url:"copy",basePath:c,assetsPath:f,useHash:!1},d=JSON.stringify(["页面样式后处理",e.at("browserslist"),i.release,f,s]);if(!i.nocache){let e=a.get(d);if(e)return e.indexOf("url(")>0&&(p.push(require("postcss-url")(g)),o(p).process(e,{from:l,to:u}).sync().root.toResult()),e}p.push(require("postcss-discard-comments")({remove:e=>1})),p.push(require("postcss-normalize-whitespace")),p.push(require("postcss-discard-empty")),p.push(require("postcss-discard-duplicates")),p.push(require("autoprefixer")()),p.push(require("postcss-url")(g)),p.push(require("postcss-merge-rules")());let h=o(p).process(s,{from:l,to:u}).sync().root.toResult();return r=i.release?h.css:t.formatCss(h.css),a.set(d,r)})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject"),o=require("@gotoeasy/hash");e.on("编译插件",t.plugin("y25p-page-gen-css-link-components",function(t,s){if(!s.result.isPage)return!1;let n=e.at("编译环境"),r=[],i=s.result.oCsslib,a=e.at("缓存");for(let e in i){let t=o(JSON.stringify(["按需取标签样式",i[e].pkg,i[e].version,i[e]._imported,s.result.allstandardtags]));if(n.nocache){let o=i[e].get(...s.result.allstandardtags);r.push(o),a.set(t,o)}else{let o=a.get(t);if(o)r.push(o);else{let o=i[e].get(...s.result.allstandardtags);r.push(o),a.set(t,o)}}}let l=[];s.result.allreferences.forEach(t=>{let o=e.at("组件编译缓存",e.at("标签源文件",t));o||(o=e.at("编译组件",t)),o.result.atcsslibtagcss&&r.push(...o.result.atcsslibtagcss),o.result.css&&l.push(o.result.css)}),s.result.css=[...r,...l].join("\n"),s.result.pageCss=e.at("页面样式后处理",s.result.css,s.input.file)}))})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/csjs"),require("@gotoeasy/file")),o=require("@gotoeasy/postobject");require("@gotoeasy/err");e.on("编译插件",o.plugin("y35p-page-gen-html",function(o,s){if(!s.result.isPage)return!1;let n=e.at("编译环境"),r=n.path.src,i=s.input.file,a=t.name(i),l=s.doc.api.prerender,u=!s.result.pageCss;s.result.html=require(n.prerender)({srcPath:r,file:i,name:a,type:l,nocss:u})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/file"),o=require("resolve-pkg");e.on("RPOSE运行时代码",function(e){return function(){if(!e){let s=t.resolve(o("@rpose/runtime",{cwd:__dirname}),"runtime.js");e=t.read(s)}return e}}())})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/file"),o=require("@gotoeasy/postobject"),s=require("@gotoeasy/err"),n=require("fs");e.on("编译插件",o.plugin("y55p-page-gen-js-link-runtime-components",function(o,r){if(!r.result.isPage)return!1;let i=e.at("编译环境"),a=r.result.allreferences,l=e.at("RPOSE运行时代码"),u=function(o){try{let n={};for(let r,i,a,l=0;r=o[l++];){if(i="'"+r+"'",a=e.at("标签源文件",r),!t.exists(a))throw new s("component not found (tag = "+r+")");n[i]=e.at("组件类名",a)}return`rpose.registerComponents(${JSON.stringify(n).replace(/"/g,"")});`}catch(e){throw s.cat(MODULE+"gen register stmt failed",o,e)}}(a),p=function(t){try{let o=[];for(let s,n,r=0;s=t[r++];)(n=e.at("组件编译缓存",e.at("标签源文件",s)))||(n=e.at("编译组件",s)),o.push(n.result.componentJs);return o.join("\n")}catch(e){throw s.cat(MODULE+"get component src failed",t,e)}}(a),c=e.at("缓存").path+"/resources",f=e.at("页面图片相对路径",r.input.file),g=`\n                ${l}\n\n                (function($$){\n                    // 组件注册\n                    ${u}\n\n                    ${p=p.replace(/\%imagepath\%([0-9a-z]+\.[0-9a-zA-Z]+)/g,function(e,o){let s=c+"/"+o,r=i.path.build_dist+"/"+(i.path.build_dist_images?i.path.build_dist_images+"/":"")+o;return t.existsFile(s)&&!t.existsFile(r)&&(t.mkdir(r),n.copyFileSync(s,r)),f+o})}\n\n                    // 组件挂载\n                    rpose.mount( rpose.newComponentProxy('${r.result.tagpkg}').render(), '${r.doc.mount}' );\n                })(rpose.$$);\n            `;r.result.pageJs=g}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/csjs"),o=require("@gotoeasy/file"),s=require("@gotoeasy/postobject");e.on("编译插件",s.plugin("y65p-page-gen-js-babel",function(s,n){if(!n.result.isPage)return!1;let r=e.at("编译环境"),i=e.at("缓存"),a=JSON.stringify(["page-gen-js-babel",e.at("browserslist"),n.result.pageJs]);if(!r.nocache){let e=i.get(a);if(e)return n.result.babelJs=e}try{n.result.babelJs=t.babel(n.result.pageJs),i.set(a,n.result.babelJs)}catch(e){throw o.write(r.path.build+"/error/babel.log",n.result.pageJs+"\n\n"+e.stack),e}}))})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/csjs"),o=require("@gotoeasy/file"),s=require("@gotoeasy/postobject");e.on("编译插件",s.plugin("y75p-page-gen-js-browserify-minformat",function(s,n){if(!n.result.isPage)return!1;let r=e.at("编译环境"),i=e.at("缓存"),a=JSON.stringify(["page-gen-js-browserify-minformat",e.at("browserslist"),r.release,n.result.babelJs]);if(!r.nocache){let e=i.get(a);if(e)return n.result.browserifyJs=Promise.resolve(e)}n.result.browserifyJs=new Promise((e,s)=>{(new Date).getTime(),t.browserify(n.result.babelJs,null).then(o=>{o=r.release?t.miniJs(o):t.formatJs(o),i.set(a,o),e(o)}).catch(e=>{o.write(r.path.build+"/error/browserify.log",n.result.babelJs+"\n\n"+e.stack),s(e)})})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/csjs"),require("@gotoeasy/hash")),o=require("@gotoeasy/file"),s=require("@gotoeasy/postobject");require("@gotoeasy/err"),require("fs");e.on("编译插件",s.plugin("y85p-write-page",function(s,n){if(!n.result.isPage)return!1;let r,i=e.at("编译环境"),a=(e.at("browserslist"),(new Date).getTime());n.result.browserifyJs.then(s=>{let l=e.at("页面目标HTML文件名",n.input.file),u=e.at("页面目标CSS文件名",n.input.file),p=e.at("页面目标JS文件名",n.input.file),c=n.result.html,f=n.result.pageCss,g=s;n.result.js=g,f?o.write(u,f):o.remove(u),o.write(p,g),o.write(l,c),i.watch&&(n.result.hashcode=t(c+f+g)),r=(new Date).getTime()-a,console.info("[pack]",r+"ms -",l.substring(i.path.build_dist.length+1))}).catch(e=>{console.error("[pack]",e)})}))})(),(()=>{const e=require("@gotoeasy/bus"),t=(require("@gotoeasy/csjs"),require("@gotoeasy/file"),require("@gotoeasy/postobject"),require("@gotoeasy/err"),require("@gotoeasy/hash")),o=require("browserslist");e.on("browserslist",function(){let e=o();return t(e.join("\n"))})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/hash");e.on("哈希样式类名",function(o,s){let n=s;if(n.startsWith("_"))return n;const r=e.at("编译环境");if(s.indexOf("@")>0){let e=s.split("@");n=`${e[1]}---${e[0]}`}else if(n.indexOf("---")>0||n.indexOf("___")>0||n.startsWith("_"));else{let r=e.at("标签全名",o);n=`${s}___${t(r)}`}return r.release?"_"+t(n.toLowerCase()):n})})(),(()=>{const e=require("@gotoeasy/file"),t=require("@gotoeasy/bus"),o=require("@gotoeasy/npm"),s=(require("@gotoeasy/hash"),require("find-node-modules"));t.on("标签全名",t=>{let o=t.indexOf(":");if(o>0&&t.substring(o).indexOf(".")<0)return t;let s="";if((o=t.lastIndexOf("/node_modules/"))>0){let n=t.substring(o+14).split("/");s=n[0].startsWith("@")?n[0]+"/"+n[1]+":"+e.name(t):n[0]+":"+e.name(t)}else s=e.name(t);return s}),t.on("标签源文件",e=>{if(e.endsWith(".rpose"))return e;if(e.indexOf(":")>0){let o=e.split(":");o[0].indexOf("=")>0&&(o=o[0].split("="));let s=t.at("模块组件信息",o[0].trim()),n=s.files,r="/"+o[1]+".rpose";for(let e,t=0;e=n[t++];)if(e.endsWith(r))return e;return t.at("标签库引用",e,s.config)}{let o=t.at("标签项目源文件",e);if(o)return o;let s=t.at("编译环境");return t.at("标签库引用",e,s.path.root)}}),t.on("文件所在模块",e=>{let t="/",o=e.lastIndexOf("/node_modules/");if(o>0){let s=e.substring(o+14).split("/");t=s[0].startsWith("@")?s[0]+"/"+s[1]:s[0]}return t}),t.on("文件所在项目根目录",e=>{let o,s=e.lastIndexOf("/node_modules/");if(s>0){let t=[];t.push(e.substring(0,s+13));let n=e.substring(s+14).split("/");n[0].startsWith("@")?(t.push(n[0]),t.push(n[1])):t.push(n[0]),o=t.join("/")}else o=t.at("编译环境").path.root;return o}),t.on("文件所在项目配置文件",o=>{let s,n=o.lastIndexOf("/node_modules/");if(n>0){let e=[];e.push(o.substring(0,n+13));let t=o.substring(n+14).split("/");t[0].startsWith("@")?(e.push(t[0]),e.push(t[1])):e.push(t[0]),e.push("rpose.config.btf"),s=e.join("/")}else s=t.at("编译环境").path.root+"/rpose.config.btf";if(e.existsFile(s))return s}),t.on("模块组件信息",function(o=new Map){return function(n){if(n.indexOf(":")>0&&(n=n.substring(0,n.indexOf(":"))),n.lastIndexOf("@")>0&&(n=n.substring(0,n.lastIndexOf("@"))),n=n.toLowerCase(),!o.has(n)){let r=t.at("编译环境"),i=[...s({cwd:r.path.root,relative:!1}),...s({cwd:__dirname,relative:!1})];for(let t,s,r=0;t=i[r++];)if(s=e.resolve(t,n).replace(/\\/g,"/"),e.existsDir(s)){let t=JSON.parse(e.read(e.resolve(s,"package.json"))),n=t.version,r=t.name,i=r+"@"+n,a=e.files(s,"/src/**.rpose"),l=e.resolve(s,"rpose.config.btf");o.set(r,{path:s,pkg:i,name:r,version:n,files:a,config:l});break}}return o.get(n)||{files:[],config:""}}}()),t.on("组件类名",e=>{let o=t.at("标签全名",t.at("标签源文件",e));return o=("-"+(o=o.replace(/[@\/`]/g,"$").replace(/\./g,"_").replace(":","$-"))).split("-").map(e=>e.substring(0,1).toUpperCase()+e.substring(1)).join("")}),t.on("组件目标文件名",function(o){let s=t.at("编译环境");return o.startsWith(s.path.src_buildin)?"$buildin/"+e.name(o):t.at("标签全名",o).replace(":","/")}),t.on("页面目标JS文件名",function(e){let o=t.at("编译环境");return o.path.build_dist+e.substring(o.path.src.length,e.length-6)+".js"}),t.on("页面目标CSS文件名",function(e){let o=t.at("编译环境");return o.path.build_dist+e.substring(o.path.src.length,e.length-6)+".css"}),t.on("页面目标HTML文件名",function(e){let o=t.at("编译环境");return o.path.build_dist+e.substring(o.path.src.length,e.length-6)+".html"}),t.on("自动安装",function(e={}){return function(t){return t.indexOf(":")>0&&(t=t.substring(0,t.indexOf(":"))),t.lastIndexOf("@")>0&&(t=t.substring(0,t.lastIndexOf("@"))),e[t]||(o.isInstalled(t)?e[t]=!0:e[t]=o.install(t,{timeout:6e4})),e[t]}}()),t.on("页面图片相对路径",e=>{let o=t.at("编译环境"),s=e.substring(o.path.src.length).split("/");return("../".repeat(s.length-2)+o.path.build_dist_images||".")+"/"})})(),(()=>{const e=require("@gotoeasy/bus"),t=require("@gotoeasy/postobject");e.on("编译插件",t.plugin("z99p-log",function(e,t){}))})(),console.timeEnd("load");const bus=require("@gotoeasy/bus"),npm=require("@gotoeasy/npm"),Err=require("@gotoeasy/err"),File=require("@gotoeasy/file"),postobject=require("@gotoeasy/postobject");async function build(e){console.time("build");try{bus.at("编译环境",e);bus.at("clean"),await Promise.all(bus.at("全部编译"))}catch(e){console.error(Err.cat("build failed",e).toString())}console.timeEnd("build")}function clean(e){console.time("clean");try{bus.at("编译环境",e);bus.at("clean")}catch(e){console.error(Err.cat("clean failed",e).toString())}console.timeEnd("clean")}async function watch(e){await build(e),bus.at("文件监视")}module.exports={build,clean,watch};
+console.time("load");
+
+(() => {
+    const File = require("@gotoeasy/file");
+    const Btf = require("@gotoeasy/btf");
+    const bus = require("@gotoeasy/bus");
+    const util = require("@gotoeasy/util");
+    const Err = require("@gotoeasy/err");
+    const npm = require("@gotoeasy/npm");
+    const path = require("path");
+    bus.on("编译环境", function(result) {
+        return function(opts) {
+            if (result) {
+                return result;
+            }
+            let packagefile = File.resolve(__dirname, "./package.json");
+            !File.existsFile(packagefile) && (packagefile = File.resolve(__dirname, "../package.json"));
+            let compilerVersion = JSON.parse(File.read(packagefile)).version;
+            let defaultFile = File.path(packagefile) + "/default.rpose.config.btf";
+            result = parseRposeConfigBtf("rpose.config.btf", defaultFile, opts);
+            result.clean = !!opts.clean;
+            result.release = !!opts.release;
+            result.debug = !!opts.debug;
+            result.nocache = !!opts.nocache;
+            result.build = !!opts.build;
+            result.watch = !!opts.watch;
+            result.compilerVersion = compilerVersion;
+            if (result.path.cache) {
+                result.path.cache = File.resolve(result.path.cwd, result.path.cache);
+            }
+            return result;
+        };
+    }());
+    function parseRposeConfigBtf(file, defaultFile, opts) {
+        let cwd = opts.cwd || process.cwd();
+        cwd = path.resolve(cwd).replace(/\\/g, "/");
+        if (!File.existsDir(cwd)) {
+            throw new Err("invalid path of cwd: " + opts.cwd);
+        }
+        let root = cwd;
+        file = File.resolve(root, file);
+        if (!File.exists(file)) {
+            file = defaultFile;
+        }
+        let result = {
+            path: {}
+        };
+        let btf = new Btf(file);
+        let mapPath = btf.getMap("path");
+        mapPath.forEach((v, k) => mapPath.set(k, v.split("//")[0].trim()));
+        let mapImport = btf.getMap("taglib");
+        let imports = {};
+        mapImport.forEach((v, k) => imports[k] = v.split("//")[0].trim());
+        result.imports = imports;
+        result.path.cwd = cwd;
+        result.path.root = root;
+        result.path.src = root + "/src";
+        result.path.build = getConfPath(root, mapPath, "build", "build");
+        result.path.build_temp = result.path.build + "/temp";
+        result.path.build_dist = result.path.build + "/dist";
+        result.path.build_dist_images = mapPath.get("build_dist_images") || "images";
+        result.path.cache = mapPath.get("cache");
+        result.theme = btf.getText("theme") == null || !btf.getText("theme").trim() ? "@gotoeasy/theme" : btf.getText("theme").trim();
+        result.prerender = btf.getText("prerender") == null || !btf.getText("prerender").trim() ? "@gotoeasy/pre-render" : btf.getText("prerender").trim();
+        autoInstallLocalModules(result.theme, result.prerender);
+        return result;
+    }
+    function getConfPath(root, map, key, defaultValue) {
+        if (!map.get(key)) {
+            return root + "/" + defaultValue.split("/").filter(v => !!v).join("/");
+        }
+        return root + "/" + map.get(key).split("/").filter(v => !!v).join("/");
+    }
+    function autoInstallLocalModules(...names) {
+        let ignores = [ "@gotoeasy/theme", "@gotoeasy/pre-render" ];
+        let node_modules = [ ...require("find-node-modules")({
+            cwd: __dirname,
+            relative: false
+        }), ...require("find-node-modules")({
+            cwd: process.cwd(),
+            relative: false
+        }) ];
+        for (let i = 0, name; name = names[i++]; ) {
+            if (ignores.includes(name)) {
+                continue;
+            }
+            let isInstalled = false;
+            for (let j = 0, dir; dir = node_modules[j++]; ) {
+                if (File.isDirectoryExists(File.resolve(dir, name))) {
+                    isInstalled = true;
+                    continue;
+                }
+            }
+            !isInstalled && npm.install(name);
+        }
+    }
+})();
+
+(() => {
+    const Err = require("@gotoeasy/err");
+    const File = require("@gotoeasy/file");
+    const bus = require("@gotoeasy/bus");
+    bus.on("clean", function() {
+        return () => {
+            try {
+                let env = bus.at("编译环境");
+                if (env.clean) {
+                    File.remove(env.path.build);
+                    console.info("clean:", env.path.build);
+                }
+                File.mkdir(env.path.build_dist);
+            } catch (e) {
+                throw Err.cat(" clean failed", e);
+            }
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const cache = require("@gotoeasy/cache");
+    const csslibify = require("csslibify");
+    (function(result = {}, oCache, resourcesPaths) {
+        bus.on("组件编译缓存", function(file, context) {
+            if (context) {
+                result[file] = context;
+                return context;
+            }
+            if (context === undefined) {
+                return result[file];
+            }
+            delete result[file];
+        });
+        bus.on("缓存", function() {
+            if (!oCache) {
+                let env = bus.at("编译环境");
+                oCache = cache({
+                    name: "rpose-compiler-" + env.compilerVersion,
+                    path: env.path.cache
+                });
+            }
+            return oCache;
+        });
+        bus.on("缓存资源目录数组", function() {
+            if (!resourcesPaths) {
+                resourcesPaths = [ bus.at("缓存").path + "/resources", csslibify().basePath ];
+            }
+            return resourcesPaths;
+        });
+    })();
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const os = require("@gotoeasy/os");
+    const hash = require("@gotoeasy/hash");
+    const File = require("@gotoeasy/file");
+    (function(oFiles, oTagFiles = {}) {
+        function getSrcFileObject(file, tag) {
+            let text = File.read(file);
+            let hashcode = hash(text);
+            return {
+                file: file,
+                text: text,
+                hashcode: hashcode,
+                tag: tag
+            };
+        }
+        function getRefPages(tag) {
+            if (!tag) {
+                return [];
+            }
+            let refFiles = [];
+            for (let file in oFiles) {
+                let context = bus.at("组件编译缓存", file);
+                if (context) {
+                    let allreferences = context.result.allreferences || [];
+                    allreferences.includes(tag) && refFiles.push(file);
+                }
+            }
+            return refFiles;
+        }
+        bus.on("标签项目源文件", function(tag) {
+            let ary = oTagFiles[tag];
+            if (ary && ary.length) {
+                return ary[0];
+            }
+        });
+        bus.on("源文件对象清单", function() {
+            if (!oFiles) {
+                oFiles = {};
+                let env = bus.at("编译环境");
+                let files = File.files(env.path.src, "**.rpose");
+                files.forEach(file => {
+                    let tag = getTagOfSrcFile(file);
+                    if (tag) {
+                        let ary = oTagFiles[tag] = oTagFiles[tag] || [];
+                        ary.push(file);
+                        if (ary.length === 1) {
+                            oFiles[file] = getSrcFileObject(file, tag);
+                        }
+                    } else {
+                        console.error("[src-file-manager]", "ignore invalid source file ..........", file);
+                    }
+                });
+                for (let tag in oTagFiles) {
+                    let ary = oTagFiles[tag];
+                    if (ary.length > 1) {
+                        console.error("[src-file-manager]", "duplicate tag name:", tag);
+                        console.error(ary);
+                        for (let i = 1, file; file = ary[i++]; ) {
+                            console.error("  ignore ..........", file);
+                        }
+                    }
+                }
+            }
+            return oFiles;
+        });
+        bus.on("源文件添加", function(oFile) {
+            let tag = getTagOfSrcFile(oFile.file);
+            if (!tag) {
+                return console.error("[src-file-manager]", "invalid source file name ..........", oFile.file);
+            }
+            let ary = oTagFiles[tag] = oTagFiles[tag] || [];
+            ary.push(oFile.file);
+            if (ary.length > 1) {
+                console.error("[src-file-manager]", "duplicate tag name:", tag);
+                console.error(ary);
+                console.error("  ignore ..........", oFile.file);
+                return;
+            }
+            oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);
+            return bus.at("全部编译");
+        });
+        bus.on("源文件修改", function(oFileIn) {
+            let tag = getTagOfSrcFile(oFileIn.file);
+            let refFiles = getRefPages(tag);
+            let oFile = oFiles[oFileIn.file];
+            if (!tag || !oFile) {
+                delete oFiles[oFileIn.file];
+                return;
+            }
+            if (oFile.hashcode === oFileIn.hashcode) {
+                return;
+            }
+            oFiles[oFile.file] = Object.assign({}, oFileIn);
+            refFiles.forEach(file => {
+                bus.at("组件编译缓存", file, false);
+                writeInfoPage(file, `rebuilding for component [${tag}] changed`);
+            });
+            bus.at("组件编译缓存", oFile.file, false);
+            return bus.at("全部编译");
+        });
+        bus.on("源文件删除", function(file) {
+            let tag = getTagOfSrcFile(file);
+            let refFiles = getRefPages(tag);
+            let oFile = oFiles[file];
+            let ary = oTagFiles[tag];
+            delete oFiles[file];
+            if (ary) {
+                let idx = ary.indexOf(file);
+                if (idx > 0) {
+                    return ary.splice(idx, 1);
+                } else if (idx === 0) {
+                    ary.splice(idx, 1);
+                    if (ary.length) {
+                        oFiles[ary[0]] = getSrcFileObject(ary[0], tag);
+                        bus.at("组件编译缓存", ary[0], false);
+                    } else {
+                        delete oTagFiles[tag];
+                    }
+                }
+            }
+            if (!tag || !oFile) {
+                return;
+            }
+            refFiles.forEach(file => {
+                bus.at("组件编译缓存", file, false);
+                writeInfoPage(file, `rebuilding for component [${tag}] removed`);
+            });
+            bus.at("组件编译缓存", oFile.file, false);
+            return bus.at("全部编译");
+        });
+    })();
+    function getTagOfSrcFile(file) {
+        let name = File.name(file);
+        if (/[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name)) {
+            return;
+        }
+        return name.toLowerCase();
+    }
+    function writeInfoPage(file, msg) {
+        let fileHtml = bus.at("页面目标HTML文件名", file);
+        let fileCss = bus.at("页面目标CSS文件名", file);
+        let fileJs = bus.at("页面目标JS文件名", file);
+        if (File.existsFile(fileHtml)) {
+            File.write(fileHtml, syncHtml(msg));
+            File.remove(fileCss);
+            File.remove(fileJs);
+        }
+    }
+    function syncHtml(msg = "") {
+        return `<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>Page build failed or src file removed<p/>\n        <pre style="background:#333;color:#ddd;padding:10px;">${msg.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>\n    </body>`;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const os = require("@gotoeasy/os");
+    const File = require("@gotoeasy/file");
+    const Err = require("@gotoeasy/err");
+    const hash = require("@gotoeasy/hash");
+    const chokidar = require("chokidar");
+    bus.on("文件监视", function(oHash = {}) {
+        return function() {
+            let env = bus.at("编译环境");
+            if (!env.watch) {
+                return;
+            }
+            bus.at("热刷新服务器");
+            let ready, watcher = chokidar.watch(env.path.src);
+            watcher.on("add", async file => {
+                if (ready && (file = file.replace(/\\/g, "/")) && /\.rpose$/i.test(file)) {
+                    if (isValidRposeFile(file)) {
+                        console.info("add ......", file);
+                        let text = File.read(file);
+                        let hashcode = hash(text);
+                        let oFile = {
+                            file: file,
+                            text: text,
+                            hashcode: hashcode
+                        };
+                        oHash[file] = oFile;
+                        await busAt("源文件添加", oFile);
+                    } else {
+                        console.info("ignored ...... add", file);
+                    }
+                }
+            }).on("change", async file => {
+                if (ready && (file = file.replace(/\\/g, "/")) && /\.rpose$/i.test(file)) {
+                    if (isValidRposeFile(file)) {
+                        let text = File.read(file);
+                        let hashcode = hash(text);
+                        if (!oHash[file] || oHash[file].hashcode !== hashcode) {
+                            console.info("change ......", file);
+                            let oFile = {
+                                file: file,
+                                text: text,
+                                hashcode: hashcode
+                            };
+                            oHash[file] = oFile;
+                            await busAt("源文件修改", oFile);
+                        }
+                    } else {
+                        console.info("ignored ...... change", file);
+                    }
+                }
+            }).on("unlink", async file => {
+                if (ready && (file = file.replace(/\\/g, "/")) && /\.rpose$/i.test(file)) {
+                    if (isValidRposeFile(file)) {
+                        console.info("del ......", file);
+                        delete oHash[file];
+                        await busAt("源文件删除", file);
+                    } else {
+                        console.info("ignored ...... del", file);
+                    }
+                }
+            }).on("ready", () => {
+                ready = true;
+            });
+        };
+    }());
+    async function busAt(name, ofile) {
+        console.time("build");
+        let promises = bus.at(name, ofile);
+        if (promises) {
+            for (let i = 0, p; p = promises[i++]; ) {
+                try {
+                    await p;
+                } catch (e) {
+                    console.error(Err.cat("build failed", e).toString());
+                }
+            }
+        }
+        console.timeEnd("build");
+    }
+    function isValidRposeFile(file) {
+        let name = File.name(file);
+        if (/[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name)) {
+            return false;
+        }
+        return true;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const os = require("@gotoeasy/os");
+    const File = require("@gotoeasy/file");
+    bus.on("全部编译", function(bs) {
+        return function() {
+            let oFiles = bus.at("源文件对象清单");
+            let env = bus.at("编译环境");
+            bus.at("项目配置处理", env.path.root + "rpose.config.btf");
+            let promises = [];
+            let stime, time;
+            for (let key in oFiles) {
+                stime = new Date().getTime();
+                let context = bus.at("编译组件", oFiles[key]);
+                context.result.browserifyJs && promises.push(context.result.browserifyJs);
+                time = new Date().getTime() - stime;
+                if (time > 100) {
+                    console.info("[compile] " + time + "ms -", key.replace(env.path.src + "/", ""));
+                }
+            }
+            return promises;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+    const hash = require("@gotoeasy/hash");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译组件", function() {
+        return function(infile) {
+            let oFile;
+            if (infile.file) {
+                oFile = infile;
+            } else {
+                let file, text, hashcode;
+                file = bus.at("标签源文件", infile);
+                if (!File.existsFile(file)) {
+                    throw new Err(`file not found: ${file} (${infile})`);
+                }
+                text = File.read(file);
+                hashcode = hash(text);
+                oFile = {
+                    file: file,
+                    text: text,
+                    hashcode: hashcode
+                };
+            }
+            let env = bus.at("编译环境");
+            let context = bus.at("组件编译缓存", oFile.file);
+            if (context && context.input.hashcode !== oFile.hashcode) {
+                context = bus.at("组件编译缓存", oFile.file, false);
+            }
+            if (!context) {
+                let plugins = bus.on("编译插件");
+                return postobject(plugins).process({
+                    ...oFile
+                }, {
+                    log: env.debug
+                });
+            }
+            return context;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+    const hash = require("@gotoeasy/hash");
+    const fs = require("fs");
+    const url = require("url");
+    const path = require("path");
+    const http = require("http");
+    const opn = require("opn");
+    const REBUILDING = "rebuilding...";
+    bus.on("热刷新服务器", function(hasQuery) {
+        return function() {
+            let env = bus.at("编译环境");
+            if (!env.watch) {
+                return;
+            }
+            createHttpServer(env.path.build_dist, 3700);
+        };
+        function queryHandle(req, res, oUrl) {
+            hasQuery = true;
+            let env = bus.at("编译环境");
+            let htmlpage = oUrl.query.split("&")[0].split("=")[1];
+            let srcFile = File.resolve(env.path.src, htmlpage.substring(0, htmlpage.length - 5) + ".rpose");
+            let hashcode = "";
+            if (File.existsFile(srcFile)) {
+                let context = bus.at("组件编译缓存", srcFile);
+                if (context) {
+                    hashcode = context.result.hashcode || "";
+                }
+                if (!hashcode) {
+                    let fileHtml = bus.at("页面目标HTML文件名", srcFile);
+                    let fileCss = bus.at("页面目标CSS文件名", srcFile);
+                    let fileJs = bus.at("页面目标JS文件名", srcFile);
+                    if (File.existsFile(fileHtml)) {
+                        let html = File.read(fileHtml);
+                        if (html.indexOf("<body>Page build failed or src file removed<p/>") > 0) {
+                            hashcode = REBUILDING;
+                        } else {
+                            let css = File.existsFile(fileCss) ? File.read(fileCss) : "";
+                            let js = File.existsFile(fileJs) ? File.read(fileJs) : "";
+                            hashcode = hash(html + css + js);
+                        }
+                    }
+                }
+            }
+            res.writeHead(200);
+            res.end(hashcode);
+        }
+        function htmlHandle(req, res, oUrl, htmlfile) {
+            let env = bus.at("编译环境");
+            let srcFile = File.resolve(env.path.src, htmlfile.substring(env.path.build_dist.length + 1, htmlfile.length - 5) + ".rpose");
+            let context = bus.at("组件编译缓存", srcFile);
+            let hashcode = context ? context.result.hashcode || "" : null;
+            if (!hashcode) {
+                let fileHtml = bus.at("页面目标HTML文件名", srcFile);
+                let fileCss = bus.at("页面目标CSS文件名", srcFile);
+                let fileJs = bus.at("页面目标JS文件名", srcFile);
+                if (File.existsFile(fileHtml)) {
+                    let html = File.read(fileHtml);
+                    let css = File.existsFile(fileCss) ? File.read(fileCss) : "";
+                    let js = File.existsFile(fileJs) ? File.read(fileJs) : "";
+                    hashcode = hash(html + css + js);
+                }
+            }
+            let htmlpage = htmlfile.substring(env.path.build_dist.length + 1);
+            let script = `\n        <script>\n            var _times_ = 0;\n            function refresh() {\n                let url = '/query?page=${htmlpage}&t=' + new Date().getTime();\n                ajaxAsync(url, function(rs){\n                    if ( rs !== '${hashcode}' ) {\n                        if ( rs === '${REBUILDING}' ) {\n                            _times_++;\n                            _times_ >= 5 ? location.reload() : setTimeout(refresh, 1000);\n                        }else{\n                            location.reload();\n                        }\n                    }else{\n                        _times_ = 0;\n                        setTimeout(refresh, 1000);\n                    }\n                }, function(err){\n                    _times_ = 0;\n                    setTimeout(refresh, 1000);\n                });\n            }\n\n            function ajaxAsync(url, fnCallback, fnError) {\n                var xhr = new XMLHttpRequest();\n                xhr.onreadystatechange = function (xxx, eee) {\n                    if (xhr.readyState === 4 && xhr.status === 200) {\n                        fnCallback(xhr.responseText);\n                    }\n                };\n                xhr.onerror = fnError;\n                xhr.open("GET", url, true);\n                xhr.send();\n            }\n\n            setTimeout(refresh, 3000);\n        <\/script>`;
+            let html = File.read(htmlfile).replace(/<head>/i, "<head>" + script);
+            res.writeHead(200, {
+                "Content-Type": "text/html;charset=UFT8"
+            });
+            res.end(html);
+        }
+        function createHttpServer(www, port) {
+            let server = http.createServer(function(req, res) {
+                let oUrl = url.parse(req.url);
+                if (/^\/query$/i.test(oUrl.pathname)) {
+                    queryHandle(req, res, oUrl);
+                    return;
+                }
+                let reqfile = path.join(www, oUrl.pathname).replace(/\\/g, "/");
+                if (File.existsDir(reqfile)) {
+                    reqfile = File.resolve(reqfile, "index.html");
+                }
+                if (/\.html$/i.test(reqfile)) {
+                    if (File.existsFile(reqfile)) {
+                        htmlHandle(req, res, oUrl, reqfile);
+                    } else {
+                        res.writeHead(404);
+                        res.end("404 Not Found");
+                    }
+                    return;
+                }
+                if (File.existsFile(reqfile)) {
+                    if (/\.css$/i.test(reqfile)) {
+                        res.writeHead(200, {
+                            "Content-Type": "text/css;charset=UFT8"
+                        });
+                    } else {
+                        res.writeHead(200);
+                    }
+                    fs.createReadStream(reqfile).pipe(res);
+                } else {
+                    if (/favicon\.ico$/i.test(reqfile)) {
+                        res.writeHead(200);
+                        res.end(null);
+                    } else {
+                        res.writeHead(404);
+                        res.end("404 Not Found");
+                    }
+                }
+            });
+            server.listen(port);
+            let hostUrl = "http://localhost:" + port;
+            console.log("-------------------------------------------");
+            console.log(` server ready ...... ${hostUrl}`);
+            console.log("-------------------------------------------");
+            setTimeout(() => {
+                !hasQuery && opn(hostUrl);
+            }, 1e3);
+        }
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("b00p-log", function(root, context) {});
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("b01p-init-context", function(root, context) {
+            context.input = {};
+            context.doc = {};
+            context.style = {};
+            context.script = {};
+            context.keyCounter = 1;
+            context.result = {};
+            root.walk((node, object) => {
+                context.input.file = object.file;
+                context.input.text = object.text;
+                context.input.hashcode = object.hashcode;
+            }, {
+                readonly: true
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("项目配置文件解析", function() {
+        return function(text, keepLoc = true) {
+            let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
+            let lines = text.split(LF);
+            let lineCounts = lines.map(v => v.length + LF.length);
+            let nodes = [];
+            parse(nodes, lines, lineCounts, LF);
+            nodes.forEach(block => {
+                if (block.buf.length) {
+                    let type = "ProjectBtfBlockText";
+                    let value = block.buf.join(LF);
+                    let line = block.name.loc.start.line + 1;
+                    let column = 1;
+                    let pos = sumLineCount(lineCounts, line - 1);
+                    let start = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    line = block.name.loc.start.line + block.buf.length;
+                    column = block.buf[block.buf.length - 1].length + 1;
+                    pos = sumLineCount(lineCounts, line - 1) + column;
+                    if (column === 1 && block.buf.length > 1) {
+                        line--;
+                        column = block.buf[block.buf.length - 2].length + 1;
+                    }
+                    end = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    block.text = {
+                        type: type,
+                        value: value,
+                        loc: {
+                            start: start,
+                            end: end
+                        }
+                    };
+                }
+                delete block.buf;
+                if (keepLoc === false) {
+                    delete block.name.loc;
+                    block.comment !== undefined && delete block.comment.loc;
+                    block.text !== undefined && delete block.text.loc;
+                }
+            });
+            return {
+                nodes: nodes
+            };
+        };
+    }());
+    function parse(blocks, lines, lineCounts, lf) {
+        let sLine, block, oName, name, comment, value, blockStart = false;
+        for (let i = 0; i < lines.length; i++) {
+            sLine = lines[i];
+            if (isBlockStart(sLine)) {
+                block = {
+                    type: "ProjectBtfBlock"
+                };
+                oName = getBlockName(sLine);
+                comment = sLine.substring(oName.len + 2);
+                let line = i + 1;
+                let column = 1;
+                let pos = sumLineCount(lineCounts, line - 1);
+                let start = {
+                    line: line,
+                    column: column,
+                    pos: pos
+                };
+                column = oName.len + 3;
+                pos += column - 1;
+                end = {
+                    line: line,
+                    column: column,
+                    pos: pos
+                };
+                block.name = {
+                    type: "ProjectBtfBlockName",
+                    value: oName.name,
+                    loc: {
+                        start: start,
+                        end: end
+                    }
+                };
+                if (comment) {
+                    column = oName.len + 3;
+                    start = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    column = sLine.length + 1;
+                    pos = sumLineCount(lineCounts, line - 1) + column - 1;
+                    end = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    block.comment = {
+                        type: "ProjectBtfBlockComment",
+                        value: comment,
+                        loc: {
+                            start: start,
+                            end: end
+                        }
+                    };
+                }
+                block.buf = [];
+                blocks.push(block);
+                blockStart = true;
+            } else if (isBlockEnd(sLine)) {
+                blockStart = false;
+            } else if (isDocumentEnd(sLine)) {
+                return;
+            } else {
+                if (blockStart) {
+                    let buf = blocks[blocks.length - 1].buf;
+                    if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine))) {
+                        buf.push(sLine.substring(1));
+                    } else {
+                        buf.push(sLine);
+                    }
+                } else {}
+            }
+        }
+    }
+    function isBlockStart(sLine) {
+        return sLine.startsWith("[") && sLine.indexOf("]") > 0;
+    }
+    function isBlockEnd(sLine) {
+        return sLine.startsWith("---------");
+    }
+    function isDocumentEnd(sLine) {
+        return sLine.startsWith("=========");
+    }
+    function getBlockName(sLine) {
+        let name, len;
+        for (let i = 1; i < sLine.length; i++) {
+            if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
+                name = sLine.substring(1, i).toLowerCase();
+                len = name.length;
+                name = name.replace(/\\\]/g, "]");
+                return {
+                    name: name,
+                    len: len
+                };
+            }
+        }
+        name = sLine.substring(1, sLine.lastIndexOf("]")).toLowerCase();
+        len = name.length;
+        name = name.replace(/\\\]/g, "]");
+        return {
+            name: name,
+            len: len
+        };
+    }
+    function sumLineCount(lineCounts, lineNo) {
+        let rs = 0;
+        for (let i = 0; i < lineNo; i++) {
+            rs += lineCounts[i];
+        }
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    const File = require("@gotoeasy/file");
+    const hash = require("@gotoeasy/hash");
+    const csslibify = require("csslibify");
+    bus.on("样式库", function(rs = {}) {
+        return function(defCsslib) {
+            let match;
+            let name, pkg, filters = [];
+            if (match = defCsslib.match(/^(.*?)=(.*?):(.*)$/)) {
+                name = match[1].trim();
+                pkg = match[2].trim();
+                cssfilter = match[3];
+                cssfilter.replace(/;/g, ",").split(",").forEach(filter => {
+                    filter = filter.trim();
+                    filter && filters.push(filter);
+                });
+            } else if (match = defCsslib.match(/^(.*?)=(.*)$/)) {
+                name = match[1].trim();
+                pkg = match[2].trim();
+                filters.push("**.min.css");
+            } else if (match = defCsslib.match(/^(.*?):(.*)$/)) {
+                name = "*";
+                pkg = match[1].trim();
+                cssfilter = match[2];
+                cssfilter.replace(/;/g, ",").split(",").forEach(filter => {
+                    filter = filter.trim();
+                    filter && filters.push(filter);
+                });
+            } else {
+                name = "*";
+                pkg = defCsslib.trim();
+                filters.push("**.min.css");
+            }
+            pkg.lastIndexOf("@") > 1 && (pkg = pkg.substring(0, pkg.lastIndexOf("@")));
+            let dir, env = bus.at("编译环境");
+            if (pkg.startsWith("$")) {
+                dir = env.path.root + "/" + pkg;
+                !File.existsDir(dir) && (dir = env.path.root + "/" + pkg.substring(1));
+            }
+            (!dir || !File.existsDir(dir)) && (dir = getNodeModulePath(pkg));
+            let cssfiles = File.files(dir, ...filters);
+            (!name || name === "*") && (pkg = "");
+            let libid = hash(JSON.stringify([ pkg, cssfiles ]));
+            let csslib = csslibify(pkg, name, libid);
+            !csslib._imported.length && cssfiles.forEach(cssfile => csslib.imp(cssfile));
+            return csslib;
+        };
+    }());
+    function getNodeModulePath(npmpkg) {
+        bus.at("自动安装", npmpkg);
+        let node_modules = [ ...require("find-node-modules")({
+            cwd: process.cwd(),
+            relative: false
+        }), ...require("find-node-modules")({
+            cwd: __dirname,
+            relative: false
+        }) ];
+        for (let i = 0, modulepath, dir; modulepath = node_modules[i++]; ) {
+            dir = File.resolve(modulepath, npmpkg);
+            if (File.existsDir(dir)) {
+                return dir;
+            }
+        }
+        throw new Error("path not found of npm package: " + npmpkg);
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("解析[csslib]", function() {
+        return function parseCsslib(csslib, context, loc) {
+            let rs = {};
+            let lines = (csslib == null ? "" : csslib.trim()).split("\n");
+            for (let i = 0, line; i < lines.length; i++) {
+                line = lines[i];
+                let key, value, idx = line.indexOf("=");
+                if (idx < 0) {
+                    continue;
+                }
+                key = line.substring(0, idx).trim();
+                value = line.substring(idx + 1).trim();
+                idx = value.lastIndexOf("//");
+                idx >= 0 && (value = value.substring(0, idx).trim());
+                if (!key) {
+                    throw new Err("use * as empty csslib name. etc. * = " + value, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        line: loc.start.line + i,
+                        column: 1
+                    });
+                }
+                if (rs[key]) {
+                    throw new Err("duplicate csslib name: " + key, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        line: loc.start.line + i,
+                        column: 1
+                    });
+                }
+                rs[key] = value;
+            }
+            return rs;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    const File = require("@gotoeasy/file");
+    const Btf = require("@gotoeasy/btf");
+    bus.on("标签库定义", function(rs = {}, rsPkg = {}) {
+        let stack = [];
+        bus.on("标签库引用", function(tag, fileOrRoot) {
+            let searchPkg = bus.at("文件所在模块", fileOrRoot);
+            let name, idx1 = tag.indexOf("="), idx2 = tag.indexOf(":");
+            if (idx1 < 0 && idx2 < 0) {
+                name = tag.trim();
+            } else if (idx2 > 0) {
+                name = tag.substring(idx2 + 1).trim();
+            } else {
+                name = tag.substring(0, idx1).trim();
+            }
+            let key = searchPkg + ":" + name;
+            return rs[key];
+        });
+        return function(defTaglib, file) {
+            let oTaglib = bus.at("normalize-taglib", defTaglib);
+            initPkgDefaultTag(oTaglib.pkg);
+            let askey, tagkey, oPkg, searchPkg = bus.at("文件所在模块", file);
+            askey = searchPkg + ":" + oTaglib.astag;
+            tagkey = oTaglib.pkg + ":" + oTaglib.tag;
+            if (rs[tagkey]) {
+                rs[askey] = rs[tagkey];
+                stack = [];
+                return rs;
+            }
+            stack.push(`[${searchPkg}] ${oTaglib.taglib}`);
+            let pkgfile;
+            try {
+                pkgfile = require.resolve(oTaglib.pkg + "/package.json", {
+                    paths: [ bus.at("编译环境").path.root, __dirname ]
+                });
+            } catch (e) {
+                stack.unshift(e.message);
+                let msg = stack.join("\n => ");
+                stack = [];
+                throw new Error(msg);
+            }
+            let configfile = File.path(pkgfile) + "/rpose.config.btf";
+            if (!File.existsFile(configfile)) {
+                stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
+                let msg = stack.join("\n => ");
+                stack = [];
+                throw new Error(msg);
+            }
+            let btf = new Btf(configfile);
+            let oTaglibKv, taglibBlockText = btf.getText("taglib");
+            try {
+                oTaglibKv = bus.at("解析[taglib]", taglibBlockText, {
+                    input: {
+                        file: configfile
+                    }
+                });
+            } catch (e) {
+                stack.push(`[${oTaglib.pkg}] ${oTaglib.pkg}:${oTaglib.tag}`);
+                stack.push(configfile);
+                stack.unshift(e.message);
+                let msg = stack.join("\n => ");
+                stack = [];
+                throw new Error(msg);
+            }
+            let oConfTaglib = oTaglibKv[oTaglib.tag];
+            if (!oConfTaglib) {
+                stack.push(configfile);
+                stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
+                let msg = stack.join("\n => ");
+                stack = [];
+                throw new Error(msg);
+            }
+            bus.at("自动安装", oConfTaglib.pkg);
+            return bus.at("标签库定义", oConfTaglib.taglib, configfile);
+        };
+        function initPkgDefaultTag(pkg) {
+            if (!rsPkg[pkg]) {
+                let oPkg = bus.at("模块组件信息", pkg);
+                for (let i = 0, file; file = oPkg.files[i++]; ) {
+                    rs[oPkg.name + ":" + File.name(file)] = file;
+                }
+                rsPkg[pkg] = true;
+            }
+        }
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("normalize-taglib", function() {
+        return function normalizeTaglib(taglib, offset = 0) {
+            let astag, pkg, tag, match;
+            if (match = taglib.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/)) {
+                astag = match[1];
+                pkg = match[2];
+                tag = match[3];
+            } else if (match = taglib.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*$/)) {
+                astag = match[1];
+                pkg = match[2];
+                tag = match[1];
+            } else if (match = taglib.match(/^\s*([\S]+)\s*:\s*([\S]+)\s*$/)) {
+                astag = match[2];
+                pkg = match[1];
+                tag = match[2];
+            } else {
+                return null;
+            }
+            return {
+                line: offset,
+                astag: astag,
+                pkg: pkg,
+                tag: tag,
+                taglib: astag + "=" + pkg + ":" + tag
+            };
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("解析[taglib]", function() {
+        return function parseTaglib(taglibBlockText, context, loc) {
+            let rs = {};
+            let lines = (taglibBlockText == null ? "" : taglibBlockText.trim()).split("\n");
+            for (let i = 0, taglib, oTaglib, oPkg; i < lines.length; i++) {
+                taglib = lines[i].split("//")[0].trim();
+                if (!taglib) {
+                    continue;
+                }
+                oTaglib = bus.at("normalize-taglib", taglib, i);
+                if (!oTaglib) {
+                    if (loc) {
+                        throw new Err("invalid taglib: " + oTaglib.taglib, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: loc.start.line + i,
+                            column: 1
+                        });
+                    }
+                    throw new Err(`invalid taglib: ${taglib}`);
+                }
+                if (/^(if|for)$/i.test(oTaglib.astag)) {
+                    if (loc) {
+                        throw new Err("can not use buildin tag name: " + oTaglib.astag, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: loc.start.line + i,
+                            column: 1
+                        });
+                    }
+                    throw new Err("can not use buildin tag name: " + oTaglib.astag);
+                }
+                if (rs[oTaglib.astag]) {
+                    if (loc) {
+                        throw new Err("duplicate tag name: " + oTaglib.astag, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: loc.start.line + i,
+                            column: 1
+                        });
+                    }
+                    throw new Err("duplicate tag name: " + oTaglib.astag);
+                }
+                rs[oTaglib.astag] = oTaglib;
+            }
+            return rs;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const File = require("@gotoeasy/file");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("b95p-init-project-config", function(root, context) {
+            context.project = bus.at("项目配置处理", context.input.file);
+        });
+    }());
+    bus.on("项目配置处理", function(result = {}) {
+        return function(srcFile) {
+            let time, stime = new Date().getTime();
+            let btfFile = srcFile.endsWith("/rpose.config.btf") ? srcFile : bus.at("文件所在项目配置文件", srcFile);
+            if (result[btfFile]) {
+                return result[btfFile];
+            }
+            if (!File.existsFile(btfFile)) {
+                return {};
+            }
+            let plugins = bus.on("项目配置处理插件");
+            let rs = postobject(plugins).process({
+                file: btfFile
+            });
+            result[btfFile] = rs.result;
+            time = new Date().getTime() - stime;
+            time > 100 && console.debug("init-project-config:", time + "ms");
+            return result[btfFile];
+        };
+    }());
+    bus.on("项目配置处理插件", function() {
+        return postobject.plugin("process-project-config-101", function(root, context) {
+            context.input = {};
+            context.result = {};
+            root.walk((node, object) => {
+                context.input.file = object.file;
+                context.input.text = File.read(object.file);
+                let blocks = bus.at("项目配置文件解析", context.input.text);
+                let newNode = this.createNode(blocks);
+                node.replaceWith(...newNode.nodes);
+            });
+            root.walk((node, object) => {
+                if (!object.text || !object.text.value || !object.text.value.trim()) {
+                    return node.remove();
+                }
+                let type = object.name.value;
+                let value = object.text.value;
+                let loc = object.text.loc;
+                let oNode = this.createNode({
+                    type: type,
+                    value: value,
+                    loc: loc
+                });
+                node.replaceWith(oNode);
+            });
+        });
+    }());
+    bus.on("项目配置处理插件", function() {
+        return postobject.plugin("process-project-config-102", function(root, context) {
+            let hashClassName = bus.on("哈希样式类名")[0];
+            let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? cls + "@" + pkg : cls);
+            let opts = {
+                rename: rename
+            };
+            let oKv;
+            root.walk("csslib", (node, object) => {
+                oKv = bus.at("解析[csslib]", object.value, context, object.loc);
+                node.remove();
+            });
+            if (!oKv) {
+                return;
+            }
+            let oCsslib = context.result.oCsslib = {};
+            let oCsslibPkgs = context.result.oCsslibPkgs = context.result.oCsslibPkgs || {};
+            for (let k in oKv) {
+                oCsslib[k] = bus.at("样式库", `${k}=${oKv[k]}`);
+                oCsslibPkgs[k] = oCsslib[k].pkg;
+            }
+        });
+    }());
+    bus.on("项目配置处理插件", function(addBuildinTaglib) {
+        return postobject.plugin("process-project-config-103", function(root, context) {
+            if (!addBuildinTaglib) {
+                let pkg = "@rpose/buildin";
+                if (!bus.at("自动安装", pkg)) {
+                    throw new Error("package install failed: " + pkg);
+                }
+                bus.at("标签库定义", "@rpose/buildin:```", "");
+                bus.at("标签库定义", "@rpose/buildin:router", "");
+                bus.at("标签库定义", "@rpose/buildin:router-link", "");
+                addBuildinTaglib = true;
+            }
+        });
+    }());
+    bus.on("项目配置处理插件", function(addBuildinTaglib) {
+        return postobject.plugin("process-project-config-105", function(root, context) {
+            let oKv, startLine;
+            root.walk("taglib", (node, object) => {
+                oKv = bus.at("解析[taglib]", object.value, context, object.loc);
+                startLine = object.loc.start.line;
+                node.remove();
+            });
+            context.result.oTaglib = oKv || {};
+            if (!oKv) {
+                return;
+            }
+            let mapPkg = new Map();
+            for (let key in oKv) {
+                mapPkg.set(oKv[key].pkg, oKv[key]);
+            }
+            mapPkg.forEach((oTag, pkg) => {
+                if (!bus.at("自动安装", pkg)) {
+                    throw new Err("package install failed: " + pkg, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        line: startLine + oTag.line,
+                        column: 1
+                    });
+                }
+            });
+            for (let key in oKv) {
+                try {
+                    bus.at("标签库定义", oKv[key].taglib, context.input.file);
+                } catch (e) {
+                    throw new Err.cat(e, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        line: startLine + oKv[key].line,
+                        column: 1
+                    });
+                }
+            }
+            if (!addBuildinTaglib) {
+                pkg = "@rpose/buildin";
+                if (!bus.at("自动安装", pkg)) {
+                    throw new Error("package install failed: " + pkg);
+                }
+                bus.at("标签库定义", "@rpose/buildin:```", "");
+                bus.at("标签库定义", "@rpose/buildin:router", "");
+                bus.at("标签库定义", "@rpose/buildin:router-link", "");
+                addBuildinTaglib = true;
+            }
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("RPOSE源文件解析", function() {
+        return function(text, keepLoc = true) {
+            let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
+            let lines = text.split(LF);
+            let lineCounts = lines.map(v => v.length + LF.length);
+            let nodes = [];
+            parse(nodes, lines, lineCounts, LF);
+            nodes.forEach(block => {
+                if (block.buf.length) {
+                    let type = "RposeBlockText";
+                    let value = block.buf.join(LF);
+                    let line = block.name.loc.start.line + 1;
+                    let column = 1;
+                    let pos = sumLineCount(lineCounts, line - 1);
+                    let start = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    line = block.name.loc.start.line + block.buf.length;
+                    column = block.buf[block.buf.length - 1].length + 1;
+                    pos = sumLineCount(lineCounts, line - 1) + column;
+                    if (column === 1 && block.buf.length > 1) {
+                        line--;
+                        column = block.buf[block.buf.length - 2].length + 1;
+                    }
+                    end = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    block.text = {
+                        type: type,
+                        value: value,
+                        loc: {
+                            start: start,
+                            end: end
+                        }
+                    };
+                }
+                delete block.buf;
+                if (keepLoc === false) {
+                    delete block.name.loc;
+                    block.comment !== undefined && delete block.comment.loc;
+                    block.text !== undefined && delete block.text.loc;
+                }
+            });
+            return {
+                nodes: nodes
+            };
+        };
+    }());
+    function parse(blocks, lines, lineCounts, lf) {
+        let sLine, block, oName, name, comment, value, blockStart = false;
+        for (let i = 0; i < lines.length; i++) {
+            sLine = lines[i];
+            if (isBlockStart(sLine)) {
+                block = {
+                    type: "RposeBlock"
+                };
+                oName = getBlockName(sLine);
+                comment = sLine.substring(oName.len + 2);
+                let line = i + 1;
+                let column = 1;
+                let pos = sumLineCount(lineCounts, line - 1);
+                let start = {
+                    line: line,
+                    column: column,
+                    pos: pos
+                };
+                column = oName.len + 3;
+                pos += column - 1;
+                end = {
+                    line: line,
+                    column: column,
+                    pos: pos
+                };
+                block.name = {
+                    type: "RposeBlockName",
+                    value: oName.name,
+                    loc: {
+                        start: start,
+                        end: end
+                    }
+                };
+                if (comment) {
+                    column = oName.len + 3;
+                    start = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    column = sLine.length + 1;
+                    pos = sumLineCount(lineCounts, line - 1) + column - 1;
+                    end = {
+                        line: line,
+                        column: column,
+                        pos: pos
+                    };
+                    block.comment = {
+                        type: "RposeBlockComment",
+                        value: comment,
+                        loc: {
+                            start: start,
+                            end: end
+                        }
+                    };
+                }
+                block.buf = [];
+                blocks.push(block);
+                blockStart = true;
+            } else if (isBlockEnd(sLine)) {
+                blockStart = false;
+            } else if (isDocumentEnd(sLine)) {
+                return;
+            } else {
+                if (blockStart) {
+                    let buf = blocks[blocks.length - 1].buf;
+                    if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine))) {
+                        buf.push(sLine.substring(1));
+                    } else {
+                        buf.push(sLine);
+                    }
+                } else {}
+            }
+        }
+    }
+    function isBlockStart(sLine) {
+        return sLine.startsWith("[") && sLine.indexOf("]") > 0;
+    }
+    function isBlockEnd(sLine) {
+        return sLine.startsWith("---------");
+    }
+    function isDocumentEnd(sLine) {
+        return sLine.startsWith("=========");
+    }
+    function getBlockName(sLine) {
+        let name, len;
+        for (let i = 1; i < sLine.length; i++) {
+            if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
+                name = sLine.substring(1, i).toLowerCase();
+                len = name.length;
+                name = name.replace(/\\\]/g, "]");
+                return {
+                    name: name,
+                    len: len
+                };
+            }
+        }
+        name = sLine.substring(1, sLine.lastIndexOf("]")).toLowerCase();
+        len = name.length;
+        name = name.replace(/\\\]/g, "]");
+        return {
+            name: name,
+            len: len
+        };
+    }
+    function sumLineCount(lineCounts, lineNo) {
+        let rs = 0;
+        for (let i = 0; i < lineNo; i++) {
+            rs += lineCounts[i];
+        }
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("c15p-parse-rpose-src-to-blocks", function(root, context) {
+            let result = context.result;
+            root.walk((node, object) => {
+                result.tagpkg = bus.at("标签全名", object.file);
+                let blocks = bus.at("RPOSE源文件解析", object.text);
+                let newNode = this.createNode(blocks);
+                node.replaceWith(...newNode.nodes);
+                return false;
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("c25p-blocks-to-context-doc", function(root, context) {
+            let doc = context.doc;
+            root.walk("RposeBlock", (node, object) => {
+                if (/^(api|options|state|mount)$/.test(object.name.value)) {
+                    doc[object.name.value] = object.text ? object.text.value : "";
+                    node.remove();
+                }
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("c35p-normalize-context-doc", function(root, context) {
+            let doc = context.doc;
+            doc.api = parseBlockApi(doc.api);
+            doc.mount && (doc.mount = doc.mount.trim());
+        });
+    }());
+    function parseBlockApi(api) {
+        let rs = {};
+        let lines = (api == null ? "" : api.trim()).split("\n");
+        lines.forEach(line => {
+            let key, value, idx = line.indexOf("=");
+            idx < 0 && (idx = line.indexOf(":"));
+            if (idx < 0) {
+                return;
+            }
+            key = line.substring(0, idx).trim();
+            value = line.substring(idx + 1).trim();
+            idx = value.lastIndexOf("//");
+            idx >= 0 && (value = value.substring(0, idx).trim());
+            if (/^option[\-]?keys$/i.test(key)) {
+                key = "optionkeys";
+                value = value.split(/[,;]/).map(v => v.trim());
+            } else if (/^state[\-]?keys$/i.test(key)) {
+                key = "statekeys";
+                value = value.split(/[,;]/).map(v => v.trim());
+            } else if (/^pre[\-]?render$/i.test(key)) {
+                key = "prerender";
+            }
+            rs[key] = value;
+        });
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("c45p-is-page", function(root, context) {
+            context.result.isPage = context.doc.mount && !/\/components\//i.test(context.input.file) && !/\/node_modules\//i.test(context.input.file);
+        });
+    }());
+})();
+
+(() => {
+    const Err = require("@gotoeasy/err");
+    const bus = require("@gotoeasy/bus");
+    const Btf = require("@gotoeasy/btf");
+    const File = require("@gotoeasy/file");
+    bus.on("样式风格", function(result) {
+        return function() {
+            let env = bus.at("编译环境");
+            try {
+                let map;
+                if (!result) {
+                    if (env.theme) {
+                        let file = getThemeBtfFile();
+                        map = getThemeMapByFile(file);
+                    } else {
+                        map = new Map();
+                    }
+                    result = {
+                        less: getThemeLess(map),
+                        scss: getThemeScss(map),
+                        css: getThemeCss(map)
+                    };
+                }
+                return result;
+            } catch (e) {
+                throw Err.cat("init theme failed: " + env.theme, e);
+            }
+        };
+    }());
+    function getThemeLess(map) {
+        let rs = [];
+        map.forEach((v, k) => rs.push("@" + k + " : " + v + ";"));
+        return rs.join("\n") + "\n";
+    }
+    function getThemeScss(map) {
+        let rs = [];
+        map.forEach((v, k) => rs.push("$" + k + " : " + v + ";"));
+        return rs.join("\n") + "\n";
+    }
+    function getThemeCss(map) {
+        if (!map.size) {
+            return "";
+        }
+        let rs = [];
+        rs.push(":root{");
+        map.forEach((v, k) => rs.push("--" + k + " : " + v + ";"));
+        rs.push("}");
+        return rs.join("\n") + "\n";
+    }
+    function getThemeBtfFile() {
+        let env = bus.at("编译环境");
+        let file;
+        if (env.theme.endsWith(".btf")) {
+            if (File.exists(file)) {
+                return file;
+            }
+            file = File.resolve(env.path.root, env.theme);
+            if (File.exists(file)) {
+                return file;
+            }
+            throw new Err("theme file not found: " + file);
+        }
+        return getThemeBtfFileByPkg(env.theme);
+    }
+    function getThemeBtfFileByPkg(themePkg) {
+        let ary = [ ...require("find-node-modules")({
+            cwd: __dirname,
+            relative: false
+        }), ...require("find-node-modules")({
+            relative: false
+        }) ];
+        for (let i = 0, path, file; path = ary[i++]; ) {
+            file = path.replace(/\\/g, "/") + "/" + themePkg + "/theme.btf";
+            if (File.exists(file)) {
+                return file;
+            }
+        }
+        throw new Err("theme file not found: " + themePkg + "/theme.btf");
+    }
+    const fileSet = new Set();
+    function getThemeMapByFile(file) {
+        if (fileSet.has(file)) {
+            let ary = [ ...fileSet ].push(file);
+            throw Err.cat(ary, new Err("theme circular extend"));
+        }
+        fileSet.add(file);
+        btf = new Btf(file);
+        let superPkg = (btf.getText("extend") || "").trim();
+        let superTheme;
+        let theme = btf.getMap("theme");
+        if (superPkg) {
+            superTheme = getThemeMapByFile(getThemeBtfFileByPkg(superPkg));
+            theme.forEach((v, k) => superTheme.set(k, v));
+            theme = superTheme;
+        }
+        return theme;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const csjs = require("@gotoeasy/csjs");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d15p-compile-component-scss", function(root, context) {
+            let style = context.style;
+            root.walk("RposeBlock", (node, object) => {
+                if (/^scss$/.test(object.name.value)) {
+                    let scss = object.text ? object.text.value : "";
+                    if (scss) {
+                        let theme = bus.at("样式风格");
+                        style.scss = scssToCss(theme.scss + scss);
+                    }
+                    node.remove();
+                    return false;
+                }
+            });
+        });
+    }());
+    function scssToCss(scss) {
+        let env = bus.at("编译环境");
+        let oCache = bus.at("缓存");
+        let cacheKey = JSON.stringify([ "scssToCss", scss ]);
+        if (!env.nocache) {
+            let cacheValue = oCache.get(cacheKey);
+            if (cacheValue) {
+                return cacheValue;
+            }
+        }
+        let css = csjs.scssToCss(scss);
+        return oCache.set(cacheKey, css);
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const csjs = require("@gotoeasy/csjs");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d25p-compile-component-less", function(root, context) {
+            let style = context.style;
+            root.walk("RposeBlock", (node, object) => {
+                if (/^less$/.test(object.name.value)) {
+                    let less = object.text ? object.text.value : "";
+                    if (less) {
+                        let theme = bus.at("样式风格");
+                        style.less = lessToCss(theme.less + less);
+                    }
+                    node.remove();
+                    return false;
+                }
+            });
+        });
+    }());
+    function lessToCss(less) {
+        let env = bus.at("编译环境");
+        let oCache = bus.at("缓存");
+        let cacheKey = JSON.stringify([ "lessToCss", less ]);
+        if (!env.nocache) {
+            let cacheValue = oCache.get(cacheKey);
+            if (cacheValue) {
+                return cacheValue;
+            }
+        }
+        let css = csjs.lessToCss(less);
+        return oCache.set(cacheKey, css);
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+    const postcss = require("postcss");
+    module.exports = bus.on("样式统一化整理", function() {
+        return (css, from) => {
+            let url = "copy";
+            let fromPath = File.path(from);
+            let toPath = bus.at("缓存").path + "/resources";
+            let to = toPath + "/to.css";
+            let assetsPath = toPath;
+            let basePath = fromPath;
+            let useHash = true;
+            let hashOptions = {
+                method: contents => hash({
+                    contents: contents
+                })
+            };
+            let postcssUrlOpt = {
+                url: url,
+                from: from,
+                to: to,
+                basePath: basePath,
+                assetsPath: assetsPath,
+                useHash: useHash,
+                hashOptions: hashOptions
+            };
+            let env = bus.at("编译环境");
+            let oCache = bus.at("缓存");
+            let cacheKey = JSON.stringify([ "组件样式统一化", css, fromPath, toPath, assetsPath ]);
+            let plugins = [];
+            if (!env.nocache) {
+                let cacheValue = oCache.get(cacheKey);
+                if (cacheValue) {
+                    return cacheValue;
+                }
+            }
+            plugins.push(require("postcss-import-sync")({
+                from: from
+            }));
+            plugins.push(require("postcss-unprefix")());
+            plugins.push(require("postcss-url")(postcssUrlOpt));
+            plugins.push(require("postcss-nested")());
+            plugins.push(require("postcss-css-variables")());
+            plugins.push(require("postcss-discard-comments")({
+                remove: x => 1
+            }));
+            plugins.push(require("postcss-minify-selectors"));
+            plugins.push(require("postcss-minify-params"));
+            plugins.push(require("postcss-normalize-string"));
+            plugins.push(require("postcss-normalize-display-values"));
+            plugins.push(require("postcss-normalize-positions"));
+            plugins.push(require("postcss-normalize-repeat-style"));
+            plugins.push(require("postcss-minify-font-values"));
+            plugins.push(require("postcss-minify-gradients"));
+            plugins.push(require("postcss-color-hex-alpha"));
+            plugins.push(require("postcss-merge-longhand"));
+            let rs = postcss(plugins).process(css, {
+                from: from,
+                to: to
+            }).sync().root.toResult();
+            return oCache.set(cacheKey, rs.css);
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const File = require("@gotoeasy/file");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d35p-normalize-component-css", function(root, context) {
+            let style = context.style;
+            root.walk("RposeBlock", (node, object) => {
+                if (/^css$/.test(object.name.value)) {
+                    let css = object.text ? object.text.value : "";
+                    if (css) {
+                        let theme = bus.at("样式风格");
+                        style.css = theme.css + css;
+                    }
+                    node.remove();
+                    return false;
+                }
+            });
+            if (!style.css) {
+                return;
+            }
+            let from = context.input.file.replace(/\.rpose$/i, ".css");
+            style.css = bus.at("样式统一化整理", style.css, from);
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    const acorn = require("acorn");
+    const astring = require("astring");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d45p-normalize-component-actions", function(root, context) {
+            let script = context.script;
+            root.walk("RposeBlock", (node, object) => {
+                if (!/^actions$/.test(object.name.value)) {
+                    return;
+                }
+                let actions = object.text ? object.text.value.trim() : "";
+                if (actions) {
+                    let rs = generateActions(actions, object.text.loc);
+                    script.actions = rs.src;
+                    script.$actionkeys = rs.names;
+                }
+                node.remove();
+                return false;
+            });
+        });
+    }());
+    function generateActions(code, loc) {
+        let env = bus.at("编译环境");
+        let oCache = bus.at("缓存");
+        let cacheKey = JSON.stringify([ "generateActions", code ]);
+        if (!env.nocache) {
+            let cacheValue = oCache.get(cacheKey);
+            if (cacheValue) {
+                return cacheValue;
+            }
+        }
+        let rs;
+        if (code.startsWith("{")) {
+            rs = generateObjActions(code, loc);
+        } else {
+            rs = generateFunActions(code, loc);
+        }
+        return oCache.set(cacheKey, rs);
+    }
+    function generateFunActions(code, loc) {
+        let ast;
+        try {
+            ast = acorn.parse(code, {
+                ecmaVersion: 10,
+                sourceType: "module",
+                locations: true
+            });
+        } catch (e) {
+            throw new Err("syntax error in [actions]", e);
+        }
+        let map = new Map();
+        ast.body.forEach(node => {
+            let nd;
+            if (node.type == "FunctionDeclaration") {
+                node.type = "ArrowFunctionExpression";
+                map.set(node.id.name, astring.generate(node));
+            } else if (node.type == "VariableDeclaration") {
+                nd = node.declarations[0].init;
+                if (nd.type == "FunctionDeclaration" || nd.type == "ArrowFunctionExpression") {
+                    nd.type = "ArrowFunctionExpression";
+                    map.set(node.declarations[0].id.name, astring.generate(nd));
+                }
+            } else if (node.type == "ExpressionStatement") {
+                nd = node.expression.right;
+                if (nd.type == "FunctionDeclaration" || nd.type == "ArrowFunctionExpression") {
+                    nd.type = "ArrowFunctionExpression";
+                    map.set(node.expression.left.name, astring.generate(nd));
+                }
+            }
+        });
+        let names = [ ...map.keys() ];
+        let rs = {
+            src: "",
+            names: names
+        };
+        if (names.length) {
+            let ary = [];
+            ary.push("this.$actions = {");
+            names.forEach(k => {
+                ary.push('"' + k + '": ' + map.get(k) + ",");
+            });
+            ary.push("}");
+            rs.src = ary.join("\n");
+        }
+        return rs;
+    }
+    function generateObjActions(code, loc) {
+        let src = `this.$actions     = ${code}`;
+        let ast;
+        try {
+            ast = acorn.parse(src, {
+                ecmaVersion: 10,
+                sourceType: "module",
+                locations: true
+            });
+        } catch (e) {
+            throw new Err("syntax error in [actions]", e);
+        }
+        let names = [];
+        let properties = ast.body[0].expression.right.properties;
+        properties && properties.forEach(node => {
+            if (node.value.type == "ArrowFunctionExpression") {
+                names.push(node.key.name);
+            } else if (node.value.type == "FunctionExpression") {
+                let nd = node.value;
+                nd.type = "ArrowFunctionExpression";
+                names.push(node.key.name);
+            }
+        });
+        let rs = {
+            src: "",
+            names: names
+        };
+        if (names.length) {
+            names.sort();
+            rs.src = astring.generate(ast);
+        }
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const acorn = require("acorn");
+    const astring = require("astring");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d55p-normalize-component-methods", function(root, context) {
+            let script = context.script;
+            root.walk("RposeBlock", (node, object) => {
+                if (!/^methods$/.test(object.name.value)) {
+                    return;
+                }
+                let methods = object.text ? object.text.value.trim() : "";
+                if (methods) {
+                    let rs = generateMethods(methods, object.text.loc);
+                    script.methods = rs.src;
+                }
+                node.remove();
+                return false;
+            });
+        });
+    }());
+    function generateMethods(methods, loc) {
+        let env = bus.at("编译环境");
+        let oCache = bus.at("缓存");
+        let cacheKey = JSON.stringify([ "generateMethods", methods ]);
+        if (!env.nocache) {
+            let cacheValue = oCache.get(cacheKey);
+            if (cacheValue) {
+                return cacheValue;
+            }
+        }
+        let code = `oFn               = ${methods}`;
+        let ast;
+        try {
+            ast = acorn.parse(code, {
+                ecmaVersion: 10,
+                sourceType: "module",
+                locations: true
+            });
+        } catch (e) {
+            throw new Err("syntax error in [methods]", e);
+        }
+        let map = new Map();
+        let properties = ast.body[0].expression.right.properties;
+        properties && properties.forEach(node => {
+            if (node.value.type == "ArrowFunctionExpression") {
+                map.set(node.key.name, "this." + node.key.name + "=" + astring.generate(node.value));
+            } else if (node.value.type == "FunctionExpression") {
+                let arrNode = node.value;
+                arrNode.type = "ArrowFunctionExpression";
+                map.set(node.key.name, "this." + node.key.name + "=" + astring.generate(arrNode));
+            }
+        });
+        let names = [ ...map.keys() ];
+        names.sort();
+        let rs = {
+            src: "",
+            names: names
+        };
+        names.forEach(k => rs.src += map.get(k) + "\n");
+        return oCache.set(cacheKey, rs);
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d75p-init-component-[csslib]", function(root, context) {
+            let prj = bus.at("项目配置处理", context.input.file);
+            let oCsslib = context.result.oCsslib = Object.assign({}, prj.oCsslib || {});
+            let oCsslibPkgs = context.result.oCsslibPkgs = Object.assign({}, prj.oCsslibPkgs || {});
+            root.walk("RposeBlock", (node, object) => {
+                if (object.name.value !== "csslib") {
+                    return;
+                }
+                if (!object.text || !object.text.value || !object.text.value.trim()) {
+                    return;
+                }
+                let oKv = bus.at("解析[csslib]", object.text.value, context, object.text.loc);
+                for (let k in oKv) {
+                    if (oCsslib[k]) {
+                        throw new Err("duplicate csslib name: " + k, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: object.text.loc.start.line,
+                            column: 1
+                        });
+                    }
+                    oCsslib[k] = bus.at("样式库", `${k}=${oKv[k]}`);
+                    oCsslibPkgs[k] = oCsslib[k].pkg;
+                }
+                node.remove();
+                return false;
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("d85p-init-component-[taglib]", function(root, context) {
+            let prj = bus.at("项目配置处理", context.input.file);
+            let oTaglib = context.result.oTaglib = Object.assign({}, prj.oTaglib || {});
+            root.walk("RposeBlock", (node, object) => {
+                if (object.name.value !== "taglib") {
+                    return;
+                }
+                if (!object.text || !object.text.value || !object.text.value.trim()) {
+                    return;
+                }
+                let oKv = bus.at("解析[taglib]", object.text.value, context, object.text.loc);
+                for (let k in oKv) {
+                    if (oTaglib[k]) {
+                        throw new Err("duplicate taglib name: " + k, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: object.text.loc.start.line + oTaglib[k].line,
+                            column: 1
+                        });
+                    }
+                }
+                let mapPkg = new Map();
+                for (let key in oKv) {
+                    mapPkg.set(oKv[key].pkg, oKv[key]);
+                }
+                mapPkg.forEach((oTag, pkg) => {
+                    if (!bus.at("自动安装", pkg)) {
+                        throw new Err("package install failed: " + pkg, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: object.text.loc.start.line + oTag.line,
+                            column: 1
+                        });
+                    }
+                });
+                for (let key in oKv) {
+                    try {
+                        bus.at("标签库定义", oKv[key].taglib, context.input.file);
+                    } catch (e) {
+                        throw new Err.cat(e, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            line: object.text.loc.start.line + oKv[key].line,
+                            column: 1
+                        });
+                    }
+                }
+                node.remove();
+                return false;
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    module.exports = bus.on("视图编译选项", function(options = {}, init) {
+        options.CodeBlockStart = "{%";
+        options.CodeBlockEnd = "%}";
+        options.ExpressionStart = "{";
+        options.ExpressionEnd = "}";
+        options.TypeHtmlComment = "HtmlComment";
+        options.TypeCodeBlock = "JsCode";
+        options.TypeExpression = "Expression";
+        options.TypeTagOpen = "TagOpen";
+        options.TypeTagClose = "TagClose";
+        options.TypeTagSelfClose = "TagSelfClose";
+        options.TypeAttributeName = "AttributeName";
+        options.TypeAttributeValue = "AttributeValue";
+        options.TypeEqual = "=";
+        options.TypeText = "Text";
+        return function(opts) {
+            if (!init && opts) {
+                init = true;
+                options.CodeBlockStart = opts.CodeBlockStart || options.CodeBlockStart;
+                options.CodeBlockEnd = opts.CodeBlockEnd || options.CodeBlockEnd;
+                options.ExpressionStart = opts.ExpressionStart || options.ExpressionStart;
+                options.ExpressionEnd = opts.ExpressionEnd || options.ExpressionEnd;
+                options.TypeHtmlComment = opts.TypeHtmlComment || options.TypeHtmlComment;
+                options.TypeCodeBlock = opts.TypeCodeBlock || options.TypeCodeBlock;
+                options.TypeExpression = opts.TypeExpression || options.TypeExpression;
+                options.TypeTagOpen = opts.TypeTagOpen || options.TypeTagOpen;
+                options.TypeTagClose = opts.TypeTagClose || options.TypeTagClose;
+                options.TypeTagSelfClose = opts.TypeTagSelfClose || options.TypeTagSelfClose;
+                options.TypeAttributeName = opts.TypeAttributeName || options.TypeAttributeName;
+                options.TypeAttributeValue = opts.TypeAttributeValue || options.TypeAttributeValue;
+                options.TypeEqual = opts.TypeEqual || options.TypeEqual;
+                options.TypeText = opts.TypeText || options.TypeText;
+            }
+            return options;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    bus.on("是否表达式", function() {
+        const OPTS = bus.at("视图编译选项");
+        return function(val) {
+            if (!val) {
+                return false;
+            }
+            let tmp = val.replace(/\\\{/g, "").replace(/\\\}/g, "");
+            return /\{.*\}/.test(tmp);
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const SOF = "\0";
+    const EOF = "￿";
+    class CharReader {
+        constructor(src) {
+            this.ary = src.split("");
+            this.maxLength = this.ary.length;
+            this.pos = 0;
+        }
+        skip(len) {
+            if (len > 0) {
+                this.pos = this.pos + len;
+                if (this.pos > this.maxLength) {
+                    this.pos = this.maxLength;
+                }
+            }
+            return this.pos;
+        }
+        skipBlank() {
+            let rs = "";
+            while (/\s/.test(this.getCurrentChar()) && !this.eof()) {
+                rs += this.readChar();
+            }
+            return rs;
+        }
+        getPos() {
+            return this.pos;
+        }
+        eof() {
+            return this.pos >= this.maxLength;
+        }
+        readChar() {
+            let rs = this.getCurrentChar();
+            this.pos < this.maxLength && (this.pos += 1);
+            return rs;
+        }
+        getPrevChar() {
+            return this.pos == 0 ? SOF : this.ary[this.pos - 1];
+        }
+        getCurrentChar() {
+            return this.pos >= this.maxLength ? EOF : this.ary[this.pos];
+        }
+        getNextChar(len = 1) {
+            let idx = len < 1 ? 1 : len;
+            return this.pos + idx >= this.maxLength ? EOF : this.ary[this.pos + idx];
+        }
+        getChar(idx = 0) {
+            return idx < 0 ? SOF : idx >= this.maxLength ? EOF : this.ary[idx];
+        }
+        getPrevString(len) {
+            return this.getString(this.pos - len, this.pos);
+        }
+        getString(start, end) {
+            let min = start < 0 ? 0 : start >= this.maxLength ? this.maxLength - 1 : start;
+            let max = end < 0 ? 0 : end > this.maxLength ? this.maxLength : end;
+            let rs = "";
+            for (let i = min; i < max; i++) {
+                rs += this.ary[i];
+            }
+            return rs;
+        }
+        getNextString(len) {
+            return this.getString(this.pos, this.pos + len);
+        }
+    }
+    module.exports = bus.on("字符阅读器", function(srcView) {
+        return new CharReader(srcView);
+    });
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+    const Err = require("@gotoeasy/err");
+    const SELF_CLOSE_TAGS = "br,hr,input,img,meta,link,area,base,basefont,bgsound,col,command,isindex,frame,embed,keygen,menuitem,nextid,param,source,track,wbr".split(",");
+    function escape(str) {
+        return str == null ? null : str.replace(/\\{/g, "\0").replace(/\\}/g, "￾￿");
+    }
+    function unescape(str) {
+        return str == null ? null : str.replace(/\u0000\u0001/g, "{").replace(/\ufffe\uffff/g, "}");
+    }
+    function getLocation(src, startPos, endPos, PosOffset) {
+        let ary, line, start = {}, end = {};
+        ary = src.substring(0, startPos + PosOffset).split("\n");
+        start.line = ary.length;
+        line = ary.pop();
+        start.column = line.length + 1;
+        start.pos = PosOffset + startPos;
+        ary = src.substring(0, endPos + PosOffset).split("\n");
+        end.line = ary.length;
+        line = ary.pop();
+        end.column = line.length;
+        end.pos = PosOffset + endPos;
+        if (!line.length) {
+            end.line--;
+            end.column = ary.pop().length + 1;
+        }
+        return {
+            start: start,
+            end: end
+        };
+    }
+    function TokenParser(fileText, viewText, file, PosOffset) {
+        let src = escape(viewText);
+        let options = bus.at("视图编译选项");
+        let reader = bus.at("字符阅读器", src);
+        let tokens = [];
+        this.parse = function() {
+            while (parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseHighlight() || parseText()) {}
+            tokens.forEach(token => {
+                token.loc = getLocation(fileText, token.pos.start, token.pos.end, PosOffset);
+                delete token.pos;
+            });
+            return tokens;
+        };
+        function parseNode() {
+            let pos = reader.getPos();
+            if (reader.getCurrentChar() !== "<" || reader.eof() || reader.getNextString(4) === "\x3c!--" || reader.getNextString(9) === "<![CDATA[" || src.indexOf(options.CodeBlockStart, pos) == pos || src.indexOf(options.ExpressionStart, pos) == pos) {
+                return 0;
+            }
+            let token, tagNm = "", oPos;
+            if (reader.getNextString(2) === "</") {
+                let idx = src.indexOf(">", pos + 3);
+                if (idx < 0) {
+                    return 0;
+                } else {
+                    oPos = {};
+                    oPos.start = reader.getPos();
+                    reader.skip(2);
+                    while (reader.getCurrentChar() !== ">" && !reader.eof()) {
+                        tagNm += reader.readChar();
+                    }
+                    reader.skip(1);
+                    oPos.end = reader.getPos();
+                    token = {
+                        type: options.TypeTagClose,
+                        value: tagNm.trim(),
+                        pos: oPos
+                    };
+                    tokens.push(token);
+                    return 1;
+                }
+            }
+            if (reader.getCurrentChar() === "<" && src.indexOf(">", pos + 2) < 0) {
+                return 0;
+            }
+            if (!/[a-z]/i.test(reader.getNextChar())) {
+                return 0;
+            }
+            oPos = {};
+            oPos.start = reader.getPos();
+            reader.skip(1);
+            while (/[^\s\/>]/.test(reader.getCurrentChar())) {
+                tagNm += reader.readChar();
+            }
+            let tokenTagNm = {
+                type: "",
+                value: unescape(tagNm).trim(),
+                pos: oPos
+            };
+            tokens.push(tokenTagNm);
+            while (parseAttr()) {}
+            reader.skipBlank();
+            if (reader.getNextString(2) === "/>") {
+                tokenTagNm.type = options.TypeTagSelfClose;
+                reader.skip(2);
+                oPos.end = reader.getPos();
+                return 1;
+            }
+            if (reader.getCurrentChar() === ">") {
+                if (SELF_CLOSE_TAGS.includes(tagNm.toLowerCase())) {
+                    tokenTagNm.type = options.TypeTagSelfClose;
+                } else {
+                    tokenTagNm.type = options.TypeTagOpen;
+                }
+                reader.skip(1);
+                oPos.end = reader.getPos();
+                return 1;
+            }
+            throw new Err('tag missing ">"', "file=" + file, {
+                text: fileText,
+                start: oPos.start + PosOffset
+            });
+        }
+        function parseAttr() {
+            if (reader.eof()) {
+                return 0;
+            }
+            reader.skipBlank();
+            let oPos = {};
+            oPos.start = reader.getPos();
+            let key = "", val = "";
+            if (reader.getCurrentChar() === "{") {
+                let stack = [];
+                key += reader.readChar();
+                while (!reader.eof()) {
+                    if (reader.getCurrentChar() === "{") {
+                        if (reader.getPrevChar() !== "\\") {
+                            stack.push("{");
+                        }
+                    }
+                    if (reader.getCurrentChar() === "}") {
+                        if (reader.getPrevChar() !== "\\") {
+                            if (!stack.length) {
+                                key += reader.readChar();
+                                break;
+                            }
+                            stack.pop();
+                        }
+                    }
+                    key += reader.readChar();
+                }
+                if (!key) {
+                    return 0;
+                }
+            } else {
+                while (/[^\s=\/>]/.test(reader.getCurrentChar())) {
+                    key += reader.readChar();
+                }
+                if (!key) {
+                    return 0;
+                }
+            }
+            oPos.end = reader.getPos();
+            let token = {
+                type: options.TypeAttributeName,
+                value: unescape(key),
+                pos: oPos
+            };
+            tokens.push(token);
+            reader.skipBlank();
+            oPos = {};
+            oPos.start = reader.getPos();
+            if (reader.getCurrentChar() === "=") {
+                oPos.end = reader.getPos() + 1;
+                token = {
+                    type: options.TypeEqual,
+                    value: "=",
+                    pos: oPos
+                };
+                tokens.push(token);
+                let PosEqual = reader.getPos() + PosOffset + 1;
+                reader.skip(1);
+                reader.skipBlank();
+                oPos = {};
+                oPos.start = reader.getPos();
+                if (reader.getCurrentChar() === '"') {
+                    reader.skip(1);
+                    let posStart = reader.getPos();
+                    while (!reader.eof() && reader.getCurrentChar() !== '"') {
+                        let ch = reader.readChar();
+                        ch !== "\r" && ch !== "\n" && (val += ch);
+                    }
+                    if (reader.eof() || reader.getCurrentChar() !== '"') {
+                        throw new Err('invalid attribute value format (missing ")', "file=" + file, {
+                            text: fileText,
+                            start: PosEqual,
+                            end: posStart + PosOffset
+                        });
+                    }
+                    reader.skip(1);
+                    oPos.end = reader.getPos();
+                    token = {
+                        type: options.TypeAttributeValue,
+                        value: unescape(val),
+                        pos: oPos
+                    };
+                    tokens.push(token);
+                } else if (reader.getCurrentChar() === "'") {
+                    reader.skip(1);
+                    let posStart = reader.getPos();
+                    while (!reader.eof() && reader.getCurrentChar() !== "'") {
+                        let ch = reader.readChar();
+                        ch != "\r" && ch != "\n" && (val += ch);
+                    }
+                    if (reader.eof() || reader.getCurrentChar() !== "'") {
+                        throw new Err("invalid attribute value format (missing ')", "file=" + file, {
+                            text: fileText,
+                            start: PosEqual,
+                            end: posStart + PosOffset
+                        });
+                    }
+                    reader.skip(1);
+                    oPos.end = reader.getPos();
+                    token = {
+                        type: options.TypeAttributeValue,
+                        value: unescape(val),
+                        pos: oPos
+                    };
+                    tokens.push(token);
+                } else if (reader.getCurrentChar() === "{") {
+                    let stack = [];
+                    let posStart = reader.getPos() + 1;
+                    while (!reader.eof()) {
+                        if (reader.getCurrentChar() === "{") {
+                            stack.push("{");
+                        } else if (reader.getCurrentChar() === "}") {
+                            if (!stack.length) {
+                                break;
+                            } else if (stack.length === 1) {
+                                val += reader.readChar();
+                                break;
+                            } else {
+                                stack.pop();
+                            }
+                        }
+                        val += reader.readChar();
+                    }
+                    if (reader.eof()) {
+                        throw new Err("invalid attribute value format (missing })", "file=" + file, {
+                            text: fileText,
+                            start: PosEqual,
+                            end: posStart + PosOffset
+                        });
+                    }
+                    oPos.end = reader.getPos();
+                    token = {
+                        type: options.TypeAttributeValue,
+                        value: unescape(val),
+                        pos: oPos
+                    };
+                    tokens.push(token);
+                } else {
+                    while (/[^\s\/>]/.test(reader.getCurrentChar())) {
+                        val += reader.readChar();
+                    }
+                    if (!val) {
+                        throw new Err("missing attribute value", "file=" + file, {
+                            text: fileText,
+                            start: PosEqual,
+                            end: PosEqual + 1
+                        });
+                    }
+                    if (!/^(\d+|\d+\.?\d+)$/.test(val)) {
+                        throw new Err("invalid attribute value", "file=" + file, {
+                            text: fileText,
+                            start: PosEqual,
+                            end: reader.getPos() + PosOffset
+                        });
+                    }
+                    oPos.end = reader.getPos();
+                    token = {
+                        type: options.TypeAttributeValue,
+                        value: val - 0,
+                        pos: oPos
+                    };
+                    tokens.push(token);
+                }
+            } else {}
+            return 1;
+        }
+        function parseComment() {
+            let token, pos = reader.getPos();
+            let idxStart = src.indexOf("\x3c!--", pos), idxEnd = src.indexOf("--\x3e", pos + 4);
+            if (idxStart === pos && idxEnd > pos) {
+                let oPos = {};
+                oPos.start = idxStart;
+                oPos.end = idxEnd + 3;
+                token = {
+                    type: options.TypeHtmlComment,
+                    value: unescape(src.substring(pos + 4, idxEnd)),
+                    pos: oPos
+                };
+                reader.skip(idxEnd + 3 - pos);
+                tokens.push(token);
+                return 1;
+            }
+            return 0;
+        }
+        function parseCdata() {
+            let token, pos = reader.getPos();
+            let idxStart = src.indexOf("<![CDATA[", pos), idxEnd = src.indexOf("]]>", pos + 9);
+            if (idxStart === pos && idxEnd > pos) {
+                let oPos = {};
+                oPos.start = idxStart;
+                oPos.end = idxEnd + 3;
+                let value = escape(src.substring(pos + 9, idxEnd));
+                reader.skip(idxEnd + 3 - pos);
+                if (!/\{.*?}/.test(value)) {
+                    token = {
+                        type: options.TypeText,
+                        value: value,
+                        pos: oPos
+                    };
+                    tokens.push(token);
+                } else {
+                    let idx1, idx2, txt, iStart = idxStart + 9, oPosTxt;
+                    while ((idx1 = value.indexOf("{")) >= 0 && (idx2 = value.indexOf("}", idx1)) > 0) {
+                        if (idx1 > 0) {
+                            txt = unescape(value.substring(0, idx1));
+                            oPosTxt = {
+                                start: iStart,
+                                end: iStart + txt.length
+                            };
+                            iStart = oPosTxt.end;
+                            token = {
+                                type: options.TypeText,
+                                value: txt,
+                                pos: oPosTxt
+                            };
+                            tokens.push(token);
+                        }
+                        txt = unescape(value.substring(idx1, idx2 + 1));
+                        oPosTxt = {
+                            start: iStart,
+                            end: iStart + txt.length
+                        };
+                        iStart = oPosTxt.end;
+                        token = {
+                            type: options.TypeExpression,
+                            value: txt,
+                            pos: oPosTxt
+                        };
+                        tokens.push(token);
+                        value = value.substring(idx2 + 1);
+                    }
+                    if (value) {
+                        txt = unescape(value);
+                        oPosTxt = {
+                            start: iStart,
+                            end: iStart + txt.length
+                        };
+                        iStart = oPosTxt.end;
+                        token = {
+                            type: options.TypeText,
+                            value: txt,
+                            pos: oPosTxt
+                        };
+                        tokens.push(token);
+                    }
+                }
+                return 1;
+            }
+            return 0;
+        }
+        function parseHighlight() {
+            let pos = reader.getPos(), start, end;
+            if (!((pos === 0 || reader.getPrevChar() === "\n") && src.indexOf("```", pos) === pos && src.indexOf("\n```", pos + 3) > 0)) {
+                return 0;
+            }
+            let str = src.substring(pos);
+            let rs = /(^```[\s\S]*?\r?\n)([\s\S]*?)\r?\n```[\s\S]*?\r?(\n|$)/.exec(str);
+            let len = rs[0].length;
+            let token, oPos = {};
+            start = pos;
+            end = pos + len;
+            token = {
+                type: options.TypeTagSelfClose,
+                value: "```",
+                pos: {
+                    start: start,
+                    end: end
+                }
+            };
+            tokens.push(token);
+            let match = rs[1].match(/\b\w*\b/);
+            let lang = match ? match[0].toLowerCase() : "";
+            if (lang) {
+                start = pos + match.index;
+                end = start + lang.length;
+                token = {
+                    type: options.TypeAttributeName,
+                    value: "lang",
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+                token = {
+                    type: options.TypeEqual,
+                    value: "=",
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+                token = {
+                    type: options.TypeAttributeValue,
+                    value: lang,
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+            }
+            match = rs[1].match(/\b\d+(\%|px)/i);
+            let height;
+            if (match) {
+                height = match[0];
+            } else {
+                match = rs[1].match(/\b\d+/i);
+                match && (height = match[0]);
+            }
+            if (height) {
+                start = pos + match.index;
+                end = start + height.length;
+                token = {
+                    type: options.TypeAttributeName,
+                    value: "height",
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+                token = {
+                    type: options.TypeEqual,
+                    value: "=",
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+                height = /^\d+$/.test(height) ? height + "px" : height;
+                token = {
+                    type: options.TypeAttributeValue,
+                    value: height,
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+            }
+            match = rs[1].match(/\bref\s?=\s?"(.*?)"/i);
+            let ref = match && match[0] ? match[0] : "";
+            if (ref) {
+                token = {
+                    type: options.TypeAttributeName,
+                    value: "ref",
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+                token = {
+                    type: options.TypeEqual,
+                    value: "=",
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+                token = {
+                    type: options.TypeAttributeValue,
+                    value: ref,
+                    pos: {
+                        start: start,
+                        end: end
+                    }
+                };
+                tokens.push(token);
+            }
+            let $CODE = rs[2].replace(/\u0000\u0001/g, "\\{").replace(/\ufffe\uffff/g, "\\}");
+            $CODE = $CODE.replace(/\n\\+```/g, match => "\n" + match.substring(2));
+            /^\\+```/.test($CODE) && ($CODE = $CODE.substring(1));
+            $CODE = $CODE.replace(/\{/g, "\\{").replace(/\}/g, "\\}");
+            start = pos + rs[1].length;
+            end = start + rs[2].length;
+            token = {
+                type: options.TypeAttributeName,
+                value: "$CODE",
+                pos: {
+                    start: start,
+                    end: end
+                }
+            };
+            tokens.push(token);
+            token = {
+                type: options.TypeEqual,
+                value: "=",
+                pos: {
+                    start: start,
+                    end: end
+                }
+            };
+            tokens.push(token);
+            token = {
+                type: options.TypeAttributeValue,
+                value: $CODE,
+                pos: {
+                    start: start,
+                    end: end
+                }
+            };
+            tokens.push(token);
+            reader.skip(len);
+            return 1;
+        }
+        function parseCodeBlock() {
+            let token, pos = reader.getPos();
+            let idxStart = src.indexOf(options.CodeBlockStart, pos), idxEnd = src.indexOf(options.CodeBlockEnd, pos + options.CodeBlockStart.length);
+            if (idxStart === pos && idxEnd > 0) {
+                let oPos = {};
+                oPos.start = idxStart;
+                oPos.end = idxEnd + options.CodeBlockEnd.length;
+                token = {
+                    type: options.TypeCodeBlock,
+                    value: unescape(src.substring(pos + options.CodeBlockStart.length, idxEnd)),
+                    pos: oPos
+                };
+                reader.skip(idxEnd + options.CodeBlockEnd.length - pos);
+                tokens.push(token);
+                return 1;
+            }
+            return 0;
+        }
+        function parseText() {
+            if (reader.eof()) {
+                return 0;
+            }
+            let oPos = {};
+            oPos.start = reader.getPos();
+            let token, text = "", pos;
+            while (!reader.eof()) {
+                text += reader.readChar();
+                pos = reader.getPos();
+                if (reader.getCurrentChar() === "<" || reader.getNextString(3) === "```" || src.indexOf(options.CodeBlockStart, pos) === pos || src.indexOf(options.ExpressionStart, pos) === pos) {
+                    break;
+                }
+            }
+            if (text) {
+                oPos.end = reader.getPos();
+                token = {
+                    type: options.TypeText,
+                    value: unescape(text),
+                    pos: oPos
+                };
+                tokens.push(token);
+                return 1;
+            }
+            return 0;
+        }
+        function parseExpression() {
+            if (reader.eof()) {
+                return 0;
+            }
+            let token;
+            let oPos = {};
+            oPos.start = reader.getPos();
+            token = parseExpr();
+            if (token) {
+                oPos.end = reader.getPos();
+                token.pos = oPos;
+                tokens.push(token);
+                return 1;
+            }
+            return 0;
+        }
+        function parseExpr() {
+            let pos = reader.getPos();
+            let idxStart = src.indexOf(options.ExpressionStart, pos), idxEnd = src.indexOf(options.ExpressionEnd, pos + options.ExpressionStart.length);
+            if (idxStart === pos && idxEnd > 0) {
+                let rs = {
+                    type: options.TypeExpression,
+                    value: unescape(src.substring(pos, idxEnd + options.ExpressionEnd.length))
+                };
+                reader.skip(idxEnd + options.ExpressionEnd.length - pos);
+                return rs;
+            }
+            return null;
+        }
+    }
+    bus.on("视图TOKEN解析器", function(fileText, srcView, file, PosOffset) {
+        return new TokenParser(fileText, srcView, file, PosOffset);
+    });
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("e15p-parse-view-tokens-to-ast", function(root, context) {
+            root.walk("RposeBlock", (node, object) => {
+                if (!/^view$/.test(object.name.value)) {
+                    return;
+                }
+                let view = object.text ? object.text.value : "";
+                if (!view) {
+                    return node.remove();
+                }
+                let tokenParser = bus.at("视图TOKEN解析器", context.input.text, view, context.input.file, object.text.loc.start.pos);
+                let type = "View";
+                let src = view;
+                let loc = object.text.loc;
+                let nodes = tokenParser.parse();
+                let objToken = {
+                    type: type,
+                    src: src,
+                    loc: loc,
+                    nodes: nodes
+                };
+                let nodeToken = this.createNode(objToken);
+                node.replaceWith(nodeToken);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("f15p-astedit-normalize-group-attribute", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk(OPTS.TypeAttributeName, (node, object) => {
+                let eqNode = node.after();
+                if (eqNode && eqNode.type === OPTS.TypeEqual) {
+                    let valNode = eqNode.after();
+                    if (!valNode || !valNode.type === OPTS.TypeAttributeValue) {
+                        throw new Err("missing attribute value");
+                    }
+                    if (bus.at("是否表达式", object.value)) {
+                        throw new Err("unsupport expression on attribute name", {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: object.loc.start.pos,
+                            end: object.loc.end.pos
+                        });
+                    }
+                    if (/^\s*\{\s*\}\s*$/.test(valNode.object.value)) {
+                        throw new Err("invalid empty expression", {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: valNode.object.loc.start.pos,
+                            end: valNode.object.loc.end.pos
+                        });
+                    }
+                    let oAttr = {
+                        type: "Attribute",
+                        name: object.value,
+                        value: valNode.object.value,
+                        isExpression: bus.at("是否表达式", valNode.object.value),
+                        loc: {
+                            start: object.loc.start,
+                            end: valNode.object.loc.end
+                        }
+                    };
+                    let attrNode = this.createNode(oAttr);
+                    node.replaceWith(attrNode);
+                    eqNode.remove();
+                    valNode.remove();
+                } else {
+                    let oAttr = {
+                        type: "Attribute",
+                        name: object.value,
+                        value: true,
+                        isExpression: false,
+                        loc: object.loc
+                    };
+                    if (bus.at("是否表达式", object.value)) {
+                        oAttr.isExpression = true;
+                        oAttr.isObjectExpression = true;
+                        delete oAttr.value;
+                    }
+                    let attrNode = this.createNode(oAttr);
+                    node.replaceWith(attrNode);
+                }
+            });
+            root.walk("Attribute", (node, object) => {
+                if (!node.parent) {
+                    return;
+                }
+                let ary = [ node ];
+                let nextNode = node.after();
+                while (nextNode && nextNode.type === "Attribute") {
+                    ary.push(nextNode);
+                    nextNode = nextNode.after();
+                }
+                let attrsNode = this.createNode({
+                    type: "Attributes"
+                });
+                node.before(attrsNode);
+                ary.forEach(n => {
+                    attrsNode.addChild(n.clone());
+                    n.remove();
+                });
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("f25p-astedit-normolize-tag-of-self-close", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk(OPTS.TypeTagSelfClose, (node, object) => {
+                let type = "Tag";
+                let value = object.value;
+                let loc = object.loc;
+                let tagNode = this.createNode({
+                    type: type,
+                    value: value,
+                    loc: loc
+                });
+                let tagAttrsNode = node.after();
+                if (tagAttrsNode && tagAttrsNode.type === "Attributes") {
+                    tagNode.addChild(tagAttrsNode.clone());
+                    tagAttrsNode.remove();
+                }
+                node.replaceWith(tagNode);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("f35p-astedit-normolize-tag-of-open-close", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            let normolizeTagNode = (tagNode, nodeTagOpen) => {
+                let nextNode = nodeTagOpen.after();
+                while (nextNode && nextNode.type !== OPTS.TypeTagClose) {
+                    if (nextNode.type === OPTS.TypeTagOpen) {
+                        let type = "Tag";
+                        let value = nextNode.object.value;
+                        let loc = nextNode.object.loc;
+                        let subTagNode = this.createNode({
+                            type: type,
+                            value: value,
+                            loc: loc
+                        });
+                        normolizeTagNode(subTagNode, nextNode);
+                        tagNode.addChild(subTagNode);
+                    } else {
+                        tagNode.addChild(nextNode.clone());
+                    }
+                    nextNode.remove();
+                    nextNode = nodeTagOpen.after();
+                }
+                if (!nextNode) {
+                    throw new Err("missing close tag", "file=" + context.input.file, {
+                        text: context.input.text,
+                        start: tagNode.object.loc.start.pos
+                    });
+                }
+                if (nextNode.type === OPTS.TypeTagClose) {
+                    if (nodeTagOpen.object.value !== nextNode.object.value) {
+                        throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, "file=" + context.input.file, {
+                            text: context.input.text,
+                            start: tagNode.object.loc.start.pos,
+                            end: nextNode.object.loc.end.pos
+                        });
+                    }
+                    tagNode.object.loc.end = nextNode.object.loc.end;
+                    nextNode.remove();
+                    return tagNode;
+                }
+                throw new Error("todo unhandle type");
+            };
+            root.walk(OPTS.TypeTagOpen, (node, object) => {
+                if (!node.parent) {
+                    return;
+                }
+                let type = "Tag";
+                let value = object.value;
+                let loc = object.loc;
+                let tagNode = this.createNode({
+                    type: type,
+                    value: value,
+                    loc: loc
+                });
+                normolizeTagNode(tagNode, node);
+                node.replaceWith(tagNode);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("BTF内容解析", function() {
+        return function(text) {
+            let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
+            let lines = text.split(LF);
+            let tokens = [];
+            parse(tokens, lines);
+            tokens.forEach(token => {
+                if (token.type === "BlockText") {
+                    token.value = token.value.join(LF);
+                }
+            });
+            return tokens;
+        };
+    }());
+    function parse(tokens, lines) {
+        let sLine, oName, comment, blockStart = false;
+        for (let i = 0; i < lines.length; i++) {
+            sLine = lines[i];
+            if (isBlockStart(sLine)) {
+                oName = getBlockName(sLine);
+                comment = sLine.substring(oName.len + 2);
+                tokens.push({
+                    type: "BlockName",
+                    name: oName.name,
+                    comment: comment
+                });
+                blockStart = true;
+            } else if (isBlockEnd(sLine)) {
+                tokens.push({
+                    type: "Comment",
+                    value: sLine
+                });
+                blockStart = false;
+            } else if (isDocumentEnd(sLine)) {
+                tokens.push({
+                    type: "Comment",
+                    value: sLine
+                });
+                blockStart = false;
+            } else {
+                if (blockStart) {
+                    if (tokens[tokens.length - 1].type !== "BlockText") {
+                        tokens.push({
+                            type: "BlockText",
+                            name: tokens[tokens.length - 1].name,
+                            value: []
+                        });
+                    }
+                    let oBlockText = tokens[tokens.length - 1];
+                    oBlockText.value.push(sLine);
+                } else {
+                    tokens.push({
+                        type: "Comment",
+                        value: sLine
+                    });
+                }
+            }
+        }
+    }
+    function isBlockStart(sLine) {
+        return sLine.startsWith("[") && sLine.indexOf("]") > 0;
+    }
+    function isBlockEnd(sLine) {
+        return sLine.startsWith("---------");
+    }
+    function isDocumentEnd(sLine) {
+        return sLine.startsWith("=========");
+    }
+    function getBlockName(sLine) {
+        let name, len;
+        for (let i = 1; i < sLine.length; i++) {
+            if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
+                name = sLine.substring(1, i).toLowerCase();
+                len = name.length;
+                return {
+                    name: name,
+                    len: len
+                };
+            }
+        }
+        name = sLine.substring(1, sLine.lastIndexOf("]")).toLowerCase();
+        len = name.length;
+        return {
+            name: name,
+            len: len
+        };
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const refractor = require("refractor");
+    const rehype = require("rehype");
+    inilike.displayName = "inilike";
+    inilike.aliases = [];
+    function inilike(Prism) {
+        Prism.languages.inilike = {
+            constant: /^[ \t]*[^\s=:]+?(?=[ \t]*[=:])/m,
+            "attr-value": {
+                pattern: /(=|:).*/,
+                inside: {
+                    punctuation: /^(=|:)/
+                }
+            }
+        };
+    }
+    refractor.register(inilike);
+    bus.on("语法高亮转换", function(tagpkgHighlight = "@rpose/buildin:```", oClass) {
+        return function(code = "", lang = "clike") {
+            if (!oClass) {
+                oClass = {};
+                oClass["token"] = bus.at("哈希样式类名", tagpkgHighlight, "token");
+                oClass["comment"] = bus.at("哈希样式类名", tagpkgHighlight, "comment");
+                oClass["selector"] = bus.at("哈希样式类名", tagpkgHighlight, "selector");
+            }
+            if (/^(btf|rpose)$/i.test(lang)) {
+                let html = highlightBtfLike(code);
+                return "<ol><li>" + html.split(/\r?\n/).join("</li><li>") + "</li></ol>";
+            }
+            !refractor.registered(lang) && (lang = "clike");
+            let html = highlight(code, lang);
+            return "<ol><li>" + html.split(/\r?\n/).join("</li><li>") + "</li></ol>";
+        };
+        function highlightBtfLike(code) {
+            let html = [];
+            let tokens = bus.at("BTF内容解析", code);
+            tokens.forEach(token => {
+                if (token.type === "BlockName") {
+                    html.push(btfBlockName("[" + token.name + "]") + btfComment(token.comment));
+                } else if (token.type === "BlockText") {
+                    let lang = token.name;
+                    if (!refractor.registered(lang)) {
+                        if (/^(actions|methods|options|state)$/i.test(lang)) {
+                            lang = "js";
+                        } else if (/^view$/i.test(lang)) {
+                            lang = "markup";
+                        } else {
+                            lang = "inilike";
+                        }
+                    }
+                    html.push(highlight(token.value, lang));
+                } else if (token.type === "Comment") {
+                    html.push(btfComment(token.value));
+                } else {
+                    throw new Error("unknow type");
+                }
+            });
+            return html.join("\n");
+        }
+        function btfComment(code) {
+            return code.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/(\S+.*)/g, `<span class="${oClass["token"]} ${oClass["comment"]}">$1</span>`);
+        }
+        function btfBlockName(code) {
+            return code.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/(.*)/g, `<span class="${oClass["token"]} ${oClass["selector"]}">$1</span>`);
+        }
+        function highlight(code, lang) {
+            let nodes = refractor.highlight(code, lang);
+            renameClassName(nodes);
+            return rehype().stringify({
+                type: "root",
+                children: nodes
+            }).toString();
+        }
+        function renameClassName(nodes) {
+            nodes && nodes.forEach(node => {
+                if (node.properties && node.properties.className) {
+                    let classes = [];
+                    node.properties.className.forEach(cls => {
+                        !oClass[cls] && (oClass[cls] = bus.at("哈希样式类名", tagpkgHighlight, cls));
+                        classes.push(oClass[cls]);
+                    });
+                    node.properties.className = classes;
+                }
+                renameClassName(node.children);
+            });
+        }
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("f45p-astedit-transform-tag-```", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (object.value !== "```") {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                let codeNode, lang;
+                for (let i = 0, nd; nd = attrsNode.nodes[i++]; ) {
+                    if (nd.object.name === "$CODE") {
+                        codeNode = nd;
+                        nd.object.value = nd.object.value.replace(/\\\{/g, "{").replace(/\\\}/g, "}");
+                    } else if (nd.object.name === "lang") {
+                        lang = nd.object.value;
+                    }
+                }
+                codeNode.object.value = bus.at("语法高亮转换", codeNode.object.value, lang);
+                let taglibNode = this.createNode({
+                    type: "Attribute"
+                });
+                taglibNode.object.name = "@taglib";
+                taglibNode.object.value = "@rpose/buildin:```";
+                let loc = Object.assign({}, object.loc);
+                loc.end.line = loc.start.line;
+                loc.end.column = 3;
+                loc.end.pos = loc.start.pos + 3;
+                taglibNode.object.loc = loc;
+                attrsNode.addChild(taglibNode);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("f55p-astedit-normolize-flag-is-svg-tag", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!/^svg$/i.test(object.value)) {
+                    return;
+                }
+                object.svg = true;
+                node.walk("Tag", (nd, obj) => {
+                    obj.svg = true;
+                }, {
+                    readonly: true
+                });
+            }, {
+                readonly: true
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const REG_TAGS = /^(html|link|meta|style|title|address|article|aside|footer|header|h1|h2|h3|h4|h5|h6|hgroup|main|nav|section|blockquote|dd|dir|div|dl|dt|figcaption|figure|hr|li|ol|p|pre|ul|a|abbr|b|bdi|bdo|br|cite|code|data|dfn|em|i|kbd|mark|q|rb|rbc|rp|rt|rtc|ruby|s|samp|small|span|strong|sub|sup|time|tt|u|var|wbr|area|audio|img|map|track|video|applet|embed|iframe|noembed|object|param|picture|source|canvas|noscript|script|del|ins|caption|col|colgroup|table|tbody|td|tfoot|th|thead|tr|button|datalist|fieldset|form|input|label|legend|meter|optgroup|option|output|progress|select|textarea|details|dialog|menu|menuitem|summary|content|element|shadow|slot|template|acronym|basefont|bgsound|big|blink|center|command|font|frame|frameset|image|isindex|keygen|listing|marquee|multicol|nextid|nobr|noframes|plaintext|spacer|strike|xmp|head|base|body|math|svg)$/i;
+    bus.on("编译插件", function() {
+        return postobject.plugin("f65p-astedit-normolize-flag-is-standard-tag", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                object.standard = !!object.svg || REG_TAGS.test(object.value);
+            }, {
+                readonly: true
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("g15p-astedit-group-attribtue-{prop}", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    nd.object.isObjectExpression && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                let groupNode = this.createNode({
+                    type: "ObjectExpressionAttributes"
+                });
+                ary.forEach(nd => {
+                    let cNode = nd.clone();
+                    cNode.type = "ObjectExpressionAttribute";
+                    cNode.object.type = "ObjectExpressionAttribute";
+                    groupNode.addChild(cNode);
+                    nd.remove();
+                });
+                node.addChild(groupNode);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const REG_EVENTS = /^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;
+    bus.on("编译插件", function() {
+        return postobject.plugin("g25p-astedit-group-attribtue-events", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.object.standard) {
+                    return;
+                }
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    REG_EVENTS.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                let groupNode = this.createNode({
+                    type: "Events"
+                });
+                ary.forEach(nd => {
+                    let cNode = nd.clone();
+                    cNode.type = "Event";
+                    cNode.object.type = "Event";
+                    groupNode.addChild(cNode);
+                    nd.remove();
+                });
+                node.addChild(groupNode);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("g35p-astedit-process-attribtue-style", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^style$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of style", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "Style";
+                oNode.object.type = "Style";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("g45p-astedit-process-attribtue-class", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^class$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of class", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "Class";
+                oNode.object.type = "Class";
+                oNode.object.classes = getClasses(oNode.object.value);
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+    function getClasses(clas) {
+        let result = [];
+        clas = clas.replace(/\{.*?\}/g, function(match) {
+            let str = match.substring(1, match.length - 1);
+            let idx, key, val;
+            while (str.indexOf(":") > 0) {
+                idx = str.indexOf(":");
+                key = str.substring(0, idx).replace(/['"]/g, "").trim();
+                val = str.substring(idx + 1);
+                let idx2 = val.indexOf(":");
+                if (idx2 > 0) {
+                    val = val.substring(0, idx2);
+                    val = val.substring(0, val.lastIndexOf(","));
+                    str = str.substring(idx + 1 + val.length + 1);
+                } else {
+                    str = "";
+                }
+                key && result.push(key);
+            }
+            return "";
+        });
+        let ary = clas.split(/\s+/);
+        for (let i = 0; i < ary.length; i++) {
+            ary[i].trim() && result.push(ary[i].trim());
+        }
+        return result;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("h15p-astedit-process-attribtue-@ref", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^@ref$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of @ref", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                if (/^(if|for)$/.test(object.value)) {
+                    throw new Err(`unsupport attribute @ref on tag <${object.value}>`, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[0].object.loc.start.pos,
+                        end: ary[0].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "@ref";
+                oNode.object.type = "@ref";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("h25p-astedit-process-attribtue-@if", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^@if$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of @if", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "@if";
+                oNode.object.type = "@if";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("h35p-astedit-process-attribtue-@show", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^@show$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of @show", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                if (/^(if|for)$/.test(object.value)) {
+                    throw new Err(`unsupport attribute @show on tag <${object.value}>`, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[0].object.loc.start.pos,
+                        end: ary[0].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "@show";
+                oNode.object.type = "@show";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("h45p-astedit-process-attribtue-@for", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^@for$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of @for", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "@for";
+                oNode.object.type = "@for";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("h55p-astedit-process-attribtue-@csslib", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^@csslib$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of @csslib", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                if (/^(if|for)$/.test(object.value)) {
+                    throw new Err(`unsupport attribute @csslib on tag <${object.value}>`, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[0].object.loc.start.pos,
+                        end: ary[0].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "@csslib";
+                oNode.object.type = "@csslib";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("h65p-astedit-process-attribtue-@taglib", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!node.nodes || !node.nodes.length) {
+                    return;
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes.forEach(nd => {
+                    /^@taglib$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (!ary.length) {
+                    return;
+                }
+                if (ary.legnth > 1) {
+                    throw new Err("duplicate attribute of @taglib", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                if (/^(if|for)$/.test(object.value)) {
+                    throw new Err(`unsupport @taglib on tag <${object.value}>`, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[0].object.loc.start.pos,
+                        end: ary[0].object.loc.end.pos
+                    });
+                }
+                let oNode = ary[0].clone();
+                oNode.type = "@taglib";
+                oNode.object.type = "@taglib";
+                node.addChild(oNode);
+                ary[0].remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+    const File = require("@gotoeasy/file");
+    const Err = require("@gotoeasy/err");
+    const postobject = require("@gotoeasy/postobject");
+    const fs = require("fs");
+    bus.on("编译插件", function() {
+        return postobject.plugin("j15p-astedit-process-tag-img", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!/^img$/i.test(object.value)) {
+                    return;
+                }
+                context.result.hasImg = true;
+                let attrsNode;
+                for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    return;
+                }
+                let srcAttrNode;
+                for (let i = 0, nd; nd = attrsNode.nodes[i++]; ) {
+                    if (/^src$/i.test(nd.object.name)) {
+                        srcAttrNode = nd;
+                        break;
+                    }
+                }
+                if (!srcAttrNode) {
+                    return;
+                }
+                let imgname = hashImageName(context.input.file, srcAttrNode.object.value);
+                if (!imgname) {
+                    throw new Err("image file not found", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: srcAttrNode.object.loc.start.pos,
+                        end: srcAttrNode.object.loc.end.pos
+                    });
+                }
+                srcAttrNode.object.value = "%imagepath%" + imgname;
+            }, {
+                readonly: true
+            });
+        });
+    }());
+    function hashImageName(srcFile, imgFile) {
+        let file;
+        if (File.exists(imgFile)) {
+            file = imgFile;
+        } else {
+            file = File.resolve(srcFile, imgFile);
+            if (!File.exists(file)) {
+                return false;
+            }
+        }
+        let name = hash({
+            file: file
+        }) + File.extname(file);
+        let oCache = bus.at("缓存");
+        let distDir = oCache.path + "/resources";
+        let distFile = distDir + "/" + name;
+        if (!File.exists(distFile)) {
+            !File.existsDir(distDir) && File.mkdir(distDir);
+            fs.createReadStream(file).pipe(fs.createWriteStream(distFile));
+        }
+        return name;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k15p-astedit-transform-attribtue-@ref", function(root, context) {
+            root.walk("@ref", (node, object) => {
+                let tagNode = node.parent;
+                if (bus.at("是否表达式", object.value)) {
+                    throw new Err("@ref unsupport the expression", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let attrsNode;
+                for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                    if (nd.type === "Attributes") {
+                        attrsNode = nd;
+                        break;
+                    }
+                }
+                let cNode = node.clone();
+                cNode.type = "Attribute";
+                cNode.object.type = "Attribute";
+                cNode.object.name = "ref";
+                let $contextNode = node.clone();
+                $contextNode.type = "Attribute";
+                $contextNode.object.type = "Attribute";
+                $contextNode.object.name = "$context";
+                $contextNode.object.value = "{$this}";
+                $contextNode.object.isExpression = true;
+                if (!attrsNode) {
+                    attrsNode = this.createNode({
+                        type: "Attributes"
+                    });
+                    tagNode.addChild(attrsNode);
+                }
+                attrsNode.addChild(cNode);
+                attrsNode.addChild($contextNode);
+                node.remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k25p-astedit-transform-attribtue-@if", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk("@if", (node, object) => {
+                let tagNode = node.parent;
+                /^if$/i.test(tagNode.object.value) && (tagNode.ok = true);
+                let type = OPTS.TypeCodeBlock;
+                let value = "if (" + object.value.replace(/^\s*\{=?/, "").replace(/\}\s*$/, "") + ") {";
+                let jsNode = this.createNode({
+                    type: type,
+                    value: value
+                });
+                tagNode.before(jsNode);
+                value = "}";
+                jsNode = this.createNode({
+                    type: type,
+                    value: value
+                });
+                tagNode.after(jsNode);
+                node.remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k35p-astedit-transform-attribtue-@show", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk("@show", (node, object) => {
+                let tagNode = node.parent;
+                let styleNode;
+                for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                    if (nd.type === "Style") {
+                        styleNode = nd;
+                        break;
+                    }
+                }
+                let display = OPTS.ExpressionStart + "(" + object.value.replace(/^\{/, "").replace(/\}$/, "") + ') ? "display:block;" : "display:none;"' + OPTS.ExpressionEnd;
+                if (!styleNode) {
+                    styleNode = this.createNode({
+                        type: "Style",
+                        value: display
+                    });
+                    tagNode.addChild(styleNode);
+                } else {
+                    if (styleNode.object.value.endsWith(";")) {
+                        styleNode.object.value += display;
+                    } else {
+                        styleNode.object.value += ";" + display;
+                    }
+                }
+                styleNode.object.isExpression = true;
+                node.remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k45p-astedit-transform-attribtue-@for", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk("@for", (node, object) => {
+                let tagNode = node.parent;
+                /^for$/i.test(tagNode.object.value) && (tagNode.ok = true);
+                let type = OPTS.TypeCodeBlock;
+                let value = parseFor(context, object);
+                let loc = object.loc;
+                let jsNode = this.createNode({
+                    type: type,
+                    value: value,
+                    loc: loc
+                });
+                tagNode.before(jsNode);
+                value = "}";
+                jsNode = this.createNode({
+                    type: type,
+                    value: value,
+                    loc: loc
+                });
+                tagNode.after(jsNode);
+                node.remove();
+            });
+        });
+    }());
+    function parseFor(context, object) {
+        if (!object.value) {
+            throw getError(context, object);
+        }
+        let value, index, from, max, array, match;
+        match = object.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+from\s+(\w+)\s+max\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = match[2];
+            from = match[3];
+            max = match[4];
+            array = match[5];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(index)) {
+                throw getError(context, object, `invalid index name: [${index}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=${from},ARY_=(${array}),MAX_=Math.min(${max},ARY_.length),${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=${from},MAX_=Math.min(${max},${array}.length),${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        match = object.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+max\s+(\w+)\s+from\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = match[2];
+            from = match[4];
+            max = match[3];
+            array = match[5];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(index)) {
+                throw getError(context, object, `invalid index name: [${index}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=${from},ARY_=(${array}),MAX_=Math.min(${max},ARY_.length),${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=${from},MAX_=Math.min(${max},${array}.length),${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        match = object.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+from\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = match[2];
+            from = match[3];
+            array = match[4];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(index)) {
+                throw getError(context, object, `invalid index name: [${index}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=${from},ARY_=(${array}),MAX_=ARY_.length,${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=${from},MAX_=${array}.length,${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        match = object.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s+max\s+(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = match[2];
+            max = match[3];
+            array = match[4];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(index)) {
+                throw getError(context, object, `invalid index name: [${index}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=0,ARY_=(${array}),MAX_=Math.min(${max},ARY_.length),${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=0,MAX_=Math.min(${max},${array}.length),${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        match = object.value.match(/^\s*\{*\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = match[2];
+            array = match[3];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(index)) {
+                throw getError(context, object, `invalid index name: [${index}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=0,ARY_=(${array}),MAX_=ARY_.length,${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=0,MAX_=${array}.length,${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        match = object.value.match(/^\s*\{*\s*\(\s*(\w+)\s*\)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = "J_";
+            array = match[2];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(index)) {
+                throw getError(context, object, `invalid index name: [${index}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=0,ARY_=(${array}),MAX_=ARY_.length,${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=0,MAX_=${array}.length,${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        match = object.value.match(/^\s*\{*\s*(\w+)\s+in\s+(\S+?)\s*\}*\s*$/);
+        if (match) {
+            value = match[1];
+            index = "J_";
+            array = match[2];
+            if (/^\d+/.test(value)) {
+                throw getError(context, object, `invalid value name: [${value}]`);
+            }
+            if (/^\d+/.test(array)) {
+                throw getError(context, object, `invalid array name: [${array}]`);
+            }
+            if (/[^a-zA-Z\d_]/.test(array)) {
+                return ` for ( let ${index}=0,ARY_=(${array}),MAX_=ARY_.length,${value}; ${index}<MAX_; ${index}++) {\n                        ${value} = ARY_[${index}]; `;
+            }
+            return ` for ( let ${index}=0,MAX_=${array}.length,${value}; ${index}<MAX_; ${index}++) {\n                    ${value} = ${array}[${index}]; `;
+        }
+        throw getError(context, object);
+    }
+    function getError(context, object, msg = "invalid format of @for") {
+        return new Err(msg, {
+            file: context.input.file,
+            text: context.input.text,
+            start: object.loc.start.pos,
+            end: object.loc.end.pos
+        });
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k55p-astedit-transform-tag-name-by-@taglib", function(root, context) {
+            root.walk("@taglib", (node, object) => {
+                let tagNode = node.parent;
+                if (tagNode.object.standard) {
+                    throw new Err("unsupport @taglib on standard tag", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let cpFile = bus.at("标签项目源文件", tagNode.object.value);
+                if (cpFile) {
+                    throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let name, pkg, comp, match, taglib = object.value;
+                if (match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/)) {
+                    pkg = match[1];
+                    comp = match[2];
+                } else if (match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/)) {
+                    pkg = match[1];
+                    comp = tagNode.object.value;
+                } else if (taglib.indexOf("=") >= 0) {
+                    throw new Err("invalid attribute value of @taglib", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                } else if (match = taglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/)) {
+                    pkg = match[1];
+                    comp = match[2];
+                } else if (match = taglib.match(/^\s*(.+?)\s*$/)) {
+                    pkg = match[1];
+                    comp = tagNode.object.value;
+                } else {
+                    throw new Err("invalid attribute value of @taglib", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let install = bus.at("自动安装", pkg);
+                if (!install) {
+                    throw new Err("package install failed: " + pkg, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let oPkg = bus.at("模块组件信息", pkg);
+                let srcFile = bus.at("标签库引用", `${pkg}:${comp}`, oPkg.config);
+                if (!srcFile) {
+                    throw new Err("component not found: " + object.value, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let tagpkg = bus.at("标签全名", srcFile);
+                tagNode.object.value = tagpkg;
+                node.remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k65p-astedit-transform-tag-name-by-[taglib]", function(root, context) {
+            let oTaglib = Object.assign({}, context.result.oTaglib);
+            let ary, clsname, csslib, css;
+            root.walk("Tag", (node, object) => {
+                if (object.standard) {
+                    return;
+                }
+                let taglib = oTaglib[object.value];
+                if (!taglib) {
+                    return;
+                }
+                let pkg, comp, ary = taglib.split(":");
+                if (ary.length > 1) {
+                    pkg = ary[0].trim();
+                    comp = ary[1].trim();
+                } else {
+                    pkg = taglib.trim();
+                    comp = object.value;
+                }
+                let install = bus.at("自动安装", pkg);
+                if (!install) {
+                    throw new Err("package install failed: " + pkg, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let oPkg = bus.at("模块组件信息", pkg);
+                let srcFile = bus.at("标签库引用", `${pkg}:${comp}`, oPkg.config);
+                if (!srcFile) {
+                    throw new Err("component not found: " + object.value, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let tagpkg = bus.at("标签全名", srcFile);
+                object.value = tagpkg;
+            });
+        }, {
+            readonly: true
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("k75p-astedit-transform-tag-if-for", function(root, context) {
+            root.walk("Tag", (node, object) => {
+                if (!/^(if|for)$/i.test(object.value)) {
+                    return;
+                }
+                if (!node.ok) {
+                    throw new Err(`missing attribute @${object.value} of tag <${object.value}>`, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos
+                    });
+                }
+                node.nodes.forEach(nd => {
+                    nd.type !== "Attributes" && node.before(nd.clone());
+                });
+                node.remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    const hash = require("@gotoeasy/hash");
+    const AryNm = "_Ary";
+    const SlotVnodes = "slotVnodes";
+    bus.on("编译插件", function() {
+        return postobject.plugin("k85p-astedit-transform-tag-slot", function(root, context) {
+            let nonameSlotNodes = [];
+            let options = bus.at("视图编译选项");
+            root.walk("Tag", (node, object) => {
+                if (!/^slot$/i.test(object.value)) {
+                    return;
+                }
+                let slots = context.result.slots = context.result.slots || [];
+                let attrsNode;
+                if (node.nodes) {
+                    for (let i = 0, nd; nd = node.nodes[i++]; ) {
+                        if (nd.type === "Attributes") {
+                            attrsNode = nd;
+                            break;
+                        }
+                    }
+                }
+                if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                    if (slots.length) {
+                        throw new Err(`missing attribute 'name' of tag <slot>`, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: object.loc.start.pos,
+                            end: object.loc.end.pos
+                        });
+                    }
+                    slots.push("");
+                    nonameSlotNodes.push(node);
+                    node.slotName = "";
+                    return;
+                }
+                let ary = [];
+                attrsNode.nodes && attrsNode.nodes.forEach(nd => {
+                    /^name$/i.test(nd.object.name) && ary.push(nd);
+                });
+                if (ary.length === 0) {
+                    if (slots.length) {
+                        throw new Err(`missing attribute 'name' of tag <slot>`, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: object.loc.start.pos,
+                            end: object.loc.end.pos
+                        });
+                    }
+                    slots.push("");
+                    nonameSlotNodes.push(node);
+                    node.slotName = "";
+                    return;
+                }
+                if (ary.length > 1) {
+                    throw new Err("duplicate attribute of name", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[1].object.loc.start.pos,
+                        end: ary[1].object.loc.end.pos
+                    });
+                }
+                if (bus.at("是否表达式", ary[0].object.value)) {
+                    throw new Err("slot name unsupport the expression", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[0].object.loc.start.pos,
+                        end: ary[0].object.loc.end.pos
+                    });
+                }
+                let name = ary[0].object.value + "";
+                if (slots.includes(name)) {
+                    throw new Err("duplicate slot name: " + name, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: ary[0].object.loc.start.pos,
+                        end: ary[0].object.loc.end.pos
+                    });
+                }
+                slots.push(name);
+                !name && nonameSlotNodes.push(node);
+                node.slotName = name;
+            });
+            let slots = context.result.slots = context.result.slots || [];
+            if (slots.length > 1 && nonameSlotNodes.length) {
+                throw new Err(`missing slot name on tag <slot>`, {
+                    file: context.input.file,
+                    text: context.input.text,
+                    start: nonameSlotNodes[0].object.loc.start.pos,
+                    end: nonameSlotNodes[0].object.loc.end.pos
+                });
+            }
+            if (context.result.slots) {
+                let statekeys = context.doc.api.statekeys = context.doc.api.statekeys || [];
+                !statekeys.includes("$SLOT") && statekeys.push("$SLOT");
+            }
+            if (slots.length) {
+                root.walk("Tag", (nd, obj) => {
+                    if (!/^slot$/i.test(obj.value)) {
+                        return;
+                    }
+                    let type = options.TypeCodeBlock;
+                    let value = `${AryNm}.push( ...${SlotVnodes}_${hash(nd.slotName)} );`;
+                    let loc = nd.object.loc;
+                    nd.replaceWith(this.createNode({
+                        type: type,
+                        value: value
+                    }));
+                });
+                let arySrc = [];
+                let isNoNameSlot = slots.length === 1 && slots[0] === "" ? true : false;
+                let aryVars = [];
+                isNoNameSlot && aryVars.push(" _hasDefinedSlotTemplate ");
+                slots.forEach(slotName => {
+                    aryVars.push(` ${SlotVnodes}_${hash(slotName)} = [] `);
+                });
+                arySrc.push("let " + aryVars.join(",") + ";");
+                arySrc.push(` ($state.$SLOT || []).forEach(vn => { `);
+                arySrc.push(`     if (vn.a) { `);
+                if (isNoNameSlot) {
+                    arySrc.push(`     vn.a.slot !== undefined && (_hasDefinedSlotTemplate = 1); `);
+                }
+                slots.forEach(slotNm => {
+                    arySrc.push(`     vn.a.slot === '${slotNm}' && (${SlotVnodes}_${hash(slotNm)} = vn.c || []); `);
+                });
+                arySrc.push(`     } `);
+                arySrc.push(` }); `);
+                if (isNoNameSlot) {
+                    arySrc.push(` !_hasDefinedSlotTemplate && !${SlotVnodes}_${hash("")}.length && (${SlotVnodes}_${hash("")} = $state.$SLOT || []); `);
+                }
+                root.walk("View", (nd, obj) => {
+                    let type = options.TypeCodeBlock;
+                    let value = arySrc.join("\n");
+                    nd.addChild(this.createNode({
+                        type: type,
+                        value: value
+                    }), 0);
+                    return false;
+                });
+            }
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("m15p-csslibify-check-@csslib", function(root, context) {
+            let oCsslib = context.result.oCsslib;
+            let oNameSet = new Set();
+            root.walk("@csslib", (node, object) => {
+                if (bus.at("是否表达式", object.value)) {
+                    throw new Err("@csslib unsupport the expression", {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                let tmpAry = object.value.split("=");
+                let libname = tmpAry.length > 1 ? tmpAry[0].trim() : "*";
+                if (!libname) {
+                    throw new Err("use * as empty csslib name. etc. * = " + tmpAry[1], {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                if (oCsslib[libname]) {
+                    throw new Err("duplicate csslib name: " + libname, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                if (oNameSet.has(libname)) {
+                    throw new Err("duplicate csslib name: " + libname, {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: object.loc.start.pos,
+                        end: object.loc.end.pos
+                    });
+                }
+                oNameSet.add(libname);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("m17p-csslibify-gen-css-@csslib", function(root, context) {
+            let style = context.style;
+            let oCssSet = style.csslibset = style.csslibset || new Set();
+            let oCsslib = Object.assign({}, context.result.oCsslib);
+            let oCsslibPkgs = context.result.oCsslibPkgs;
+            let hashClassName = bus.on("哈希样式类名")[0];
+            let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? cls + "@" + pkg : cls);
+            let opts = {
+                rename: rename
+            };
+            let atcsslibtagcss = context.result.atcsslibtagcss = context.result.atcsslibtagcss || [];
+            let ary, clsname, csslib, css;
+            root.walk("Class", (node, object) => {
+                let csslibNode;
+                for (let i = 0, nd; nd = node.parent.nodes[i++]; ) {
+                    if (nd.type === "@csslib") {
+                        csslibNode = nd;
+                        break;
+                    }
+                }
+                if (csslibNode) {
+                    let atcsslib = bus.at("样式库", csslibNode.object.value);
+                    oCsslib[atcsslib.name] = atcsslib;
+                    oCsslibPkgs[atcsslib.name] = atcsslib.pkg;
+                    node.parent.object.standard && atcsslibtagcss.push(atcsslib.get(node.parent.object.value));
+                }
+                let nonameCsslib = oCsslib["*"];
+                for (let i = 0, clspkg, clsname, asname; clspkg = object.classes[i++]; ) {
+                    ary = clspkg.split("@");
+                    clsname = "." + ary[0];
+                    asname = ary.length > 1 ? ary[1] : "";
+                    if (asname) {
+                        csslib = oCsslib[asname];
+                        if (!csslib) {
+                            throw new Err("csslib not found: " + asname, {
+                                file: context.input.file,
+                                text: context.input.text,
+                                start: object.loc.start.pos,
+                                end: object.loc.end.pos
+                            });
+                        }
+                        css = csslib.get(clsname, opts);
+                        if (!css) {
+                            throw new Err("css class not found: " + clsname, {
+                                file: context.input.file,
+                                text: context.input.text,
+                                start: object.loc.start.pos,
+                                end: object.loc.end.pos
+                            });
+                        }
+                        oCssSet.add(css);
+                    } else {
+                        nonameCsslib && oCssSet.add(nonameCsslib.get(clsname, opts));
+                    }
+                }
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("n15p-astedit-remove-blank-text", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk(OPTS.TypeText, (node, object) => {
+                if (!/^\s*$/.test(object.value) || node.parent.object.name === "pre") {
+                    return;
+                }
+                let nBefore = node.before();
+                let nAfter = node.after();
+                if (!nBefore || !nAfter || (nBefore.type === "Tag" || nAfter.type === "Tag") || (nBefore.type === OPTS.TypeHtmlComment || nAfter.type === OPTS.TypeHtmlComment) || (nBefore.type === OPTS.TypeCodeBlock || nAfter.type === OPTS.TypeCodeBlock)) {
+                    node.remove();
+                }
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("n25p-astedit-remove-html-comment", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk(OPTS.TypeHtmlComment, (node, object) => {
+                node.remove();
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("n35p-astedit-join-text-node", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk(/^(Text|Expression)$/, (node, object) => {
+                let ary = [ node ];
+                let nAfter = node.after();
+                while (nAfter && (nAfter.type === OPTS.TypeText || nAfter.type === OPTS.TypeExpression)) {
+                    ary.push(nAfter);
+                    nAfter = nAfter.after();
+                }
+                if (ary.length < 2) {
+                    return;
+                }
+                let aryRs = [], tmp;
+                ary.forEach(nd => {
+                    if (nd.type === OPTS.TypeText) {
+                        aryRs.push('"' + lineString(nd.object.value) + '"');
+                    } else {
+                        if (!isBlankOrCommentExpr(nd.object.value)) {
+                            aryRs.push(nd.object.value.replace(/^\s*\{/, "(").replace(/\}\s*$/, ")"));
+                        }
+                    }
+                });
+                let value = OPTS.ExpressionStart + aryRs.join(" + ") + OPTS.ExpressionEnd;
+                let start = ary[0].object.loc.start;
+                let end = ary[ary.length - 1].object.loc.end;
+                let loc = {
+                    start: start,
+                    end: end
+                };
+                let tNode = this.createNode({
+                    type: OPTS.TypeExpression,
+                    value: value,
+                    loc: loc
+                });
+                node.before(tNode);
+                ary.forEach(nd => nd.remove());
+            });
+        });
+    }());
+    function lineString(str, quote = '"') {
+        if (str == null) {
+            return str;
+        }
+        let rs = str.replace(/\\/g, "\\\\").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+        if (quote == '"') {
+            rs = rs.replace(/"/g, '\\"');
+        } else if (quote == "'") {
+            rs = rs.replace(/'/g, "\\'");
+        }
+        return rs;
+    }
+    function isBlankOrCommentExpr(code) {
+        code = code.trim();
+        if (code.startsWith("{") && code.endsWith("}")) {
+            code = code.substring(1, code.length - 1).trim();
+        }
+        if (!code) {
+            return true;
+        }
+        if (/^\/\/.*$/.test(code) && code.indexOf("\n") < 0) {
+            return true;
+        }
+        if (!code.startsWith("/*") || !code.endsWith("*/")) {
+            return false;
+        }
+        if (code.indexOf("*/") === code.length - 2) {
+            return true;
+        }
+        return false;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("n45p-astedit-remove-jscode-blank-comment", function(root, context) {
+            const OPTS = bus.at("视图编译选项");
+            root.walk(OPTS.TypeCodeBlock, (node, object) => {
+                if (isBlankOrComment(object.value)) {
+                    node.remove();
+                }
+            });
+        });
+    }());
+    function isBlankOrComment(code) {
+        code = code.trim();
+        if (!code) {
+            return true;
+        }
+        if (/^\/\/.*$/.test(code) && code.indexOf("\n") < 0) {
+            return true;
+        }
+        if (!code.startsWith("/*") || !code.endsWith("*/")) {
+            return false;
+        }
+        if (code.indexOf("*/") === code.length - 2) {
+            return true;
+        }
+        return false;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    class ClsTemplate {
+        constructor(tmpl = "", argNm) {
+            let fnParse = function(ary, tmpl, isPreCode) {
+                let tmp, idx = tmpl.indexOf("<%");
+                if (idx < 0) {
+                    ary.push(fnText(ary, tmpl, isPreCode));
+                } else if (idx == 0) {
+                    if (tmpl.indexOf("<%=") == idx) {
+                        tmpl = tmpl.substring(3);
+                        idx = tmpl.indexOf("%>");
+                        tmp = tmpl.substring(0, idx);
+                        ary.push(ary.pop() + "+" + tmp);
+                        fnParse(ary, tmpl.substring(idx + 2), false);
+                    } else {
+                        tmpl = tmpl.substring(2);
+                        idx = tmpl.indexOf("%>");
+                        tmp = tmpl.substring(0, idx);
+                        isPreCode ? ary.push(tmp) : ary.push(ary.pop() + ";") && ary.push(tmp);
+                        fnParse(ary, tmpl.substring(idx + 2), true);
+                    }
+                } else {
+                    tmp = tmpl.substring(0, idx);
+                    ary.push(fnText(ary, tmp, isPreCode));
+                    fnParse(ary, tmpl.substring(idx), false);
+                }
+            };
+            let fnText = function(ary, txt, isPreCode) {
+                let str = txt.replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\'/g, "\\'");
+                return isPreCode ? "s+='" + str + "'" : ary.pop() + "+'" + str + "'";
+            };
+            let aryBody = [];
+            aryBody.push("let s=''");
+            fnParse(aryBody, tmpl, true);
+            aryBody.push("return s");
+            this.toString = argNm ? new Function(argNm, aryBody.join("\n")) : new Function(aryBody.join("\n"));
+        }
+    }
+    bus.on("编译模板JS", function(result) {
+        return function() {
+            if (!result) {
+                let tmpl = getSrcTemplate().replace(/\\/g, "\\\\");
+                let clsTemplate = new ClsTemplate(tmpl, "$data");
+                result = clsTemplate.toString;
+            }
+            return result;
+        };
+    }());
+    function getSrcTemplate() {
+        return `\n\n// ------------------------------------------------------------------------------------------------------\n// 组件 <%= $data['COMPONENT_NAME'] %>\n// 注:应通过rpose.newComponentProxy方法创建组件代理对象后使用，而不是直接调用方法或用new创建\n// ------------------------------------------------------------------------------------------------------\n<% if ( $data['singleton'] ){ %>\n    // 这是个单例组件\n    <%= $data['COMPONENT_NAME'] %>.Singleton = true;\n<% } %>\n\n// 属性接口定义\n<%= $data['COMPONENT_NAME'] %>.prototype.$OPTION_KEYS = <%= JSON.stringify($data['optionkeys']) %>;  // 可通过标签配置的属性，未定义则不支持外部配置\n<%= $data['COMPONENT_NAME'] %>.prototype.$STATE_KEYS = <%= JSON.stringify($data['statekeys']) %>;    // 可更新的state属性，未定义则不支持外部更新state\n\n// 组件函数\nfunction <%= $data['COMPONENT_NAME'] %>(options={}) {\n\n    <% if ( $data['optionkeys'] != null ){ %>\n    // 组件默认选项值\n    this.$options = <%= $data['options'] %>;\n    rpose.extend(this.$options, options, this.$OPTION_KEYS);    // 按属性接口克隆配置选项\n    <% }else{ %>\n    // 组件默认选项值\n    this.$options = <%= $data['options'] %>;\n    <% } %>\n\n    <% if ( $data['statekeys'] != null ){ %>\n    // 组件默认数据状态值\n    this.$state = <%= $data['state'] %>;\n    rpose.extend(this.$state, options, this.$STATE_KEYS);       // 按属性接口克隆数据状态\n    <% }else{ %>\n    // 组件默认数据状态值\n    this.$state = <%= $data['state'] %>;\n    <% } %>\n\n    <% if ( $data['actions'] ){ %>\n    // 事件处理器\n    <%= $data['actions'] %>\n    <% } %>\n\n    <% if ( $data['methods'] ){ %>\n    // 自定义方法\n    <%= $data['methods'] %>;\n    <% } %>\n\n    <% if ( $data['updater'] ){ %>\n    // 组件更新函数\n    this.$updater = <%= $data['updater'] %>;\n    <% } %>\n}\n\n/**\n * 节点模板函数\n */\n<%= $data['COMPONENT_NAME'] %>.prototype.nodeTemplate = <%= $data['vnodeTemplate'] %>\n\n`;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    bus.on("表达式代码转换", function() {
+        return function(expression) {
+            let expr = expression.trim();
+            expr.startsWith("{") && expr.endsWith("}") && (expr = expr.substring(1, expr.length - 1));
+            return `(${expr})`;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    bus.on("astgen-node-text", function() {
+        return function(node, context) {
+            const OPTS = bus.at("视图编译选项");
+            if (node.type === OPTS.TypeText) {
+                return textJsify(node, context);
+            } else if (node.type === OPTS.TypeExpression) {
+                return expressionJsify(node, context);
+            }
+            return "";
+        };
+    }());
+    function textJsify(node, context) {
+        let obj = node.object;
+        let ary = [];
+        let text = '"' + lineString(obj.value) + '"';
+        ary.push(`{ `);
+        ary.push(`  s: ${text} `);
+        ary.push(` ,k: ${context.keyCounter++} `);
+        ary.push(`}`);
+        return ary.join("\n");
+    }
+    function expressionJsify(node, context) {
+        let obj = node.object;
+        let ary = [];
+        let text = obj.value.replace(/^\s*\{/, "(").replace(/\}\s*$/, ")");
+        ary.push(`{ `);
+        ary.push(`  s: ${text} `);
+        ary.push(` ,k: ${context.keyCounter++} `);
+        ary.push(`}`);
+        return ary.join("\n");
+    }
+    function lineString(str, quote = '"') {
+        if (str == null) {
+            return str;
+        }
+        let rs = str.replace(/\\/g, "\\\\").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+        if (quote == '"') {
+            rs = rs.replace(/"/g, '\\"');
+        } else if (quote == "'") {
+            rs = rs.replace(/'/g, "\\'");
+        }
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("p15p-reference-components", function(root, context) {
+            let result = context.result;
+            let oSet = new Set();
+            root.walk("Tag", (node, object) => {
+                if (!object.standard) {
+                    oSet.add(object.value);
+                    let file = bus.at("标签源文件", object.value);
+                    if (!file) {
+                        throw new Err("file not found of tag: " + object.value, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: object.loc.start.pos
+                        });
+                    }
+                }
+            }, {
+                readonly: true
+            });
+            result.references = [ ...oSet ];
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("p17p-components-reference-standard-tags", function(root, context) {
+            let result = context.result;
+            let oSet = new Set();
+            root.walk("Tag", (node, object) => {
+                if (object.standard) {
+                    oSet.add(object.value);
+                }
+            }, {
+                readonly: true
+            });
+            result.standardtags = [ ...oSet ];
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const REG_EVENTS = /^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;
+    bus.on("astgen-node-attributes", function() {
+        return function(tagNode, context) {
+            if (!tagNode.nodes) {
+                return "";
+            }
+            let attrsNode;
+            for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                if (nd.type === "Attributes") {
+                    attrsNode = nd;
+                    break;
+                }
+            }
+            if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
+                return "";
+            }
+            let key, value, comma = "", ary = [];
+            ary.push(`{ `);
+            attrsNode.nodes.forEach(node => {
+                key = '"' + lineString(node.object.name) + '"';
+                if (node.object.isExpression) {
+                    value = bus.at("表达式代码转换", node.object.value);
+                } else if (typeof node.object.value === "string") {
+                    if (!tagNode.object.standard && REG_EVENTS.test(node.object.name) && !node.object.isExpression && context.script.$actionkeys) {
+                        let val = node.object.value.trim();
+                        let fnNm = val.startsWith("$actions.") ? val.substring(9) : val;
+                        if (context.script.$actionkeys.includes(fnNm)) {
+                            value = `$actions['${fnNm}']`;
+                        } else {
+                            value = '"' + lineString(node.object.value) + '"';
+                        }
+                    } else {
+                        value = '"' + lineString(node.object.value) + '"';
+                    }
+                } else {
+                    value = node.object.value;
+                }
+                ary.push(` ${comma} ${key}: ${value} `);
+                !comma && (comma = ",");
+            });
+            ary.push(` } `);
+            return ary.join("\n");
+        };
+    }());
+    function lineString(str, quote = '"') {
+        if (str == null) {
+            return str;
+        }
+        let rs = str.replace(/\\/g, "\\\\").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+        if (quote == '"') {
+            rs = rs.replace(/"/g, '\\"');
+        } else if (quote == "'") {
+            rs = rs.replace(/'/g, "\\'");
+        }
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    bus.on("astgen-node-events", function() {
+        return function(tagNode, context) {
+            if (!tagNode.nodes) {
+                return "";
+            }
+            let eventsNode;
+            for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                if (nd.type === "Events") {
+                    eventsNode = nd;
+                    break;
+                }
+            }
+            if (!eventsNode || !eventsNode.nodes || !eventsNode.nodes.length) {
+                return "";
+            }
+            let key, value, comma = "", ary = [];
+            ary.push(`{ `);
+            eventsNode.nodes.forEach(node => {
+                key = node.object.name.substring(2);
+                value = node.object.value;
+                if (node.object.isExpression) {
+                    value = bus.at("表达式代码转换", value);
+                } else {
+                    value = value.trim();
+                    let fnNm = value.startsWith("$actions.") ? value.substring(9) : value;
+                    if (context.script.$actionkeys && context.script.$actionkeys.includes(fnNm)) {
+                        value = "$actions." + value;
+                    } else {
+                        throw new Err("action not found: " + fnNm, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: node.object.loc.start.pos,
+                            end: node.object.loc.end.pos
+                        });
+                    }
+                }
+                ary.push(` ${comma} ${key}: ${value} `);
+                !comma && (comma = ",");
+            });
+            ary.push(` } `);
+            return ary.join("\n");
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    bus.on("astgen-node-style", function() {
+        return function(tagNode, context) {
+            if (!tagNode.nodes) {
+                return "";
+            }
+            let styleNode;
+            for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                if (nd.type === "Style") {
+                    styleNode = nd;
+                    break;
+                }
+            }
+            if (!styleNode || !styleNode.object.value) {
+                return "";
+            }
+            if (!styleNode.object.isExpression) {
+                return '"' + lineString(styleNode.object.value) + '"';
+            }
+            let ary = [];
+            parseExpression(ary, styleNode.object.value);
+            return "(" + ary.join(" + ") + ")";
+        };
+    }());
+    function parseExpression(ary, val) {
+        if (/^\{\s*\{[\s\S]*?\}\s*\}$/.test(val)) {
+            ary.push(val.replace(/^\{/, "").replace(/\}$/, ""));
+            return;
+        }
+        let idxStart = val.indexOf("{");
+        if (idxStart < 0) {
+            ary.push('"' + lineString(val) + '"');
+            return;
+        }
+        let idxEnd = val.indexOf("}", idxStart);
+        if (idxEnd < 0) {
+            ary.push('"' + lineString(val) + '"');
+            return;
+        }
+        if (idxStart > 0) {
+            ary.push('"' + lineString(val.substring(0, idxStart)) + '"');
+        }
+        ary.push("(" + val.substring(idxStart + 1, idxEnd) + ")");
+        let tmp = val.substring(idxEnd + 1);
+        tmp && parseExpression(ary, tmp);
+    }
+    function lineString(str, quote = '"') {
+        if (str == null) {
+            return str;
+        }
+        let rs = str.replace(/\\/g, "\\\\").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+        if (quote == '"') {
+            rs = rs.replace(/"/g, '\\"');
+        } else if (quote == "'") {
+            rs = rs.replace(/'/g, "\\'");
+        }
+        return rs;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    bus.on("astgen-node-class", function() {
+        return function(tagNode, context) {
+            if (!tagNode.nodes) {
+                return "";
+            }
+            let classNode;
+            for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                if (nd.type === "Class") {
+                    classNode = nd;
+                    break;
+                }
+            }
+            if (!classNode || !classNode.object.value) {
+                return "";
+            }
+            return classStrToObjectString(classNode.object.value, context);
+        };
+    }());
+    function classStrToObjectString(clas, context) {
+        let oCsslibPkgs = context.result.oCsslibPkgs;
+        let oRs = {};
+        clas = clas.replace(/\{.*?\}/g, function(match) {
+            let str = match.substring(1, match.length - 1);
+            let idx, cls, expr;
+            while (str.indexOf(":") > 0) {
+                idx = str.indexOf(":");
+                cls = str.substring(0, idx).replace(/['"]/g, "");
+                expr = str.substring(idx + 1);
+                let idx2 = expr.indexOf(":");
+                if (idx2 > 0) {
+                    expr = expr.substring(0, idx2);
+                    expr = expr.substring(0, expr.lastIndexOf(","));
+                    str = str.substring(idx + 1 + expr.length + 1);
+                } else {
+                    str = "";
+                }
+                oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(cls, oCsslibPkgs))] = "@(" + expr + ")@";
+            }
+            return "";
+        });
+        let ary = clas.split(/\s/);
+        for (let i = 0; i < ary.length; i++) {
+            ary[i].trim() && (oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(ary[i], oCsslibPkgs))] = 1);
+        }
+        return JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, "");
+    }
+    function getClassPkg(cls, oCsslibPkgs) {
+        let ary = cls.trim().split("@");
+        if (ary.length > 1) {
+            return ary[0] + "@" + oCsslibPkgs[ary[1]];
+        }
+        return ary[0];
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    bus.on("astgen-node-{prop}", function() {
+        return function(tagNode, context) {
+            if (!tagNode.nodes) {
+                return "";
+            }
+            let exprAttrNode;
+            for (let i = 0, nd; nd = tagNode.nodes[i++]; ) {
+                if (nd.type === "ObjectExpressionAttributes") {
+                    exprAttrNode = nd;
+                    break;
+                }
+            }
+            if (!exprAttrNode || !exprAttrNode.nodes || !exprAttrNode.nodes.length) {
+                return "";
+            }
+            let prop, ary = [];
+            exprAttrNode.nodes.forEach(node => {
+                prop = node.object.name.replace(/^\s*\{=?/, "(").replace(/\}\s*$/, ")");
+                ary.push(prop);
+            });
+            return ary.join(",");
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+    bus.on("astgen-node-tag", function() {
+        return tagJsify;
+    }());
+    function tagJsify(node, context) {
+        if (node.type !== "Tag") {
+            return "";
+        }
+        let obj = node.object;
+        let isTop = node.parent.type === "View";
+        let isStatic = isStaticTagNode(node);
+        let isComponent = !node.object.standard;
+        let childrenJs = bus.at("astgen-node-tag-nodes", node.nodes, context);
+        let attrs = bus.at("astgen-node-attributes", node, context);
+        let events = bus.at("astgen-node-events", node, context);
+        let isSvg = node.object.svg;
+        let style = bus.at("astgen-node-style", node, context);
+        if (style) {
+            if (!attrs) {
+                attrs = `{style: ${style}}`;
+            } else {
+                attrs = attrs.replace(/\}\s*$/, `,style: ${style}}`);
+            }
+        }
+        let clasz = bus.at("astgen-node-class", node, context);
+        if (clasz) {
+            if (!attrs) {
+                attrs = `{class: ${clasz}}`;
+            } else {
+                attrs = attrs.replace(/\}\s*$/, `,class: ${clasz}}`);
+            }
+        }
+        let props = bus.at("astgen-node-{prop}", node, context);
+        if (props) {
+            attrs = `rpose.assign( ${attrs}, ${props})`;
+        }
+        let ary = [];
+        ary.push(`{ `);
+        ary.push(`  t: '${obj.value}' `);
+        isTop && ary.push(` ,r: 1 `);
+        isStatic && ary.push(` ,x: 1 `);
+        isComponent && ary.push(` ,m: 1 `);
+        isSvg && ary.push(` ,g: 1 `);
+        ary.push(` ,k: ${context.keyCounter++} `);
+        childrenJs && ary.push(` ,c: ${childrenJs} `);
+        attrs && ary.push(` ,a: ${attrs} `);
+        events && ary.push(` ,e: ${events} `);
+        ary.push(`}`);
+        return ary.join("\n");
+    }
+    function isStaticTagNode(node) {
+        return false;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    const AryName = "_Ary";
+    bus.on("astgen-node-tag-nodes", function() {
+        return nodesJsify;
+    }());
+    function nodesJsify(nodes = [], context) {
+        if (!nodes.length) {
+            return "";
+        }
+        return hasCodeBolck(nodes) ? nodesWithScriptJsify(nodes, context) : nodesWithoutScriptJsify(nodes, context);
+    }
+    function nodesWithScriptJsify(nodes = [], context) {
+        let ary = [], src;
+        ary.push(` ((${AryName}) => { `);
+        for (let i = 0, node; node = nodes[i++]; ) {
+            if (node.type === "JsCode") {
+                ary.push(node.object.value);
+            } else if (src = bus.at("astgen-node-tag", node, context)) {
+                ary.push(` ${AryName}.push( ${src} ); `);
+            } else if (src = bus.at("astgen-node-text", node, context)) {
+                ary.push(` ${AryName}.push( ${src} ); `);
+            } else if (node.type === "Attributes" || node.type === "Events" || node.type === "ObjectExpressionAttributes") {} else if (node.type === "Class" || node.type === "Style") {} else {
+                throw new Err("unhandle node type: " + node.type);
+            }
+        }
+        ary.push(` return ${AryName}; `);
+        ary.push(` })([]) `);
+        return ary.join("\n");
+    }
+    function nodesWithoutScriptJsify(nodes = [], context) {
+        let src, ary = [];
+        nodes.forEach(node => {
+            src = bus.at("astgen-node-tag", node, context);
+            src && ary.push(src);
+            src = bus.at("astgen-node-text", node, context);
+            src && ary.push(src);
+        });
+        return "[" + ary.join(",\n") + "]";
+    }
+    function hasCodeBolck(nodes) {
+        for (let i = 0, node; node = nodes[i++]; ) {
+            if (node.type === "JsCode") {
+                return true;
+            }
+        }
+        return false;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const File = require("@gotoeasy/file");
+    const csjs = require("@gotoeasy/csjs");
+    const Err = require("@gotoeasy/err");
+    class JsWriter {
+        constructor() {
+            this.ary = [];
+        }
+        push(src) {
+            src !== undefined && this.ary.push(src);
+        }
+        write(src) {
+            src !== undefined && this.ary.push(src);
+        }
+        out(file) {
+            File.write(file, this.toString());
+        }
+        getArray() {
+            return this.ary;
+        }
+        toString() {
+            let js = this.ary.join("\n");
+            try {
+                return csjs.formatJs(js);
+            } catch (e) {
+                File.write(process.cwd() + "/build/error/format-error.js", js);
+                throw e;
+            }
+        }
+    }
+    bus.on("编译插件", function() {
+        return postobject.plugin("s15p-component-ast-jsify-writer", function(root, context) {
+            context.writer = new JsWriter();
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const File = require("@gotoeasy/file");
+    const csjs = require("@gotoeasy/csjs");
+    const Err = require("@gotoeasy/err");
+    const AryNm = "v_Array";
+    bus.on("编译插件", function() {
+        return postobject.plugin("s25p-component-ast-jsify-root", function(root, context) {
+            let writer = context.writer;
+            let script = context.script;
+            root.walk("View", (node, object) => {
+                if (!node.nodes || node.nodes.length < 1) {
+                    return writer.write("// 没有节点，无可生成");
+                }
+                writer.write("function nodeTemplate($state, $options, $actions, $this) {");
+                if (hasCodeBolck(node.nodes)) {
+                    writer.write(`${topNodesWithScriptJsify(node.nodes, context)}`);
+                } else {
+                    writer.write(`${topNodesWithoutScriptJsify(node.nodes, context)}`);
+                }
+                writer.write("}");
+                script.vnodeTemplate = writer.toString();
+                return false;
+            });
+        });
+    }());
+    function topNodesWithScriptJsify(nodes = [], context) {
+        let ary = [], src;
+        ary.push(` let ${AryNm} = []; `);
+        for (let i = 0, node; node = nodes[i++]; ) {
+            if (node.type === "JsCode") {
+                ary.push(node.object.value);
+            } else if (src = bus.at("astgen-node-tag", node, context)) {
+                ary.push(` ${AryNm}.push( ${src} ); `);
+            } else if (src = bus.at("astgen-node-text", node, context)) {
+                ary.push(` ${AryNm}.push( ${src} ); `);
+            } else {
+                throw new Err("unhandle node type");
+            }
+        }
+        ary.push(` ${AryNm}.length > 1 && console.warn("invlid tag count"); `);
+        ary.push(` return ${AryNm}.length ? v_Array[0] : null; `);
+        return ary.join("\n");
+    }
+    function topNodesWithoutScriptJsify(nodes = [], context) {
+        if (nodes.length > 1) {
+            let text = context.input.text;
+            let file = context.input.file;
+            let start = nodes[1].object.loc.start.pos;
+            nodes[0].type !== "Tag" && (start = nodes[0].object.loc.start.pos);
+            throw new Err("invalid top tag", {
+                text: text,
+                file: file,
+                start: start
+            });
+        }
+        let src, node = nodes[0];
+        if (node.type !== "Tag") {
+            let text = context.input.text;
+            let file = context.input.file;
+            let start = nodes[0].object.loc.start.pos;
+            throw new Err("missing top tag", {
+                text: text,
+                file: file,
+                start: start
+            });
+        }
+        src = bus.at("astgen-node-tag", node, context);
+        if (src) {
+            return `return ${src}`;
+        }
+        src = bus.at("astgen-node-text", node, context);
+        if (src) {
+            return `return ${src}`;
+        }
+        throw new Err("unhandle node type");
+    }
+    function hasCodeBolck(nodes) {
+        for (let i = 0, node; node = nodes[i++]; ) {
+            if (node.type === "JsCode") {
+                return true;
+            }
+        }
+        return false;
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const hash = require("@gotoeasy/hash");
+    const acorn = require("acorn");
+    const walk = require("acorn-walk");
+    const astring = require("astring");
+    const tokenizer = require("css-selector-tokenizer");
+    bus.on("编译插件", function() {
+        return postobject.plugin("s35p-component-script-selector-rename", function(root, context) {
+            let oCsslibPkgs = context.result.oCsslibPkgs;
+            let script = context.script;
+            let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\$\s*\(|\$\s*\()/;
+            if (script.actions && reg.test(script.actions)) {
+                script.actions = transformJsSelector(script.actions, context.input.file);
+            }
+            if (script.methods && reg.test(script.methods)) {
+                script.methods = transformJsSelector(script.methods, context.input.file);
+            }
+            function transformJsSelector(code, srcFile) {
+                let ast, changed;
+                try {
+                    ast = acorn.parse(code, {
+                        ecmaVersion: 10,
+                        sourceType: "module",
+                        locations: false
+                    });
+                } catch (e) {
+                    throw new Err("syntax error", e);
+                }
+                walk.simple(ast, {
+                    CallExpression(node) {
+                        if (!node.arguments || node.arguments[0].type !== "Literal") {
+                            return;
+                        }
+                        let fnName = node.callee.name || node.callee.property.name;
+                        if (!/^(getElementsByClassName|querySelector|querySelectorAll|\$\$)$/.test(fnName)) {
+                            return;
+                        }
+                        if (fnName === "getElementsByClassName") {
+                            node.arguments[0].value = bus.at("哈希样式类名", srcFile, getClassPkg(node.arguments[0].value));
+                        } else {
+                            node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile);
+                        }
+                        node.arguments[0].raw = `'${node.arguments[0].value}'`;
+                        changed = true;
+                    }
+                });
+                return changed ? astring.generate(ast) : code;
+            }
+            function transformSelector(selector, srcFile) {
+                selector = selector.replace(/@/g, "鬱");
+                let ast = tokenizer.parse(selector);
+                let nodes = ast.nodes || [];
+                nodes.forEach(node => {
+                    if (node.type === "selector") {
+                        (node.nodes || []).forEach(nd => {
+                            if (nd.type === "class") {
+                                nd.name = bus.at("哈希样式类名", srcFile, getClassPkg(nd.name));
+                            }
+                        });
+                    }
+                });
+                let rs = tokenizer.stringify(ast);
+                return rs.replace(/鬱/g, "@");
+            }
+            function getClassPkg(cls) {
+                let ary = cls.trim().split("鬱");
+                if (ary.length > 1) {
+                    let asname = ary[1];
+                    if (!oCsslibPkgs[asname]) {
+                        throw new Error("csslib not found: " + ary[0] + "@" + ary[1] + "\nfile: " + context.input.file);
+                    }
+                    return ary[0] + "@" + asname;
+                }
+                return ary[0];
+            }
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    const acornGlobals = require("acorn-globals");
+    const JS_VARS = "$$,require,window,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(",");
+    bus.on("编译插件", function() {
+        return postobject.plugin("s45p-component-gen-js", function(root, context) {
+            let env = bus.at("编译环境");
+            let result = context.result;
+            let script = context.script;
+            let writer = context.writer;
+            let fnTmpl = bus.at("编译模板JS");
+            let $data = {};
+            $data.COMPONENT_NAME = bus.at("组件类名", context.input.file);
+            $data.options = context.doc.options || "{}";
+            $data.state = context.doc.state || "{}";
+            if (context.doc.api) {
+                $data.optionkeys = context.doc.api.optionkeys;
+                $data.statekeys = context.doc.api.statekeys;
+            }
+            $data.actions = script.actions;
+            $data.methods = script.methods;
+            $data.updater = script.updater;
+            $data.vnodeTemplate = script.vnodeTemplate;
+            result.componentJs = fnTmpl($data);
+            result.componentJs = checkAndInitVars(result.componentJs, context);
+            if (!env.release) {
+                let fileJs = env.path.build_temp + "/" + bus.at("组件目标文件名", context.input.file) + ".js";
+                File.write(fileJs, csjs.formatJs(result.componentJs));
+            }
+        });
+    }());
+    function checkAndInitVars(src, context) {
+        let optionkeys = context.doc.api.optionkeys || [];
+        let statekeys = context.doc.api.statekeys || [];
+        let scopes;
+        try {
+            scopes = acornGlobals(src);
+            if (!scopes.length) {
+                return src;
+            }
+        } catch (e) {
+            throw Err.cat("source syntax error", "\n-----------------", src, "\n-----------------", "file=" + context.input.file, e);
+        }
+        let vars = [];
+        for (let i = 0, v; i < scopes.length; i++) {
+            v = scopes[i];
+            let inc$opts = optionkeys.includes(v.name);
+            let inc$state = statekeys.includes(v.name);
+            let incJsVars = JS_VARS.includes(v.name);
+            if (!inc$opts && !inc$state && !incJsVars) {
+                let msg = "template variable undefined: " + v.name;
+                msg += "\n  file: " + context.input.file;
+                throw new Err(msg);
+            }
+            if (inc$opts && inc$state) {
+                let msg = "template variable uncertainty: " + v.name;
+                msg += "\n  file: " + context.input.file;
+                throw new Err(msg);
+            }
+            if (inc$state) {
+                vars.push(`let ${v.name} = $state.${v.name};`);
+            } else if (inc$opts) {
+                vars.push(`let ${v.name} = $options.${v.name};`);
+            }
+        }
+        return src.replace(/(\n.+?prototype\.nodeTemplate\s*=\s*function\s+.+?\r?\n)/, "$1" + vars.join("\n"));
+    }
+})();
+
+(() => {
+    const Err = require("@gotoeasy/err");
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+    const postcss = require("postcss");
+    const tokenizer = require("css-selector-tokenizer");
+    bus.on("组件样式类名哈希化", function() {
+        return function(srcFile, css) {
+            let fnPostcssPlugin = (root, result) => {
+                root.walkRules(rule => {
+                    let ast = tokenizer.parse(rule.selector);
+                    let nodes = ast.nodes || [];
+                    nodes.forEach(node => {
+                        if (node.type === "selector") {
+                            (node.nodes || []).forEach(nd => {
+                                if (nd.type === "class") {
+                                    nd.name = bus.at("哈希样式类名", srcFile, nd.name);
+                                }
+                            });
+                        }
+                    });
+                    rule.selector = tokenizer.stringify(ast);
+                });
+            };
+            let rs = postcss([ fnPostcssPlugin ]).process(css, {
+                from: "from.css"
+            }).sync().root.toResult();
+            return rs.css;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const File = require("@gotoeasy/file");
+    const csjs = require("@gotoeasy/csjs");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("s55p-component-gen-css", function(root, context) {
+            let style = context.style;
+            let ary = [];
+            style.csslibset && ary.push(...style.csslibset);
+            style.less && ary.push(style.less);
+            style.scss && ary.push(style.scss);
+            style.css && ary.push(style.css);
+            context.result.css = bus.at("组件样式类名哈希化", context.input.file, ary.join("\n"));
+            let env = bus.at("编译环境");
+            let file = env.path.build_temp + "/" + bus.at("组件目标文件名", context.input.file) + ".css";
+            if (!env.release) {
+                if (context.result.css) {
+                    File.write(file, context.result.css);
+                } else {
+                    File.remove(file);
+                }
+            }
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("w15p-component-complie-result-cache", function(root, context) {
+            bus.at("组件编译缓存", context.input.file, context);
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y15p-page-all-reference-components", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let oSetAllRef = new Set();
+            let oStatus = {};
+            let references = context.result.references;
+            references.forEach(tagpkg => {
+                addRefComponent(tagpkg, oSetAllRef, oStatus);
+            });
+            if (oSetAllRef.has(context.result.tagpkg)) {
+                throw new Err("circular reference: " + context.result.tagpkg);
+            }
+            let allreferences = [ ...oSetAllRef ];
+            allreferences.sort();
+            allreferences.push(context.result.tagpkg);
+            context.result.allreferences = allreferences;
+        });
+    }());
+    function addRefComponent(tagpkg, oSetAllRequires, oStatus) {
+        if (oStatus[tagpkg]) {
+            return;
+        }
+        oSetAllRequires.add(tagpkg);
+        oStatus[tagpkg] = true;
+        let srcFile = bus.at("标签源文件", tagpkg);
+        let context = bus.at("组件编译缓存", srcFile);
+        if (!context) {
+            context = bus.at("编译组件", srcFile);
+        }
+        let references = context.result.references;
+        references.forEach(subTagpkg => {
+            addRefComponent(subTagpkg, oSetAllRequires, oStatus);
+        });
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y17p-page-all-reference-standard-tags", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let oSetAllTag = new Set();
+            context.result.standardtags.forEach(tag => oSetAllTag.add(tag));
+            let references = context.result.references;
+            references.forEach(tagpkg => {
+                let srcFile = bus.at("标签源文件", tagpkg);
+                let ctx = bus.at("组件编译缓存", srcFile);
+                !ctx && (ctx = bus.at("编译组件", srcFile));
+                let standardtags = ctx.result.standardtags;
+                standardtags.forEach(tag => oSetAllTag.add(tag));
+            });
+            let allstandardtags = [ ...oSetAllTag ];
+            allstandardtags.sort();
+            context.result.allstandardtags = allstandardtags;
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const hash = require("@gotoeasy/hash");
+    const postcss = require("postcss");
+    bus.on("页面样式后处理", function() {
+        return (css, srcFile) => {
+            if (!css) {
+                return "";
+            }
+            let env = bus.at("编译环境");
+            let oCache = bus.at("缓存");
+            let from = oCache.path + "/resources/from.css";
+            let to = bus.at("页面目标CSS文件名", srcFile);
+            let pageCss;
+            let plugins = [];
+            let url = "copy";
+            let basePath = bus.at("缓存资源目录数组");
+            let useHash = false;
+            let assetsPath = bus.at("页面图片相对路径", srcFile);
+            let postcssUrlOpt = {
+                url: url,
+                basePath: basePath,
+                assetsPath: assetsPath,
+                useHash: useHash
+            };
+            let cacheKey = JSON.stringify([ "页面样式后处理", bus.at("browserslist"), env.release, assetsPath, css ]);
+            if (!env.nocache) {
+                let cacheValue = oCache.get(cacheKey);
+                if (cacheValue) {
+                    if (cacheValue.indexOf("url(") > 0) {
+                        plugins.push(require("postcss-url")(postcssUrlOpt));
+                        postcss(plugins).process(css, {
+                            from: from,
+                            to: to
+                        }).sync().root.toResult();
+                    }
+                    return cacheValue;
+                }
+            }
+            plugins.push(require("postcss-discard-comments")({
+                remove: x => 1
+            }));
+            plugins.push(require("postcss-normalize-whitespace"));
+            plugins.push(require("postcss-discard-empty"));
+            plugins.push(require("postcss-discard-duplicates"));
+            plugins.push(require("autoprefixer")());
+            plugins.push(require("postcss-url")(postcssUrlOpt));
+            plugins.push(require("postcss-merge-rules")());
+            let rs = postcss(plugins).process(css, {
+                from: from,
+                to: to
+            }).sync().root.toResult();
+            pageCss = env.release ? rs.css : csjs.formatCss(rs.css);
+            return oCache.set(cacheKey, pageCss);
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const hash = require("@gotoeasy/hash");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y25p-page-gen-css-link-components", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let env = bus.at("编译环境");
+            let aryTagCss = [];
+            let oCsslib = context.result.oCsslib;
+            let oCache = bus.at("缓存");
+            for (let k in oCsslib) {
+                let cacheKey = hash(JSON.stringify([ "按需取标签样式", oCsslib[k].pkg, oCsslib[k].version, oCsslib[k]._imported, context.result.allstandardtags ]));
+                if (!env.nocache) {
+                    let cacheValue = oCache.get(cacheKey);
+                    if (cacheValue) {
+                        aryTagCss.push(cacheValue);
+                    } else {
+                        let tagcss = oCsslib[k].get(...context.result.allstandardtags);
+                        aryTagCss.push(tagcss);
+                        oCache.set(cacheKey, tagcss);
+                    }
+                } else {
+                    let tagcss = oCsslib[k].get(...context.result.allstandardtags);
+                    aryTagCss.push(tagcss);
+                    oCache.set(cacheKey, tagcss);
+                }
+            }
+            let ary = [];
+            let allreferences = context.result.allreferences;
+            allreferences.forEach(tagpkg => {
+                let ctx = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg));
+                if (!ctx) {
+                    ctx = bus.at("编译组件", tagpkg);
+                }
+                ctx.result.atcsslibtagcss && aryTagCss.push(...ctx.result.atcsslibtagcss);
+                ctx.result.css && ary.push(ctx.result.css);
+            });
+            context.result.css = [ ...aryTagCss, ...ary ].join("\n");
+            context.result.pageCss = bus.at("页面样式后处理", context.result.css, context.input.file);
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y35p-page-gen-html", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let env = bus.at("编译环境");
+            let srcPath = env.path.src;
+            let file = context.input.file;
+            let name = File.name(file);
+            let type = context.doc.api.prerender;
+            let nocss = !context.result.pageCss;
+            context.result.html = require(env.prerender)({
+                srcPath: srcPath,
+                file: file,
+                name: name,
+                type: type,
+                nocss: nocss
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+    const resolvepkg = require("resolve-pkg");
+    bus.on("RPOSE运行时代码", function(src) {
+        return function() {
+            if (!src) {
+                let file = File.resolve(resolvepkg("@rpose/runtime", {
+                    cwd: __dirname
+                }), "runtime.js");
+                src = File.read(file);
+            }
+            return src;
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    const fs = require("fs");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y55p-page-gen-js-link-runtime-components", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let env = bus.at("编译环境");
+            let allreferences = context.result.allreferences;
+            let srcRuntime = bus.at("RPOSE运行时代码");
+            let srcStmt = getSrcRegisterComponents(allreferences);
+            let srcComponents = getSrcComponents(allreferences);
+            let oCache = bus.at("缓存");
+            let resourcePath = oCache.path + "/resources";
+            let imgPath = bus.at("页面图片相对路径", context.input.file);
+            srcComponents = srcComponents.replace(/\%imagepath\%([0-9a-z]+\.[0-9a-zA-Z]+)/g, function(match, filename) {
+                let from = resourcePath + "/" + filename;
+                let to = env.path.build_dist + "/" + (env.path.build_dist_images ? env.path.build_dist_images + "/" : "") + filename;
+                File.existsFile(from) && !File.existsFile(to) && File.mkdir(to) > fs.copyFileSync(from, to);
+                return imgPath + filename;
+            });
+            let tagpkg = context.result.tagpkg;
+            let src = `\n                ${srcRuntime}\n\n                (function($$){\n                    // 组件注册\n                    ${srcStmt}\n\n                    ${srcComponents}\n\n                    // 组件挂载\n                    rpose.mount( rpose.newComponentProxy('${tagpkg}').render(), '${context.doc.mount}' );\n                })(rpose.$$);\n            `;
+            context.result.pageJs = src;
+        });
+    }());
+    function getSrcRegisterComponents(allreferences) {
+        try {
+            let obj = {};
+            for (let i = 0, tagpkg, key, file; tagpkg = allreferences[i++]; ) {
+                key = "'" + tagpkg + "'";
+                file = bus.at("标签源文件", tagpkg);
+                if (!File.exists(file)) {
+                    throw new Err("component not found (tag = " + tagpkg + ")");
+                }
+                obj[key] = bus.at("组件类名", file);
+            }
+            return `rpose.registerComponents(${JSON.stringify(obj).replace(/"/g, "")});`;
+        } catch (e) {
+            throw Err.cat(MODULE + "gen register stmt failed", allreferences, e);
+        }
+    }
+    function getSrcComponents(allreferences) {
+        try {
+            let ary = [];
+            for (let i = 0, tagpkg, context; tagpkg = allreferences[i++]; ) {
+                context = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg));
+                if (!context) {
+                    context = bus.at("编译组件", tagpkg);
+                }
+                ary.push(context.result.componentJs);
+            }
+            return ary.join("\n");
+        } catch (e) {
+            throw Err.cat(MODULE + "get component src failed", allreferences, e);
+        }
+    }
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y65p-page-gen-js-babel", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let env = bus.at("编译环境");
+            let oCache = bus.at("缓存");
+            let cacheKey = JSON.stringify([ "page-gen-js-babel", bus.at("browserslist"), context.result.pageJs ]);
+            if (!env.nocache) {
+                let cacheValue = oCache.get(cacheKey);
+                if (cacheValue) {
+                    return context.result.babelJs = cacheValue;
+                }
+            }
+            try {
+                context.result.babelJs = csjs.babel(context.result.pageJs);
+                oCache.set(cacheKey, context.result.babelJs);
+            } catch (e) {
+                File.write(env.path.build + "/error/babel.log", context.result.pageJs + "\n\n" + e.stack);
+                throw e;
+            }
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y75p-page-gen-js-browserify-minformat", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let env = bus.at("编译环境");
+            let oCache = bus.at("缓存");
+            let cacheKey = JSON.stringify([ "page-gen-js-browserify-minformat", bus.at("browserslist"), env.release, context.result.babelJs ]);
+            if (!env.nocache) {
+                let cacheValue = oCache.get(cacheKey);
+                if (cacheValue) {
+                    return context.result.browserifyJs = Promise.resolve(cacheValue);
+                }
+            }
+            context.result.browserifyJs = new Promise((resolve, reject) => {
+                let stime = new Date().getTime();
+                csjs.browserify(context.result.babelJs, null).then(js => {
+                    js = env.release ? csjs.miniJs(js) : csjs.formatJs(js);
+                    oCache.set(cacheKey, js);
+                    resolve(js);
+                }).catch(e => {
+                    File.write(env.path.build + "/error/browserify.log", context.result.babelJs + "\n\n" + e.stack);
+                    reject(e);
+                });
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const hash = require("@gotoeasy/hash");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    const fs = require("fs");
+    bus.on("编译插件", function() {
+        return postobject.plugin("y85p-write-page", function(root, context) {
+            if (!context.result.isPage) {
+                return false;
+            }
+            let env = bus.at("编译环境");
+            let browserslist = bus.at("browserslist");
+            let stime = new Date().getTime(), time;
+            context.result.browserifyJs.then(browserifyJs => {
+                let fileHtml = bus.at("页面目标HTML文件名", context.input.file);
+                let fileCss = bus.at("页面目标CSS文件名", context.input.file);
+                let fileJs = bus.at("页面目标JS文件名", context.input.file);
+                let html = context.result.html;
+                let css = context.result.pageCss;
+                let js = browserifyJs;
+                context.result.js = js;
+                css ? File.write(fileCss, css) : File.remove(fileCss);
+                File.write(fileJs, js);
+                File.write(fileHtml, html);
+                env.watch && (context.result.hashcode = hash(html + css + js));
+                time = new Date().getTime() - stime;
+                console.info("[pack]", time + "ms -", fileHtml.substring(env.path.build_dist.length + 1));
+            }).catch(e => {
+                console.error("[pack]", e);
+            });
+        });
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const csjs = require("@gotoeasy/csjs");
+    const File = require("@gotoeasy/file");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+    const hash = require("@gotoeasy/hash");
+    const browserslist = require("browserslist");
+    bus.on("browserslist", function() {
+        return function() {
+            let rs = browserslist();
+            return hash(rs.join("\n"));
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+    bus.on("哈希样式类名", function() {
+        return function renameCssClassName(srcFile, clsName) {
+            let name = clsName;
+            if (name.startsWith("_")) {
+                return name;
+            }
+            const env = bus.at("编译环境");
+            if (clsName.indexOf("@") > 0) {
+                let ary = clsName.split("@");
+                name = `${ary[1]}---${ary[0]}`;
+            } else {
+                if (name.indexOf("---") > 0 || name.indexOf("___") > 0 || name.startsWith("_")) {} else {
+                    let tag = bus.at("标签全名", srcFile);
+                    name = `${clsName}___${hash(tag)}`;
+                }
+            }
+            if (!env.release) {
+                return name;
+            }
+            return "_" + hash(name.toLowerCase());
+        };
+    }());
+})();
+
+(() => {
+    const File = require("@gotoeasy/file");
+    const bus = require("@gotoeasy/bus");
+    const npm = require("@gotoeasy/npm");
+    const hash = require("@gotoeasy/hash");
+    const findNodeModules = require("find-node-modules");
+    bus.on("标签全名", function() {
+        return file => {
+            let idx = file.indexOf(":");
+            if (idx > 0 && file.substring(idx).indexOf(".") < 0) {
+                return file;
+            }
+            let tagpkg = "";
+            idx = file.lastIndexOf("/node_modules/");
+            if (idx > 0) {
+                let ary = file.substring(idx + 14).split("/");
+                if (ary[0].startsWith("@")) {
+                    tagpkg = ary[0] + "/" + ary[1] + ":" + File.name(file);
+                } else {
+                    tagpkg = ary[0] + ":" + File.name(file);
+                }
+            } else {
+                tagpkg = File.name(file);
+            }
+            return tagpkg;
+        };
+    }());
+    bus.on("标签源文件", function() {
+        return tag => {
+            if (tag.endsWith(".rpose")) {
+                return tag;
+            }
+            if (tag.indexOf(":") > 0) {
+                let ary = tag.split(":");
+                ary[0].indexOf("=") > 0 && (ary = ary[0].split("="));
+                let oPkg = bus.at("模块组件信息", ary[0].trim());
+                let files = oPkg.files;
+                let name = "/" + ary[1] + ".rpose";
+                for (let i = 0, srcfile; srcfile = files[i++]; ) {
+                    if (srcfile.endsWith(name)) {
+                        return srcfile;
+                    }
+                }
+                return bus.at("标签库引用", tag, oPkg.config);
+            } else {
+                let file = bus.at("标签项目源文件", tag);
+                if (file) {
+                    return file;
+                }
+                let env = bus.at("编译环境");
+                return bus.at("标签库引用", tag, env.path.root);
+            }
+        };
+    }());
+    bus.on("文件所在模块", function() {
+        return file => {
+            let pkg = "/", idx = file.lastIndexOf("/node_modules/");
+            if (idx > 0) {
+                let rs = [];
+                let ary = file.substring(idx + 14).split("/");
+                if (ary[0].startsWith("@")) {
+                    pkg = ary[0] + "/" + ary[1];
+                } else {
+                    pkg = ary[0];
+                }
+            }
+            return pkg;
+        };
+    }());
+    bus.on("文件所在项目根目录", function() {
+        return file => {
+            let dir, idx = file.lastIndexOf("/node_modules/");
+            if (idx > 0) {
+                let rs = [];
+                rs.push(file.substring(0, idx + 13));
+                let ary = file.substring(idx + 14).split("/");
+                if (ary[0].startsWith("@")) {
+                    rs.push(ary[0]);
+                    rs.push(ary[1]);
+                } else {
+                    rs.push(ary[0]);
+                }
+                dir = rs.join("/");
+            } else {
+                let env = bus.at("编译环境");
+                dir = env.path.root;
+            }
+            return dir;
+        };
+    }());
+    bus.on("文件所在项目配置文件", function() {
+        return file => {
+            let btfFile, idx = file.lastIndexOf("/node_modules/");
+            if (idx > 0) {
+                let rs = [];
+                rs.push(file.substring(0, idx + 13));
+                let ary = file.substring(idx + 14).split("/");
+                if (ary[0].startsWith("@")) {
+                    rs.push(ary[0]);
+                    rs.push(ary[1]);
+                } else {
+                    rs.push(ary[0]);
+                }
+                rs.push("rpose.config.btf");
+                btfFile = rs.join("/");
+            } else {
+                let env = bus.at("编译环境");
+                btfFile = env.path.root + "/rpose.config.btf";
+            }
+            if (File.existsFile(btfFile)) {
+                return btfFile;
+            }
+        };
+    }());
+    bus.on("模块组件信息", function(map = new Map()) {
+        return function getImportInfo(pkgname) {
+            pkgname.indexOf(":") > 0 && (pkgname = pkgname.substring(0, pkgname.indexOf(":")));
+            pkgname.lastIndexOf("@") > 0 && (pkgname = pkgname.substring(0, pkgname.lastIndexOf("@")));
+            pkgname = pkgname.toLowerCase();
+            if (!map.has(pkgname)) {
+                let env = bus.at("编译环境");
+                let nodemodules = [ ...findNodeModules({
+                    cwd: env.path.root,
+                    relative: false
+                }), ...findNodeModules({
+                    cwd: __dirname,
+                    relative: false
+                }) ];
+                for (let i = 0, module, path; module = nodemodules[i++]; ) {
+                    path = File.resolve(module, pkgname).replace(/\\/g, "/");
+                    if (File.existsDir(path)) {
+                        let obj = JSON.parse(File.read(File.resolve(path, "package.json")));
+                        let version = obj.version;
+                        let name = obj.name;
+                        let pkg = name + "@" + version;
+                        let files = File.files(path, "/src/**.rpose");
+                        let config = File.resolve(path, "rpose.config.btf");
+                        map.set(name, {
+                            path: path,
+                            pkg: pkg,
+                            name: name,
+                            version: version,
+                            files: files,
+                            config: config
+                        });
+                        break;
+                    }
+                }
+            }
+            return map.get(pkgname) || {
+                files: [],
+                config: ""
+            };
+        };
+    }());
+    bus.on("组件类名", function() {
+        return file => {
+            let tagpkg = bus.at("标签全名", bus.at("标签源文件", file));
+            tagpkg = tagpkg.replace(/[@\/`]/g, "$").replace(/\./g, "_").replace(":", "$-");
+            tagpkg = ("-" + tagpkg).split("-").map(s => s.substring(0, 1).toUpperCase() + s.substring(1)).join("");
+            return tagpkg;
+        };
+    }());
+    bus.on("组件目标文件名", function() {
+        return function(srcFile) {
+            let env = bus.at("编译环境");
+            if (srcFile.startsWith(env.path.src_buildin)) {
+                return "$buildin/" + File.name(srcFile);
+            }
+            let tagpkg = bus.at("标签全名", srcFile);
+            return tagpkg.replace(":", "/");
+        };
+    }());
+    bus.on("页面目标JS文件名", function() {
+        return function(srcFile) {
+            let env = bus.at("编译环境");
+            return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".js";
+        };
+    }());
+    bus.on("页面目标CSS文件名", function() {
+        return function(srcFile) {
+            let env = bus.at("编译环境");
+            return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".css";
+        };
+    }());
+    bus.on("页面目标HTML文件名", function() {
+        return function(srcFile) {
+            let env = bus.at("编译环境");
+            return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".html";
+        };
+    }());
+    bus.on("自动安装", function(rs = {}) {
+        return function autoinstall(pkg) {
+            pkg.indexOf(":") > 0 && (pkg = pkg.substring(0, pkg.indexOf(":")));
+            pkg.lastIndexOf("@") > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf("@")));
+            if (!rs[pkg]) {
+                if (!npm.isInstalled(pkg)) {
+                    rs[pkg] = npm.install(pkg, {
+                        timeout: 6e4
+                    });
+                } else {
+                    rs[pkg] = true;
+                }
+            }
+            return rs[pkg];
+        };
+    }());
+    bus.on("页面图片相对路径", function() {
+        return srcFile => {
+            let env = bus.at("编译环境");
+            let ary = srcFile.substring(env.path.src.length).split("/");
+            let rs = "../".repeat(ary.length - 2) + env.path.build_dist_images;
+            return (rs || ".") + "/";
+        };
+    }());
+})();
+
+(() => {
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    bus.on("编译插件", function() {
+        return postobject.plugin("z99p-log", function(root, result) {});
+    }());
+})();
+
+console.timeEnd("load");
+
+const bus = require("@gotoeasy/bus");
+
+const npm = require("@gotoeasy/npm");
+
+const Err = require("@gotoeasy/err");
+
+const File = require("@gotoeasy/file");
+
+const postobject = require("@gotoeasy/postobject");
+
+async function build(opts) {
+    console.time("build");
+    try {
+        let env = bus.at("编译环境", opts);
+        bus.at("clean");
+        await Promise.all(bus.at("全部编译"));
+    } catch (e) {
+        console.error(Err.cat("build failed", e).toString());
+    }
+    console.timeEnd("build");
+}
+
+function clean(opts) {
+    console.time("clean");
+    try {
+        let env = bus.at("编译环境", opts);
+        bus.at("clean");
+    } catch (e) {
+        console.error(Err.cat("clean failed", e).toString());
+    }
+    console.timeEnd("clean");
+}
+
+async function watch(opts) {
+    await build(opts);
+    bus.at("文件监视");
+}
+
+module.exports = {
+    build: build,
+    clean: clean,
+    watch: watch
+};

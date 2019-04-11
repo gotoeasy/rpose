@@ -15,6 +15,7 @@ bus.on('编译插件', function(){
 bus.on('项目配置处理', function(result={}){
 
     return function(srcFile){
+        let time, stime = new Date().getTime();
         let btfFile = srcFile.endsWith('/rpose.config.btf') ? srcFile : bus.at('文件所在项目配置文件', srcFile);
 
 
@@ -25,6 +26,9 @@ bus.on('项目配置处理', function(result={}){
         let rs = postobject(plugins).process({file: btfFile});
 
         result[btfFile] = rs.result;
+
+        time = new Date().getTime() - stime;
+        time > 100 && console.debug('init-project-config:', time + 'ms');
         return result[btfFile];
     };
 

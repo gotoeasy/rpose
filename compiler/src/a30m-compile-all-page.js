@@ -4,10 +4,13 @@ const File = require('@gotoeasy/file');
 
 bus.on('全部编译', function (bs){
 
-    return function(srcfile){
+    return function(){
 
         let oFiles = bus.at('源文件对象清单');
         let env = bus.at('编译环境');
+
+        bus.at('项目配置处理', env.path.root + 'rpose.config.btf');
+
         let promises = [];
         let stime, time;
         for ( let key in oFiles ) {

@@ -1,7 +1,8 @@
 const bus = require('@gotoeasy/bus');
 const cache = require('@gotoeasy/cache');
+const csslibify = require('csslibify');
 
-(function(result={}, oCache){
+(function(result={}, oCache, resourcesPaths){
     
     bus.on('组件编译缓存', function(file, context){
 
@@ -25,6 +26,13 @@ const cache = require('@gotoeasy/cache');
         }
         return oCache;
 
+    });
+
+    bus.on('缓存资源目录数组', function(){
+        if ( !resourcesPaths ) {
+            resourcesPaths = [bus.at('缓存').path + '/resources', csslibify().basePath];    // 编译器缓存及样式库缓存的resources目录的绝对路径
+        }
+        return resourcesPaths;
     });
 
 }());

@@ -60,7 +60,6 @@ bus.on('样式库', function(rs={}){
 
         // 导入处理
         pkg.lastIndexOf('@') > 1 && ( pkg = pkg.substring(0, pkg.lastIndexOf('@')) );       // 模块包名去除版本号 （通常不该有，保险起见处理下）
-        (!name || name === '*') && (pkg = '');                                              // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
         let dir, env = bus.at('编译环境');
         if ( pkg.startsWith('$') ) {
             dir = env.path.root + '/' + pkg;                                                // pkg以$开头时优先查找本地目录
@@ -69,6 +68,8 @@ bus.on('样式库', function(rs={}){
         (!dir || !File.existsDir(dir)) && (dir = getNodeModulePath(pkg));                   // 本地无相关目录则按模块处理，安装指定npm包返回安装目录
         
         let cssfiles = File.files(dir, ...filters);                                         // 待导入的css文件数组
+
+        (!name || name === '*') && (pkg = '');                                              // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
         let libid = hash( JSON.stringify([pkg, cssfiles]) );                                // 样式库缓存用ID【包名：文件列表】
 
         let csslib = csslibify(pkg, name, libid);
@@ -78,6 +79,7 @@ bus.on('样式库', function(rs={}){
     }
 
 }());
+
 
 function getNodeModulePath(npmpkg){
     bus.at('自动安装', npmpkg);

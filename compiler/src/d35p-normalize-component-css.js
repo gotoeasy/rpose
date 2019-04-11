@@ -31,12 +31,8 @@ bus.on('编译插件', function(){
 
         if ( !style.css ) return;
 
-        let env = bus.at('编译环境');
-        let oCache = bus.at('缓存');
-        let fromPath = File.path(context.input.file);
-        let toPath = oCache.path + '/resources';                                            // 统一目录，假定组件样式及资源都编译到 %缓存目录%/resources
-        let assetsPath = '.';                                                               // 样式及资源在同一目录 %缓存目录%/resources
-        style.css = bus.at('样式统一化整理', style.css, fromPath, toPath, assetsPath);
+        let from = context.input.file.replace(/\.rpose$/i, '.css'); 
+        style.css = bus.at('样式统一化整理', style.css, from);
     });
 
 }());

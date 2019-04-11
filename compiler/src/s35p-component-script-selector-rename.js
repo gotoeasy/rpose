@@ -26,7 +26,7 @@ bus.on('编译插件', function(){
 
         let oCsslibPkgs = context.result.oCsslibPkgs;
         let script = context.script;
-        let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\$\s*\()/;
+        let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\$\s*\(|\$\s*\()/;
 
         if ( script.actions && reg.test(script.actions) ) {
             script.actions = transformJsSelector(script.actions, context.input.file);

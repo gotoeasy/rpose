@@ -8,19 +8,19 @@ module.exports = bus.on('样式统一化整理', function(){
 
     // -------------------------------------------------------------
     // 同步处理，仅支持同步插件
+    // url资源统一去除目录，资源文件哈希后存放缓存的resources目录中
     // 
-    // css          : 样式内容 （必须输入）
-    // fromPath     : 样式来源绝对目录 （必须输入）
-    // toPath       : 样式输出绝对目录 （必须输入）
-    // assetsPath   : 样式url目录 （必须输入）
+    // css      : 样式内容 （必须输入）
+    // from     : 样式路径文件名 （必须输入，组件源文件后缀替换为css）
     // -------------------------------------------------------------
-    return (css, fromPath, toPath, assetsPath) => {
-        
+    return (css, from) => {
 
         // 修改url并复文件哈希化文件名
         let url = 'copy';
-        let from = fromPath + '/from.css';
+        let fromPath = File.path(from);
+        let toPath = bus.at('缓存').path + '/resources';
         let to = toPath + '/to.css';
+        let assetsPath = toPath;
         let basePath = fromPath;
         let useHash = true;
         let hashOptions = { method: contents => hash({contents}) };
@@ -28,15 +28,11 @@ module.exports = bus.on('样式统一化整理', function(){
 
         let env = bus.at('编译环境');
         let oCache = bus.at('缓存');
-        let cacheKey = JSON.stringify(['样式统一化整理', css, fromPath, toPath, assetsPath]);
+        let cacheKey = JSON.stringify(['组件样式统一化', css, fromPath, toPath, assetsPath]);
         let plugins = [];
         if ( !env.nocache ) {
             let cacheValue = oCache.get(cacheKey);
             if ( cacheValue ) {
-                if ( cacheValue.indexOf('url(') > 0 ) {
-                    plugins.push( require('postcss-url')(postcssUrlOpt) );              // 复制图片资源（文件可能被clean掉，保险起见执行资源复制）
-                    postcss(plugins).process(cacheValue, {from, to}).sync().root.toResult();
-                }
                 return cacheValue;
             }
         }
