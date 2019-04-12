@@ -24,15 +24,49 @@ bus.on('编译插件', function(){
     // ---------------------------------------------------------------
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
+        let style = context.style;
+        let oCssSet = style.csslibset = style.csslibset || new Set();
+        let oCsslib = context.result.oCsslib;
         let oCsslibPkgs = context.result.oCsslibPkgs;
         let script = context.script;
         let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
+        let classnames = [];
         if ( script.actions && reg.test(script.actions) ) {
             script.actions = transformJsSelector(script.actions, context.input.file);
         }
         if ( script.methods && reg.test(script.methods) ) {
             script.methods = transformJsSelector(script.methods, context.input.file);
+        }
+
+        // 脚本中用到的类，都要查取样式库
+        let hashClassName = bus.on('哈希样式类名')[0];
+        let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
+        let opts = {rename};
+        if ( classnames.length ) {
+            // 查库取样式，把样式库匿名改成真实库名
+            for ( let i=0,clspkg,clsname,asname,ary; clspkg=classnames[i++]; ) {
+                ary = clspkg.split('@');
+                clsname = '.' + ary[0];                         // 类名
+                asname = ary.length > 1 ? ary[1] : '*';         // 库别名
+
+                if ( asname ) {
+                    // 别名样式类，按需引用别名库
+                    csslib = oCsslib[asname];
+                    if ( !csslib ) {
+                        // 指定别名的样式库不存在
+                        throw new Error('csslib not found: ' + asname + '\nfile: ' + context.input.file);  // TODO 友好定位提示
+                    }
+                    
+                    css = csslib.get(clsname, opts);
+                    if ( !css && asname !== '*' ) {
+                        // 指定样式库中找不到指定的样式类，无名库的话可以是纯js控制用，非无名库就是要引用样式，不存在就得报错
+                        throw new Error('css class not found: '+ clspkg + '\nfile: ' + context.input.file);  // TODO 友好定位提示
+                    }
+                    oCssSet.add( css );
+                }
+
+            }
         }
 
 
@@ -55,7 +89,7 @@ bus.on('编译插件', function(){
                         return;
                     }
 
-                    let fnName;
+                    let fnName, classname;
                     if ( node.callee.type === 'Identifier' ) {
                         // 直接函数调用
                         fnName = node.callee.name;
@@ -69,16 +103,24 @@ bus.on('编译插件', function(){
                         // 对象成员函数调用
                         fnName = node.callee.property.name;
                         if ( fnName === 'getElementsByClassName' ) {                                                                    // document.getElementsByClassName('foo')
-                            node.arguments[0].value = bus.at('哈希样式类名', srcFile, getClassPkg(node.arguments[0].value));
+                            classname = getClassPkg(node.arguments[0].value);
+                            node.arguments[0].value = bus.at('哈希样式类名', srcFile, classname);
+                            classnames.push(classname);                                                                                 // 脚本中用到的类，存起来查样式库使用
                         }else if (fnName === 'querySelector' || fnName === 'querySelectorAll'){                                         // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
                             node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile);
                         }else if (fnName === 'addClass' || fnName === 'removeClass'){                                                   // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
-                            let rs = [], ary = node.arguments[0].value.trim().split(/\s+/);
-                            ary.forEach( cls => rs.push( bus.at('哈希样式类名', srcFile, getClassPkg(cls) )) );
+                            let rs = [], classname, ary = node.arguments[0].value.trim().split(/\s+/);
+                            ary.forEach( cls => {
+                                classname = getClassPkg(cls);
+                                rs.push( bus.at('哈希样式类名', srcFile, classname ));
+                                classnames.push(classname);                                                                             // 脚本中用到的类，存起来查样式库使用
+                            });
                             node.arguments[0].value = rs.join(' ');
                         }else if (fnName === 'add' || fnName === 'remove'){                                                             // el.classList.add('foo'), el.classList.remove('bar')
                             if ( node.callee.object.type === 'MemberExpression' && node.callee.object.property.name === 'classList' ) {
-                                node.arguments[0].value = bus.at('哈希样式类名', srcFile, getClassPkg(node.arguments[0].value));
+                                classname = getClassPkg(node.arguments[0].value);
+                                node.arguments[0].value = bus.at('哈希样式类名', srcFile, classname);
+                                classnames.push(classname);                                                                             // 脚本中用到的类，存起来查样式库使用
                             }else{
                                 return;
                             }
@@ -102,14 +144,16 @@ bus.on('编译插件', function(){
 
         function transformSelector(selector, srcFile){
 
-            selector = selector.replace(/@/g, '鬱')
+            selector = selector.replace(/@/g, '鬱');
             let ast = tokenizer.parse(selector);
-            let nodes = ast.nodes || [];
+            let classname, nodes = ast.nodes || [];
             nodes.forEach(node => {
                 if ( node.type === 'selector' ) {
                     (node.nodes || []).forEach(nd => {
                         if ( nd.type === 'class' ) {
-                            nd.name = bus.at('哈希样式类名', srcFile, getClassPkg(nd.name) );
+                            classname = getClassPkg(nd.name);
+                            nd.name = bus.at('哈希样式类名', srcFile, classname );
+                            classnames.push(classname);                             // 脚本中用到的类，存起来查样式库使用
                         }
                     });
                 }
@@ -119,8 +163,9 @@ bus.on('编译插件', function(){
             return rs.replace(/鬱/g, '@');
         }
 
+        // 检查样式库是否存在
         function getClassPkg(cls){
-            let ary = cls.trim().split('鬱');
+            let ary = cls.trim().split(/鬱|@/);
             if ( ary.length > 1 ){
                 let asname = ary[1];
                 if ( !oCsslibPkgs[asname] ) {
