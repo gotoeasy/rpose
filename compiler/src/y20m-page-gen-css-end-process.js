@@ -43,13 +43,9 @@ bus.on('页面样式后处理', function(){
         }
 
         css = csso.minify(css, {forceMediaMerge: true, comments: false}).css;           // 压缩样式，合并@media
-
-        let sort = require('sort-css-media-queries');                                   // 默认@media的排序方式是移动优先mobileFirst;
-        desktopFirst && (sort = sort.desktopFirst);                                     // 如果在api中指定desktopFirst则按桌面优先排序
-
         plugins.push( require('autoprefixer')() );                                      // 添加前缀
         plugins.push( require('postcss-url')(postcssUrlOpt) );                          // 修改url相对目录
-        plugins.push( require('css-mqpacker')({sort}) );                                // 把@media统一放后面，按指定的排序方式（移动优先还是桌面优先）对@media进行排序
+        plugins.push( require('postcss-sort-media')({desktopFirst}) );                  // 把@media统一放后面，按指定的排序方式（移动优先还是桌面优先）对@media进行排序
 
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
 
