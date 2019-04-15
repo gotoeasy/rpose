@@ -14,7 +14,8 @@ bus.on('编译插件', function(){
 
 bus.on('项目配置处理', function(result={}){
 
-    return function(srcFile){
+    return function(srcFile, nocahce=false){
+        nocahce && (result = {});
         let time, stime = new Date().getTime();
         let btfFile = srcFile.endsWith('/rpose.config.btf') ? srcFile : bus.at('文件所在项目配置文件', srcFile);
 

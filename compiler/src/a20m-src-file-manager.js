@@ -37,7 +37,11 @@ const File = require('@gotoeasy/file');
         // 找不到时无视错误，返回undefined
     });
 
-    bus.on('源文件对象清单', function(){
+    bus.on('源文件对象清单', function(nocache=false){
+        if ( nocache ) {
+            oFiles = null;
+            oTagFiles = {};
+        }
 
         if ( !oFiles ) {
             oFiles = {};

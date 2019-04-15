@@ -10,7 +10,8 @@ const path = require('path');
 // 读不到则使用默认配置
 bus.on('编译环境', function(result){
 
-    return function(opts){
+    return function(opts, nocache=false){
+        nocache && (result = null);
         if ( result ) return result;
 
         let packagefile = File.resolve(__dirname, './package.json');
