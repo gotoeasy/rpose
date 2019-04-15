@@ -1,6 +1,6 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.4.17",
+  "version": "0.4.18",
   "main": "compiler.js",
   "dependencies": {
     "@rpose/runtime": "0.0.*",
@@ -16,7 +16,9 @@
     "@gotoeasy/theme": "0.0.*",
     "@gotoeasy/pre-render": "0.0.*",
     "csslibify": "0.3.*",
-    "postcss-import-sync": "7.1.*",
+    "csso": "3.5.*",
+    "css-mqpacker": "7.0.0",
+    "sort-css-media-queries": "1.4.*",
     "resolve-pkg": "1.0.*",
     "acorn-globals": "4.3.*",
     "acorn-walk": "6.1.*",

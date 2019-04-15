@@ -34,14 +34,30 @@ function parseBlockApi(api){
         if ( /^option[\-]?keys$/i.test(key) ) {
             key = 'optionkeys';
             value = value.split(/[,;]/).map(v=>v.trim());
+            rs[key] = value;
         }else if ( /^state[\-]?keys$/i.test(key) ) {
             key = 'statekeys';
             value = value.split(/[,;]/).map(v=>v.trim());
+            rs[key] = value;
         }else if ( /^pre[\-]?render$/i.test(key) ) {
             key = 'prerender';
+            rs[key] = value;
+        }else if ( /^desktop[\-]?first$/i.test(key) ) {
+            key = 'desktopfirst';                                   // 移动优先时，min-width => max-width => min-device-width => max-device-width => other;桌面优先时，max-width => max-device-width => min-width => min-device-width => other
+            rs[key] = toBoolean(value);
+        }else if ( /^mobile[\-]?first$/i.test(key) ) {
+            key = 'desktopfirst';
+            rs[key] = !toBoolean(value);
+        }else{
+            rs[key] = value;
         }
-        rs[key] = value;
     });
     return rs;
 }
 
+// 直接运算为false则返回false，字符串（不区分大小写）‘0’、‘f’、‘false’、‘n’、‘no’ 都为false，其他为true
+function toBoolean(arg){
+	if ( !arg ) return false;
+	if ( typeof arg !== 'string' ) return true;
+	return !/^(0|false|f|no|n)$/i.test((arg + '').trim());
+}

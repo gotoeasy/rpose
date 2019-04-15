@@ -2,6 +2,7 @@ const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
 const hash = require('@gotoeasy/hash');
 const postcss = require('postcss');
+const csso = require('csso');
 
 bus.on('页面样式后处理', function(){
 
@@ -10,14 +11,15 @@ bus.on('页面样式后处理', function(){
     // 
     // 加前缀、复制url资源、压缩/格式化
     // -------------------------------------------------------------
-    return (css, srcFile) => {
+    return (css, context) => {
 
         if ( !css ) return '';
 
         let env = bus.at('编译环境');
         let oCache = bus.at('缓存');
         let from = oCache.path + '/resources/from.css';                                 // 页面由组件拼装，组件都在%缓存目录%/resources
-        let to = bus.at('页面目标CSS文件名', srcFile);
+        let to = bus.at('页面目标CSS文件名', context.input.file);
+        let desktopFirst = !!context.doc.api.desktopfirst;                              // 移动优先时，min-width => max-width => min-device-width => max-device-width => other；桌面优先时，max-width => max-device-width => min-width => min-device-width => other
 
         let pageCss;
         let plugins = [];
@@ -25,10 +27,10 @@ bus.on('页面样式后处理', function(){
         let url = 'copy';
         let basePath = bus.at('缓存资源目录数组');                                       // 缓存资源目录中找，包括编译缓存的资源目录，和样式库缓存的资源目录
         let useHash = false;                                                            // 编译的组件样式已统一哈希文件名
-        let assetsPath = bus.at('页面图片相对路径', srcFile);
+        let assetsPath = bus.at('页面图片相对路径', context.input.file);
         let postcssUrlOpt = {url, basePath, assetsPath, useHash };
 
-        let cacheKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, assetsPath, css]);
+        let cacheKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, desktopFirst, assetsPath, css]);
         if ( !env.nocache ) {
             let cacheValue = oCache.get(cacheKey);
             if ( cacheValue ) {
@@ -40,13 +42,14 @@ bus.on('页面样式后处理', function(){
             }
         }
 
-	    plugins.push( require('postcss-discard-comments')({remove:x=>1}) );	            // 删除所有注释
-	    plugins.push( require('postcss-normalize-whitespace') );					    // 压缩删除换行空格
-	    plugins.push( require('postcss-discard-empty') );							    // 删除空样式（@font-face;h1{}{color:blue}h2{color:}h3{color:red} => h3{color:red}）
-	    plugins.push( require('postcss-discard-duplicates') );						    // 删除重复样式（p{color:green}p{color:green;color:green} => p{color:green}）
+        css = csso.minify(css, {forceMediaMerge: true, comments: false}).css;           // 压缩样式，合并@media
+
+        let sort = require('sort-css-media-queries');                                   // 默认@media的排序方式是移动优先mobileFirst;
+        desktopFirst && (sort = sort.desktopFirst);                                     // 如果在api中指定desktopFirst则按桌面优先排序
+
         plugins.push( require('autoprefixer')() );                                      // 添加前缀
         plugins.push( require('postcss-url')(postcssUrlOpt) );                          // 修改url相对目录
-        plugins.push( require('postcss-merge-rules')() );                               // 合并规则
+        plugins.push( require('css-mqpacker')({sort}) );                                // 把@media统一放后面，按指定的排序方式（移动优先还是桌面优先）对@media进行排序
 
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
 

@@ -46,7 +46,7 @@ bus.on('编译插件', function(){
 
         // 汇总后的页面样式做后处理
         context.result.css = [...aryTagCss, ...ary].join('\n');
-        context.result.pageCss = bus.at('页面样式后处理', context.result.css, context.input.file);  // TODO @media样式合并存在不足
+        context.result.pageCss = bus.at('页面样式后处理', context.result.css, context);  // TODO @media样式合并存在不足
     });
 
 }());
