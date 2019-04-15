@@ -19,7 +19,7 @@ bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbt
 		// 监视文件变化
         let browserslistrc = env.path.root + '/.browserslistrc';
         let rposeconfigbtf = env.path.root + '/rpose.config.btf';
-		let ready, watcher = chokidar.watch(env.path.root);
+		let ready, watcher = chokidar.watch(env.path.root, {ignored: [env.path.build+'/', env.path.root+'/node_modules/']});
 		watcher.on('add', async file => {
             if ( ready ) {
                 file = file.replace(/\\/g, '/');
