@@ -239,13 +239,14 @@ body
 - [x] 按`.browserslistrc`配置的目标浏览器直接打包成品
 - [x] 非release模式时，编译的组件代码输出到临时目录便于确认
 - [x] 使用基于磁盘文件的缓存，缓存目录可配置化
+- [x] 支持页面`[api]`中声明为移动优先或桌面优先，默认为移动优先（desktopFirst=false）
 
 * `other`
 
 - [x] 简易实现热刷新服务器替代第三方包，方便按需刷新、按需打开窗口
 - [x] 按需引用normalize样式，间接的可通过配置样式库实现
-- [ ] 监视模式下修改`.browserslistrc`文件，重新编译页面
-- [ ] 监视模式下修改`rpose.config.btf`文件，重新编译项目
+- [x] 监视模式下修改`.browserslistrc`文件，重新编译全部页面
+- [x] 监视模式下修改`rpose.config.btf`文件，重新编译整个项目
 - [ ] 测试及覆盖率
 - [ ] 缓存性能还可优化
 - [ ] 完善例子及文档
@@ -257,7 +258,7 @@ body
 <details>
 <summary><strong>Ver 0.4.x</strong></summary>
 
-- [x] 为方便功能删减修改，咬牙重构编译器，分离`runtime`、`buildin`模块
+- [x] 为方便功能删减修改，咬牙重构，编译器插件化，分离`runtime`、`buildin`模块
 - [x] 更多的编译期检查以及更友好的错误信息提示
 - [x] 新增指令`@for`，新增内置标签`<for>`、`<if>`
 - [x] 新增支持特殊的CDATA标签写法，方便直接书写尖括号等特殊字符
@@ -269,6 +270,9 @@ body
 - [x] 按需引用normalize样式，间接的可通过配置样式库实现
 - [x] 用语法树分析的方式，更安全的哈希化js代码中样式选择器的类名
 - [x] 在js代码中的样式类名，支持自动按需引用样式库
+- [x] 支持页面`[api]`中声明为移动优先或桌面优先，默认为移动优先（desktopFirst=false）
+- [x] 监视模式下修改`.browserslistrc`文件，重新编译全部页面
+- [x] 监视模式下修改`rpose.config.btf`文件，重新编译整个项目
 </details>
 
 <details>

@@ -2,7 +2,7 @@
 rpose
 
 [version] // 版本号
-0.4.2
+0.4.3
 
 
 
@@ -11,7 +11,6 @@ rpose
 [bin] // cli命令
 
 [dependencies] // 依赖库
-@rpose/compiler = 0.4.*
 
 [devDependencies] // 开发依赖库
 
