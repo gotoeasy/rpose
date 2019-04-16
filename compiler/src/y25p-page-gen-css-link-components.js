@@ -12,7 +12,7 @@ bus.on('编译插件', function(){
         let strict = !!context.doc.api.strict;                  // 样式库引用模式
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );    // 自定义改名函数
-        let opts = {rename, strict};
+        let opts = {rename, strict: true};
 
 
         // 在全部样式库中，用使用到的标准标签查询样式，汇总放前面
@@ -20,7 +20,7 @@ bus.on('编译插件', function(){
         let oCsslib = context.result.oCsslib;
         let oCache = bus.at('缓存');
         for ( let k in oCsslib ) {
-            let cacheKey = hash(JSON.stringify(['按需取标签样式', oCsslib[k].pkg, oCsslib[k].version, oCsslib[k]._imported, context.result.allstandardtags]));
+            let cacheKey = hash(JSON.stringify(['按需取标签样式', oCsslib[k].pkg, oCsslib[k].version, strict, oCsslib[k]._imported, context.result.allstandardtags]));
             if ( !env.nocache ) {
                 let cacheValue = oCache.get(cacheKey);
                 if ( cacheValue ) {
@@ -39,8 +39,8 @@ bus.on('编译插件', function(){
 
         // 汇总所有使用到的组件的样式
         let ary = [];
-       let allreferences = context.result.allreferences;                            // 已含页面自身组件
-       allreferences.forEach(tagpkg => {
+        let allreferences = context.result.allreferences;                            // 已含页面自身组件
+        allreferences.forEach(tagpkg => {
             let ctx = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg));
             if ( !ctx ) {
                 ctx = bus.at('编译组件', tagpkg);

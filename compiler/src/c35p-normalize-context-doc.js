@@ -18,7 +18,9 @@ bus.on('编译插件', function(){
 
 
 function parseBlockApi(api){
-    let rs = {strict: false};                                       // 默认宽松匹配样式库模式
+
+    let rs = {strict: true};                                        // 默认严格匹配样式库模式
+
     let lines = (api == null ? '' : api.trim()).split('\n');
     lines.forEach(line => {
         let key, value, idx = line.indexOf('=');                    // 等号和冒号，谁在前则按谁分隔

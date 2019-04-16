@@ -31,7 +31,7 @@ bus.on('编译插件', function(){
         let script = context.script;
         let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
-        let classnames = [];
+        let classnames = script.classnames = script.classnames || [];                   // 脚本代码中用到的样式类
         if ( script.actions && reg.test(script.actions) ) {
             script.actions = transformJsSelector(script.actions, context.input.file);
         }
@@ -39,11 +39,7 @@ bus.on('编译插件', function(){
             script.methods = transformJsSelector(script.methods, context.input.file);
         }
 
-        // 脚本中用到的类，都要查取样式库
-        let hashClassName = bus.on('哈希样式类名')[0];
-        let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
-        let strict = !!context.doc.api.strict;                                                        // 样式库引用模式
-        let opts = {rename, strict};
+        // 脚本中用到的类，检查样式库是否存在，检查类名是否存在
         if ( classnames.length ) {
             // 查库取样式，把样式库匿名改成真实库名
             for ( let i=0,clspkg,clsname,asname,ary; clspkg=classnames[i++]; ) {
@@ -59,12 +55,10 @@ bus.on('编译插件', function(){
                         throw new Error('csslib not found: ' + asname + '\nfile: ' + context.input.file);  // TODO 友好定位提示
                     }
                     
-                    css = csslib.get(clsname, opts);
-                    if ( !css && asname !== '*' ) {
+                    if ( asname !== '*' && !csslib.has(clsname) ) {
                         // 指定样式库中找不到指定的样式类，无名库的话可以是纯js控制用，非无名库就是要引用样式，不存在就得报错
                         throw new Error('css class not found: '+ clspkg + '\nfile: ' + context.input.file);  // TODO 友好定位提示
                     }
-                    oCssSet.add( css );
                 }
 
             }
