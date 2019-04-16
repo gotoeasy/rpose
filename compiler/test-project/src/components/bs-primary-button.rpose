@@ -1,10 +1,11 @@
 [api]
 optionkeys = onclick, type, style
 statekeys  = disabled
+strict  = true
 
 [view]
-<button type="button" class="btn@bootstrap btn-lg@bootstrap dropdown-toggle@bootstrap{
-    'btn-primary@bootstrap': /primary/i.test(type)
+<button type="button" class="btn@bs btn-lg@bs dropdown-toggle@bs {
+    'btn-primary@bs': /primary/i.test(type)
     }"
     style={style}
     disabled={disabled}
@@ -16,5 +17,5 @@ statekeys  = disabled
 }
 
 [csslib]
-bootstrap = bootstrap:**.min.css
+bs = bootstrap:**.min.css
 

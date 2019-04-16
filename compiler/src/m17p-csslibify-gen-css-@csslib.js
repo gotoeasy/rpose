@@ -9,12 +9,13 @@ bus.on('编译插件', function(){
 
         let style = context.style;
         let oCssSet = style.csslibset = style.csslibset || new Set();
-        let oCsslib = Object.assign({}, context.result.oCsslib);                        // 复制(项目[csslib]+组件[csslib])
+        let oCsslib = Object.assign({}, context.result.oCsslib);                                        // 复制(项目[csslib]+组件[csslib])
         let oCsslibPkgs = context.result.oCsslibPkgs;
         let hashClassName = bus.on('哈希样式类名')[0];
-        let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
-        let opts = {rename};
-        let atcsslibtagcss = context.result.atcsslibtagcss = context.result.atcsslibtagcss || [];   // @csslib的标准标签样式
+        let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );    // 自定义改名函数
+        let strict = !!context.doc.api.strict;                                                          // 样式库引用模式
+        let opts = {rename, strict};
+        let atcsslibtagcss = context.result.atcsslibtagcss = context.result.atcsslibtagcss || [];       // @csslib的标准标签样式
 
         let ary, clsname, csslib, css;
         root.walk( 'Class', (node, object) => {
@@ -29,11 +30,11 @@ bus.on('编译插件', function(){
             }
             if ( csslibNode ) {
                 let atcsslib = bus.at('样式库', csslibNode.object.value);
-                oCsslib[atcsslib.name] = atcsslib;                                      // 并入(前一步已检查)(项目[csslib]+组件[csslib]+标签[@csslib])
+                oCsslib[atcsslib.name] = atcsslib;                                                      // 并入(前一步已检查)(项目[csslib]+组件[csslib]+标签[@csslib])
                 oCsslibPkgs[atcsslib.name] = atcsslib.pkg;
 
                 // @csslib仅作用于所在标签，所以要把标签样式取出
-                node.parent.object.standard && atcsslibtagcss.push(atcsslib.get(node.parent.object.value));
+                node.parent.object.standard && atcsslibtagcss.push(atcsslib.get(node.parent.object.value, opts));
             }
             let nonameCsslib = oCsslib['*'];
 

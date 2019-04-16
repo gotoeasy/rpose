@@ -42,7 +42,8 @@ bus.on('编译插件', function(){
         // 脚本中用到的类，都要查取样式库
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
-        let opts = {rename};
+        let strict = !!context.doc.api.strict;                                                        // 样式库引用模式
+        let opts = {rename, strict};
         if ( classnames.length ) {
             // 查库取样式，把样式库匿名改成真实库名
             for ( let i=0,clspkg,clsname,asname,ary; clspkg=classnames[i++]; ) {
