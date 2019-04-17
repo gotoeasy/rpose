@@ -13,7 +13,9 @@ bus.on('编译插件', function(){
         let scriptclassnames = context.script.classnames;
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );        // 自定义改名函数
-        let strict = !!context.doc.api.strict;                                                              // 样式库引用模式
+        let strict = true;                                                                                  // 样式库严格匹配模式
+        let universal = false;                                                                              // 不查取通用样式
+        let opts = {rename, strict, universal};
 
         let ary, clsname, oQuerys = {};
         root.walk( 'Class', (node, object) => {
@@ -46,7 +48,7 @@ bus.on('编译插件', function(){
         let csslib, tags = context.result.standardtags;                                                     // 用本组件的全部标准标签，解析完后才能用本插件
         for ( let asname in oQuerys ) {
             csslib = oCsslib[asname];
-            csslib && oCssSet.add( csslib.get(...tags, ...new Set(oQuerys[asname]), {rename, strict}) );    // 用本组件的全部标准标签+同一样式库的类名，查取样式库
+            csslib && oCssSet.add( csslib.get(...tags, ...new Set(oQuerys[asname]), opts) );                // 用本组件的全部标准标签+同一样式库的类名，查取样式库
         }
 
     });

@@ -11,8 +11,9 @@ bus.on('编译插件', function(){
         let oCsslibPkgs = context.result.oCsslibPkgs;                                                   // 样式库匿名集合
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );    // 自定义改名函数
-        let strict = !!context.doc.api.strict;                                                          // 样式库引用模式
-        let opts = {rename, strict};
+        let strict = true;                                                                              // 样式库严格匹配模式
+        let universal = false;                                                                          // 不查取通用样式
+        let opts = {rename, strict, universal};
         let atcsslibtagcss = context.result.atcsslibtagcss = context.result.atcsslibtagcss || [];       // @csslib的标准标签样式
 
         let ary, clsname;

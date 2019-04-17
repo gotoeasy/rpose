@@ -1,33 +1,11 @@
-*{box-sizing:inherit}
-::after{box-sizing:inherit}
-::before{box-sizing:inherit}
-*{box-sizing:border-box}
-::after{box-sizing:border-box}
-::before{box-sizing:border-box}
-[tabindex="-1"]:focus{outline:0!important}
 button{border-radius:0}
 button:focus{outline:1px dotted;outline:5px auto -webkit-focus-ring-color}
 button{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}
 button{overflow:visible}
 button{text-transform:none}
-[type=button]{appearance:button}
-[type=reset]{appearance:button}
-[type=submit]{appearance:button}
 button{appearance:button}
-[type=button]:not(:disabled){cursor:pointer}
-[type=reset]:not(:disabled){cursor:pointer}
-[type=submit]:not(:disabled){cursor:pointer}
 button:not(:disabled){cursor:pointer}
-[type=button]::-moz-focus-inner{padding:0;border-style:none}
-[type=reset]::-moz-focus-inner{padding:0;border-style:none}
-[type=submit]::-moz-focus-inner{padding:0;border-style:none}
 button::-moz-focus-inner{padding:0;border-style:none}
-[type=number]::-webkit-inner-spin-button{height:auto}
-[type=number]::-webkit-outer-spin-button{height:auto}
-[type=search]{outline-offset:-2px;appearance:none}
-[type=search]::-webkit-search-decoration{appearance:none}
-::-webkit-file-upload-button{font:inherit;appearance:button}
-[hidden]{display:none!important}
 .bootstrap---btn{display:inline-block;font-weight:400;color:#212529;text-align:center;vertical-align:middle;user-select:none;background-color:transparent;border:1px solid transparent;padding:.375rem .75rem;font-size:1rem;line-height:1.5;border-radius:.25rem;transition:color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out}
 .bootstrap---btn:hover{color:#212529;text-decoration:none}
 .bootstrap---btn:focus{outline:0;box-shadow:0 0 0 .2rem rgba(0,123,255,.25)}
@@ -43,6 +21,3 @@ button::-moz-focus-inner{padding:0;border-style:none}
 .bootstrap---dropdown-toggle::after{display:inline-block;margin-left:.255em;vertical-align:.255em;content:"";border-top:.3em solid;border-right:.3em solid transparent;border-bottom:0;border-left:.3em solid transparent}
 .bootstrap---dropdown-toggle:empty::after{margin-left:0}
 @media (prefers-reduced-motion:reduce){.bootstrap---btn{transition:none}}
-@media print{*{text-shadow:none!important;box-shadow:none!important}}
-@media print{::after{text-shadow:none!important;box-shadow:none!important}}
-@media print{::before{text-shadow:none!important;box-shadow:none!important}}

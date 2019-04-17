@@ -9,18 +9,19 @@ bus.on('编译插件', function(){
         if ( !context.result.isPage ) return false;             // 仅针对页面
 
         let env  = bus.at('编译环境');
-        let strict = !!context.doc.api.strict;                  // 样式库引用模式
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );    // 自定义改名函数
-        let opts = {rename, strict: true};
+        let strict = true;                                      // 样式库严格匹配模式
+        let universal = true;                                   // 查取通用样式（页面的缘故）
+        let opts = {rename, strict, universal};
 
 
         // 在全部样式库中，用使用到的标准标签查询样式，汇总放前面
         let aryTagCss = [];
-        let oCsslib = context.result.oCsslib;
+        let oCsslib = context.result.oCsslib;                   // 项目[csslib]+组件[csslib]
         let oCache = bus.at('缓存');
         for ( let k in oCsslib ) {
-            let cacheKey = hash(JSON.stringify(['按需取标签样式', oCsslib[k].pkg, oCsslib[k].version, strict, oCsslib[k]._imported, context.result.allstandardtags]));
+            let cacheKey = hash(JSON.stringify(['按需取标签样式', oCsslib[k].pkg, oCsslib[k].version, strict, universal, oCsslib[k]._imported, context.result.allstandardtags]));
             if ( !env.nocache ) {
                 let cacheValue = oCache.get(cacheKey);
                 if ( cacheValue ) {

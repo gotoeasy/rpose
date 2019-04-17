@@ -20,7 +20,6 @@ bus.on('页面样式后处理', function(){
         let from = oCache.path + '/resources/from.css';                                 // 页面由组件拼装，组件都在%缓存目录%/resources
         let to = bus.at('页面目标CSS文件名', context.input.file);
         let desktopFirst = !!context.doc.api.desktopfirst;                              // 移动优先时，min-width => max-width => min-device-width => max-device-width => other；桌面优先时，max-width => max-device-width => min-width => min-device-width => other
-        let strict = !!context.doc.api.strict;                                          // 样式库引用模式
 
         let pageCss;
         let plugins = [];
@@ -31,7 +30,7 @@ bus.on('页面样式后处理', function(){
         let assetsPath = bus.at('页面图片相对路径', context.input.file);
         let postcssUrlOpt = {url, basePath, assetsPath, useHash };
 
-        let cacheKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, desktopFirst, strict, assetsPath, css]);
+        let cacheKey = JSON.stringify(['页面样式后处理', bus.at('browserslist'), env.release, desktopFirst, assetsPath, css]);
         if ( !env.nocache ) {
             let cacheValue = oCache.get(cacheKey);
             if ( cacheValue ) {
