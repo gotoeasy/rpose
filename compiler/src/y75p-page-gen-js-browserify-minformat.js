@@ -25,6 +25,7 @@ bus.on('编译插件', function(){
                 resolve(js);
             }).catch(e => {
                 File.write(env.path.build + '/error/browserify.log', context.result.babelJs + '\n\n' + e.stack);
+                bus.at('组件编译缓存', context.input.file, false);                          // 删除当前文件的编译缓存
                 reject(e);
             });
         

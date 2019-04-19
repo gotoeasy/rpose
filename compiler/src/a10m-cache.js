@@ -3,6 +3,13 @@ const cache = require('@gotoeasy/cache');
 const csslibify = require('csslibify');
 
 (function(result={}, oCache, resourcesPaths){
+
+    bus.on('清除全部编译缓存', function(){
+        result = {};
+        oCache = null;
+        resourcesPaths = null;
+    });
+
     
     bus.on('组件编译缓存', function(file, context){
 

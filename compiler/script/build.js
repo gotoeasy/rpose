@@ -33,9 +33,7 @@ const csjs = require('@gotoeasy/csjs');
 
 
     let js = ary.join('\r\n');
-//    js = csjs.formatJs(js, true);
-    js = csjs.miniJs(js);
-
+    js = csjs.formatJs(js);         // 便于确认代码，格式化代码且不删除注释
 
     File.write(File.path(fileIndex) + '/compiler.js', js);
 

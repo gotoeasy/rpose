@@ -1,6 +1,7 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const csjs = require('@gotoeasy/csjs');
+const File = require('@gotoeasy/file');
 
 bus.on('编译插件', function(){
     
@@ -23,20 +24,21 @@ bus.on('编译插件', function(){
             }
         });
 
+
+        function lessToCss(less){
+            let env = bus.at('编译环境');
+            let oCache = bus.at('缓存');
+            let cacheKey = JSON.stringify(['lessToCss', context.input.file, less]);
+            if ( !env.nocache ) {
+                let cacheValue = oCache.get(cacheKey);
+                if ( cacheValue ) return cacheValue;
+            }
+
+            let css = csjs.lessToCss(less, {paths: [File.path(context.input.file)]});
+            return oCache.set(cacheKey, css);
+        }
+
     });
 
 }());
 
-
-function lessToCss(less){
-    let env = bus.at('编译环境');
-    let oCache = bus.at('缓存');
-    let cacheKey = JSON.stringify(['lessToCss', less]);
-    if ( !env.nocache ) {
-        let cacheValue = oCache.get(cacheKey);
-        if ( cacheValue ) return cacheValue;
-    }
-
-    let css = csjs.lessToCss(less);
-    return oCache.set(cacheKey, css);
-}

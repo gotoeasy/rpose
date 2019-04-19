@@ -13,15 +13,20 @@ bus.on('全部编译', function (bs){
 
         let promises = [];
         let stime, time;
-        for ( let key in oFiles ) {
-            stime = new Date().getTime();
+        for ( let file in oFiles ) {
+            try{
+                stime = new Date().getTime();
 
-            let context = bus.at('编译组件', oFiles[key]);
-            context.result.browserifyJs && promises.push(context.result.browserifyJs);
+                let context = bus.at('编译组件', oFiles[file]);
+                context.result.browserifyJs && promises.push(context.result.browserifyJs);
 
-            time = new Date().getTime() - stime;
-            if ( time > 100 ) {
-                console.info('[compile] ' + time + 'ms -', key.replace(env.path.src + '/', ''));
+                time = new Date().getTime() - stime;
+                if ( time > 100 ) {
+                    console.info('[compile] ' + time + 'ms -', file.replace(env.path.src + '/', ''));
+                }
+            }catch(e){
+                bus.at('组件编译缓存', file , false);     // 出错时确保删除缓存（可能组件编译过程成功，页面编译过程失败）
+                throw e;
             }
         }
         return promises;

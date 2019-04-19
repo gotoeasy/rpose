@@ -1,6 +1,7 @@
 const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
 const hash = require('@gotoeasy/hash');
+const Err = require('@gotoeasy/err');
 const postcss = require('postcss');
 const csso = require('csso');
 
@@ -42,7 +43,13 @@ bus.on('页面样式后处理', function(){
             }
         }
 
-        css = csso.minify(css, {forceMediaMerge: true, comments: false}).css;           // 压缩样式，合并@media
+        try{
+            css = csso.minify(css, {forceMediaMerge: true, comments: false}).css;       // 压缩样式，合并@media
+        }catch(e){
+            // 样式有误导致处理失败
+            throw new Err('css end process failed', 'file: ' + context.input.file, e);
+        }
+
         plugins.push( require('autoprefixer')() );                                      // 添加前缀
         plugins.push( require('postcss-url')(postcssUrlOpt) );                          // 修改url相对目录
         plugins.push( require('postcss-sort-media')({desktopFirst}) );                  // 把@media统一放后面，按指定的排序方式（移动优先还是桌面优先）对@media进行排序
