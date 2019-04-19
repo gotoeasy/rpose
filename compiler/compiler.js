@@ -6413,6 +6413,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     str = "";
                 }
 
+                expr = expr.replace(/\\/g, "皛"); // 补丁案 ...... 把class里表达式的斜杠临时替换掉，避免JSON处理时不认正则表达式的转义字符，在输出代码时替换回来
                 oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(cls, oCsslibPkgs))] = "@(" + expr + ")@";
             }
 
@@ -6424,7 +6425,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             ary[i].trim() && (oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(ary[i], oCsslibPkgs))] = 1);
         }
 
-        return JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, "");
+        let rs = JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, "");
+        rs = rs.replace(/皛/g, "\\"); // 补丁案 ...... 把class里表达式的【皛】替换回斜杠，以达到正常输出正则表达式的目的
+        return rs;
     }
 
     function getClassPkg(cls, oCsslibPkgs) {
@@ -6981,7 +6984,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     const Err = require("@gotoeasy/err");
     const acornGlobals = require("acorn-globals");
 
-    const JS_VARS = "$$,require,window,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(
+    const JS_VARS = "$$,require,window,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(
         ","
     );
 
