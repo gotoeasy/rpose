@@ -22,7 +22,7 @@ bus.on('编译插件', function(){
 
             for ( let k in oKv ) {
                 if ( oCsslib[k] ) {
-                    throw new Err('duplicate csslib name: ' + k, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line, column: 1 });
+                    throw new Err('duplicate csslib name: ' + k, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line - 1 });
                 }
                 oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`);
                 oCsslibPkgs[k] = oCsslib[k].pkg;

@@ -977,35 +977,40 @@ console.time("load");
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
+    // ---------------------------------------------------
+    // 项目配置文件解析
+    // ---------------------------------------------------
     bus.on(
         "项目配置文件解析",
         (function() {
             return function(text, keepLoc = true) {
-                let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
-                let lines = text.split(LF);
-                let lineCounts = lines.map(v => v.length + LF.length);
+                let lines = text.split("\n"); // 行内容包含换行符
+                let lineCounts = []; // 行长度包含换行符
+                for (let i = 0, max = lines.length; i < max; i++) {
+                    lines[i] += "\n"; // 行内容包含换行符
+                    lineCounts[i] = lines[i].length; // 行长度包含换行符
+                }
 
                 let nodes = [];
-                parse(nodes, lines, lineCounts, LF);
+                parse(nodes, lines, lineCounts);
 
                 nodes.forEach(block => {
                     if (block.buf.length) {
                         let type = "ProjectBtfBlockText";
-                        let value = block.buf.join(LF);
-                        let line = block.name.loc.start.line + 1;
-                        let column = 1;
-                        let pos = sumLineCount(lineCounts, line - 1);
-                        let start = { line, column, pos };
+                        let lastLine = block.buf.pop();
 
-                        line = block.name.loc.start.line + block.buf.length;
-                        column = block.buf[block.buf.length - 1].length + 1;
-                        pos = sumLineCount(lineCounts, line - 1) + column;
+                        // 值
+                        block.buf.push(lastLine.replace(/\r?\n$/, "")); // 删除最后一行回车换行符
+                        let value = block.buf.join(""); // 无损拼接
 
-                        if (column === 1 && block.buf.length > 1) {
-                            line--;
-                            column = block.buf[block.buf.length - 2].length + 1;
-                        }
-                        end = { line, column, pos };
+                        // 开始位置
+                        let start = Object.assign({}, block.name.loc.start); // 块开始位置信息 = 块名开始位置信息
+
+                        // 结束位置
+                        let line = block.name.loc.start.line + block.buf.length; // 结束行
+                        let column = block.buf[block.buf.length - 1].length; // 结束列
+                        let pos = sumLineCount(lineCounts, line) + column; // 结束位置
+                        let end = { line, column, pos };
 
                         block.text = { type, value, loc: { start, end } };
                     }
@@ -1021,7 +1026,7 @@ console.time("load");
         })()
     );
 
-    function parse(blocks, lines, lineCounts, lf) {
+    function parse(blocks, lines, lineCounts) {
         let sLine,
             block,
             oName,
@@ -1033,38 +1038,40 @@ console.time("load");
             sLine = lines[i];
 
             if (isBlockStart(sLine)) {
+                // 当前是块名行 [nnn]
                 block = { type: "ProjectBtfBlock" };
-                oName = getBlockName(sLine);
-                comment = sLine.substring(oName.len + 2); // 块注释
+                oName = getBlockName(sLine); // oName.len包含转义字符长度
+                comment = sLine.substring(oName.len + 2).replace(/\r?\n$/, ""); // 块注释，忽略换行符
 
-                let line = i + 1;
-                let column = 1;
-                let pos = sumLineCount(lineCounts, line - 1);
-                let start = { line, column, pos };
-                column = oName.len + 3;
-                pos += column - 1;
-                end = { line, column, pos };
+                let line = i; // 行号，下标从0开始
+                let column = 0; // 列号，下标从0开始(计中括号)
+                let pos = sumLineCount(lineCounts, line);
+                let start = { line, column, pos }; // 起始位置信息
+                column = oName.len + 2;
+                pos += column;
+                let end = { line, column, pos }; // 结束位置信息
 
                 block.name = { type: "ProjectBtfBlockName", value: oName.name, loc: { start, end } }; // 位置包含中括号
                 if (comment) {
-                    column = oName.len + 3;
-                    start = { line, column, pos };
-                    column = sLine.length + 1;
-                    pos = sumLineCount(lineCounts, line - 1) + column - 1;
+                    start = Object.assign({}, end); // 注释的开始位置=块名的结束位置
+                    column = start.column + comment.length;
+                    pos = start.pos + comment.length;
                     end = { line, column, pos };
-                    block.comment = { type: "ProjectBtfBlockComment", value: comment, loc: { start, end } }; // 注释
+                    block.comment = { type: "ProjectBtfBlockComment", value: comment, loc: { start, end } }; // 注释(不计换行符)
                 }
                 block.buf = [];
 
                 blocks.push(block);
                 blockStart = true;
             } else if (isBlockEnd(sLine)) {
+                // 当前是块结束行 ---------
                 blockStart = false;
             } else if (isDocumentEnd(sLine)) {
+                // 当前是文档结束行 =========
                 return;
             } else {
                 if (blockStart) {
-                    // text line
+                    // 当前是块内容行
                     let buf = blocks[blocks.length - 1].buf;
                     if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine))) {
                         buf.push(sLine.substring(1)); // 去除转义字符，拼接当前Block内容
@@ -1072,7 +1079,7 @@ console.time("load");
                         buf.push(sLine);
                     }
                 } else {
-                    // ignore line
+                    // 当前是注释行(比如，块结束行之后，块开始行之前)
                 }
             }
         }
@@ -1092,12 +1099,13 @@ console.time("load");
 
     function getBlockName(sLine) {
         let name, len;
+
         for (let i = 1; i < sLine.length; i++) {
             if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
                 name = sLine.substring(1, i).toLowerCase();
                 len = name.length;
                 name = name.replace(/\\\]/g, "]"); // 名称部分转义 [\]] => ];
-                return { name, len };
+                return { name, len }; // len包含转义字符长度
             }
         }
 
@@ -1247,16 +1255,21 @@ console.time("load");
             return function parseCsslib(csslib, context, loc) {
                 let rs = {};
                 let lines = (csslib == null ? "" : csslib.trim()).split("\n");
+                let offsetLine = loc.start.line + 1; // [csslib]占了一行所以+1
 
                 for (let i = 0, line; i < lines.length; i++) {
                     line = lines[i];
                     let key,
                         value,
-                        idx = line.indexOf("="); // libname = npmpkg : filter, filter, filter
+                        pkg,
+                        idx = line.indexOf("="); // key = pkg : filter, filter, filter
                     if (idx < 0) continue;
 
                     key = line.substring(0, idx).trim();
                     value = line.substring(idx + 1).trim();
+
+                    idx = value.indexOf(":");
+                    pkg = idx > 0 ? value.substring(0, idx) : value;
 
                     idx = value.lastIndexOf("//");
                     idx >= 0 && (value = value.substring(0, idx).trim()); // 去注释，无语法分析，可能会误判
@@ -1265,19 +1278,18 @@ console.time("load");
                         throw new Err("use * as empty csslib name. etc. * = " + value, {
                             file: context.input.file,
                             text: context.input.text,
-                            line: loc.start.line + i,
-                            column: 1
+                            line: offsetLine + i
                         });
                     }
 
                     if (rs[key]) {
-                        throw new Err("duplicate csslib name: " + key, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            line: loc.start.line + i,
-                            column: 1
-                        });
+                        throw new Err("duplicate csslib name: " + key, { file: context.input.file, text: context.input.text, line: offsetLine + i });
                     }
+
+                    if (!bus.at("自动安装", pkg)) {
+                        throw new Err("package install failed: " + pkg, { file: context.input.file, text: context.input.text, line: offsetLine + i });
+                    }
+
                     rs[key] = value;
                 }
 
@@ -1474,6 +1486,8 @@ console.time("load");
             return function parseTaglib(taglibBlockText, context, loc) {
                 let rs = {};
                 let lines = (taglibBlockText == null ? "" : taglibBlockText.trim()).split("\n");
+                let offsetLine = loc.start.line + 1; // [taglib]占了一行所以+1
+
                 for (let i = 0, taglib, oTaglib, oPkg; i < lines.length; i++) {
                     taglib = lines[i].split("//")[0].trim(); // 去除注释内容
                     if (!taglib) continue; // 跳过空白行
@@ -1483,12 +1497,7 @@ console.time("load");
                     // 无效的taglib格式
                     if (!oTaglib) {
                         if (loc) {
-                            throw new Err("invalid taglib: " + oTaglib.taglib, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                line: loc.start.line + i,
-                                column: 1
-                            });
+                            throw new Err("invalid taglib: " + taglib, { file: context.input.file, text: context.input.text, line: offsetLine + i });
                         }
                         throw new Err(`invalid taglib: ${taglib}`);
                     }
@@ -1499,8 +1508,7 @@ console.time("load");
                             throw new Err("can not use buildin tag name: " + oTaglib.astag, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: loc.start.line + i,
-                                column: 1
+                                line: offsetLine + i
                             });
                         }
                         throw new Err("can not use buildin tag name: " + oTaglib.astag);
@@ -1512,8 +1520,7 @@ console.time("load");
                             throw new Err("duplicate tag name: " + oTaglib.astag, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: loc.start.line + i,
-                                column: 1
+                                line: offsetLine + i
                             });
                         }
                         throw new Err("duplicate tag name: " + oTaglib.astag);
@@ -1611,17 +1618,19 @@ console.time("load");
                 let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? cls + "@" + pkg : cls); // 自定义改名函数
                 let opts = { rename };
 
-                let oKv;
+                let oKv, startLine;
                 root.walk("csslib", (node, object) => {
                     oKv = bus.at("解析[csslib]", object.value, context, object.loc);
+                    startLine = object.loc.start.line;
                     node.remove();
                 });
                 if (!oKv) return;
 
                 let oCsslib = (context.result.oCsslib = {});
                 let oCsslibPkgs = (context.result.oCsslibPkgs = context.result.oCsslibPkgs || {});
+
                 for (let k in oKv) {
-                    oCsslib[k] = bus.at("样式库", `${k}=${oKv[k]}`);
+                    oCsslib[k] = bus.at("样式库", `${k}=${oKv[k]}`, context);
                     oCsslibPkgs[k] = oCsslib[k].pkg; // 保存样式库{匿名：实际名}的关系，便于通过匿名找到实际包名
                 }
             });
@@ -1655,7 +1664,7 @@ console.time("load");
                 let oKv, startLine;
                 root.walk("taglib", (node, object) => {
                     oKv = bus.at("解析[taglib]", object.value, context, object.loc);
-                    startLine = object.loc.start.line;
+                    startLine = object.loc.start.line + 1;
                     node.remove();
                 });
 
@@ -1672,8 +1681,7 @@ console.time("load");
                         throw new Err("package install failed: " + pkg, {
                             file: context.input.file,
                             text: context.input.text,
-                            line: startLine + oTag.line,
-                            column: 1
+                            line: startLine + oTag.line
                         });
                     }
                 });
@@ -1683,7 +1691,7 @@ console.time("load");
                     try {
                         bus.at("标签库定义", oKv[key].taglib, context.input.file); // 无法关联时抛出异常
                     } catch (e) {
-                        throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: startLine + oKv[key].line, column: 1 });
+                        throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: startLine + oKv[key].line });
                     }
                 }
 
@@ -1718,31 +1726,37 @@ console.time("load");
         "RPOSE源文件解析",
         (function() {
             return function(text, keepLoc = true) {
-                let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
-                let lines = text.split(LF);
-                let lineCounts = lines.map(v => v.length + LF.length);
+                let lines = text.split("\n"); // 行内容包含换行符
+                let lineCounts = []; // 行长度包含换行符
+                for (let i = 0, max = lines.length; i < max; i++) {
+                    lines[i] += "\n"; // 行内容包含换行符
+                    lineCounts[i] = lines[i].length; // 行长度包含换行符
+                }
 
                 let nodes = [];
-                parse(nodes, lines, lineCounts, LF);
+                parse(nodes, lines, lineCounts);
 
                 nodes.forEach(block => {
                     if (block.buf.length) {
                         let type = "RposeBlockText";
-                        let value = block.buf.join(LF);
-                        let line = block.name.loc.start.line + 1;
-                        let column = 1;
-                        let pos = sumLineCount(lineCounts, line - 1);
-                        let start = { line, column, pos };
+                        let lastLine = block.buf.pop();
 
-                        line = block.name.loc.start.line + block.buf.length;
-                        column = block.buf[block.buf.length - 1].length + 1;
-                        pos = sumLineCount(lineCounts, line - 1) + column;
+                        // 值
+                        block.buf.push(lastLine.replace(/\r?\n$/, "")); // 删除最后一行回车换行符
+                        let value = block.buf.join(""); // 无损拼接
 
-                        if (column === 1 && block.buf.length > 1) {
-                            line--;
-                            column = block.buf[block.buf.length - 2].length + 1;
-                        }
-                        end = { line, column, pos };
+                        // 开始位置
+                        let start = Object.assign({}, block.name.loc.start); // 复制块名开始位置信息
+                        start.line++; // 块开始行=块名开始行+1
+                        start.column = 0;
+                        start.pos += block.name.lineLen;
+                        delete block.name.lineLen;
+
+                        // 结束位置
+                        let line = block.name.loc.start.line + block.buf.length; // 结束行
+                        let column = block.buf[block.buf.length - 1].length; // 结束列
+                        let pos = sumLineCount(lineCounts, line) + column; // 结束位置
+                        let end = { line, column, pos };
 
                         block.text = { type, value, loc: { start, end } };
                     }
@@ -1758,7 +1772,7 @@ console.time("load");
         })()
     );
 
-    function parse(blocks, lines, lineCounts, lf) {
+    function parse(blocks, lines, lineCounts) {
         let sLine,
             block,
             oName,
@@ -1770,38 +1784,40 @@ console.time("load");
             sLine = lines[i];
 
             if (isBlockStart(sLine)) {
+                // 当前是块名行 [nnn]
                 block = { type: "RposeBlock" };
-                oName = getBlockName(sLine);
-                comment = sLine.substring(oName.len + 2); // 块注释
+                oName = getBlockName(sLine); // oName.len包含转义字符长度
+                comment = sLine.substring(oName.len + 2).replace(/\r?\n$/, ""); // 块注释，忽略换行符
 
-                let line = i + 1;
-                let column = 1;
-                let pos = sumLineCount(lineCounts, line - 1);
-                let start = { line, column, pos };
-                column = oName.len + 3;
-                pos += column - 1;
-                end = { line, column, pos };
+                let line = i; // 行号，下标从0开始
+                let column = 0; // 列号，下标从0开始(计中括号)
+                let pos = sumLineCount(lineCounts, line);
+                let start = { line, column, pos }; // 起始位置信息
+                column = oName.len + 2;
+                pos += column;
+                let end = { line, column, pos }; // 结束位置信息
 
-                block.name = { type: "RposeBlockName", value: oName.name, loc: { start, end } }; // 位置包含中括号
+                block.name = { type: "RposeBlockName", value: oName.name, loc: { start, end }, lineLen: sLine.length }; // 位置包含中括号
                 if (comment) {
-                    column = oName.len + 3;
-                    start = { line, column, pos };
-                    column = sLine.length + 1;
-                    pos = sumLineCount(lineCounts, line - 1) + column - 1;
+                    start = Object.assign({}, end); // 注释的开始位置=块名的结束位置
+                    column = start.column + comment.length;
+                    pos = start.pos + comment.length;
                     end = { line, column, pos };
-                    block.comment = { type: "RposeBlockComment", value: comment, loc: { start, end } }; // 注释
+                    block.comment = { type: "RposeBlockComment", value: comment, loc: { start, end } }; // 注释(不计换行符)
                 }
                 block.buf = [];
 
                 blocks.push(block);
                 blockStart = true;
             } else if (isBlockEnd(sLine)) {
+                // 当前是块结束行 ---------
                 blockStart = false;
             } else if (isDocumentEnd(sLine)) {
+                // 当前是文档结束行 =========
                 return;
             } else {
                 if (blockStart) {
-                    // text line
+                    // 当前是块内容行
                     let buf = blocks[blocks.length - 1].buf;
                     if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine))) {
                         buf.push(sLine.substring(1)); // 去除转义字符，拼接当前Block内容
@@ -1809,7 +1825,7 @@ console.time("load");
                         buf.push(sLine);
                     }
                 } else {
-                    // ignore line
+                    // 当前是注释行(比如，块结束行之后，块开始行之前)
                 }
             }
         }
@@ -1829,12 +1845,13 @@ console.time("load");
 
     function getBlockName(sLine) {
         let name, len;
+
         for (let i = 1; i < sLine.length; i++) {
             if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
                 name = sLine.substring(1, i).toLowerCase();
                 len = name.length;
                 name = name.replace(/\\\]/g, "]"); // 名称部分转义 [\]] => ];
-                return { name, len };
+                return { name, len }; // len包含转义字符长度
             }
         }
 
@@ -2220,6 +2237,7 @@ console.time("load");
     // ------- d30m-normalize-css start
     const bus = require("@gotoeasy/bus");
     const hash = require("@gotoeasy/hash");
+    const File = require("@gotoeasy/file");
     const postcss = require("postcss");
 
     // 整理输入样式
@@ -2575,8 +2593,7 @@ console.time("load");
                             throw new Err("duplicate csslib name: " + k, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: object.text.loc.start.line,
-                                column: 1
+                                line: object.text.loc.start.line - 1
                             });
                         }
                         oCsslib[k] = bus.at("样式库", `${k}=${oKv[k]}`);
@@ -2623,8 +2640,7 @@ console.time("load");
                             throw new Err("duplicate taglib name: " + k, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: object.text.loc.start.line + oTaglib[k].line,
-                                column: 1
+                                line: object.text.loc.start.line + oTaglib[k].line - 1
                             });
                         }
                     }
@@ -2639,8 +2655,7 @@ console.time("load");
                             throw new Err("package install failed: " + pkg, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: object.text.loc.start.line + oTag.line,
-                                column: 1
+                                line: object.text.loc.start.line + oTag.line - 1
                             });
                         }
                     });
@@ -2653,8 +2668,7 @@ console.time("load");
                             throw new Err.cat(e, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: object.text.loc.start.line + oKv[key].line,
-                                column: 1
+                                line: object.text.loc.start.line + oKv[key].line - 1
                             });
                         }
                     }
@@ -2874,26 +2888,22 @@ console.time("load");
             end = {};
 
         ary = src.substring(0, startPos + PosOffset).split("\n");
-        start.line = ary.length;
+        start.line = ary.length - 1;
         line = ary.pop();
-        start.column = line.length + 1;
+        start.column = line.length;
         start.pos = PosOffset + startPos;
 
         ary = src.substring(0, endPos + PosOffset).split("\n");
-        end.line = ary.length;
+        end.line = ary.length - 1;
         line = ary.pop();
         end.column = line.length;
         end.pos = PosOffset + endPos;
-        if (!line.length) {
-            end.line--;
-            end.column = ary.pop().length + 1;
-        }
 
         return { start, end };
     }
 
     function TokenParser(fileText, viewText, file, PosOffset) {
-        let src = escape(viewText);
+        let src = escape(viewText); // 不含[view]的块内容
         // ------------ 变量 ------------
         let options = bus.at("视图编译选项");
         let reader = bus.at("字符阅读器", src);
@@ -3002,7 +3012,7 @@ console.time("load");
                 return 1;
             }
 
-            // 前面已检查，不应该走到这里
+            // 前面已检查，不应该走到这里.......
             throw new Err('tag missing ">"', "file=" + file, { text: fileText, start: oPos.start + PosOffset });
         }
 
@@ -3066,8 +3076,8 @@ console.time("load");
                 tokens.push(token);
 
                 // --------- 键值属性 ---------
-                let PosEqual = reader.getPos() + PosOffset + 1;
                 reader.skip(1); // 跳过等号
+                let PosEqual = reader.getPos() + PosOffset;
                 reader.skipBlank(); // 跳过等号右边空白
                 oPos = {};
                 oPos.start = reader.getPos();
@@ -3083,11 +3093,7 @@ console.time("load");
 
                     if (reader.eof() || reader.getCurrentChar() !== '"') {
                         // 属性值漏一个双引号，如<tag aaa=" />
-                        throw new Err('invalid attribute value format (missing ")', "file=" + file, {
-                            text: fileText,
-                            start: PosEqual,
-                            end: posStart + PosOffset
-                        });
+                        throw new Err('invalid attribute value format (missing ")', "file=" + file, { text: fileText, start: PosEqual });
                     }
 
                     reader.skip(1); // 跳过右双引号
@@ -3467,6 +3473,7 @@ console.time("load");
                     node.replaceWith(nodeToken);
                 });
             });
+            console.info(JSON.stringify(root, null, 4));
         })()
     );
 

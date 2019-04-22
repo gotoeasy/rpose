@@ -1,5 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const hash = require('@gotoeasy/hash');
+const File = require('@gotoeasy/file');
 const postcss = require('postcss');
 
 // 整理输入样式

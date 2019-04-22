@@ -23,7 +23,7 @@ bus.on('编译插件', function(){
             // 与项目配置的重复性冲突检查
             for ( let k in oKv ) {
                 if ( oTaglib[k] ) {
-                    throw new Err('duplicate taglib name: ' + k, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line + oTaglib[k].line, column: 1 });
+                    throw new Err('duplicate taglib name: ' + k, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line + oTaglib[k].line - 1 });
                 }
             }
 
@@ -35,7 +35,7 @@ bus.on('编译插件', function(){
             }
             mapPkg.forEach((oTag, pkg) => {
                 if ( !bus.at('自动安装', pkg) ) {
-                    throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line + oTag.line, column: 1 });
+                    throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line + oTag.line - 1 });
                 }
             });
 
@@ -44,7 +44,7 @@ bus.on('编译插件', function(){
                 try{
                     bus.at('标签库定义', oKv[key].taglib, context.input.file);  // 无法关联时抛出异常
                 }catch(e){
-                    throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line + oKv[key].line, column: 1 });
+                    throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line + oKv[key].line - 1 });
                 }
             }
 

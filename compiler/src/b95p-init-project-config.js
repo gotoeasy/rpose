@@ -77,17 +77,19 @@ bus.on('项目配置处理插件', function(){
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
         let opts = {rename};
 
-        let oKv;
+        let oKv, startLine;
         root.walk( 'csslib', (node, object) => {
             oKv = bus.at('解析[csslib]', object.value, context, object.loc);
+            startLine = object.loc.start.line;
             node.remove();
         });
         if ( !oKv ) return;
 
         let oCsslib = context.result.oCsslib = {};
         let oCsslibPkgs = context.result.oCsslibPkgs = context.result.oCsslibPkgs || {};
+
         for ( let k in oKv ) {
-            oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`);
+            oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`, context);
             oCsslibPkgs[k] = oCsslib[k].pkg;            // 保存样式库{匿名：实际名}的关系，便于通过匿名找到实际包名
         }
 
@@ -122,7 +124,7 @@ bus.on('项目配置处理插件', function(addBuildinTaglib){
         let oKv, startLine;
         root.walk( 'taglib', (node, object) => {
             oKv = bus.at('解析[taglib]', object.value, context, object.loc);
-            startLine = object.loc.start.line;
+            startLine = object.loc.start.line + 1;
             node.remove();
         });
         
@@ -136,7 +138,7 @@ bus.on('项目配置处理插件', function(addBuildinTaglib){
         }
         mapPkg.forEach((oTag, pkg) => {
             if ( !bus.at('自动安装', pkg) ) {
-                throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, line: startLine + oTag.line, column: 1 });
+                throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, line: startLine + oTag.line });
             }
         });
 
@@ -145,7 +147,7 @@ bus.on('项目配置处理插件', function(addBuildinTaglib){
             try{
                 bus.at('标签库定义', oKv[key].taglib, context.input.file);  // 无法关联时抛出异常
             }catch(e){
-                throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: startLine + oKv[key].line, column: 1 });
+                throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: startLine + oKv[key].line });
             }
         }
 

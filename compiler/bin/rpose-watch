@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const compiler = require('..');
+const compiler = require('../index');
 const cmmd = require('commander');
 
 cmmd.usage('[options] [path]')

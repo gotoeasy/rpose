@@ -24,6 +24,7 @@ bus.on('编译插件', function(){
         });
 
     });
+        console.info(JSON.stringify(root,null,4));
 
 }());
 

@@ -19,27 +19,23 @@ function getLocation(src, startPos, endPos, PosOffset){
     let ary, line, start = {}, end = {};
 
     ary = src.substring(0, startPos + PosOffset).split('\n');
-    start.line = ary.length;
+    start.line = ary.length - 1;
     line = ary.pop();
-    start.column = line.length + 1;
+    start.column = line.length;
     start.pos = PosOffset + startPos;
 
     ary = src.substring(0, endPos + PosOffset).split('\n');
-    end.line = ary.length;
+    end.line = ary.length - 1;
     line = ary.pop();
     end.column = line.length;
     end.pos = PosOffset + endPos;
-    if ( !line.length ) {
-        end.line--;
-        end.column = ary.pop().length + 1;
-    }
 
     return {start, end};
 }
 
 function TokenParser(fileText, viewText, file, PosOffset){
 
-    let src = escape(viewText);
+    let src = escape(viewText);             // 不含[view]的块内容
     // ------------ 变量 ------------
     let options = bus.at('视图编译选项');
     let reader = bus.at('字符阅读器', src);
@@ -141,7 +137,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
 
         }
 
-        // 前面已检查，不应该走到这里
+        // 前面已检查，不应该走到这里.......
         throw new Err('tag missing ">"', 'file=' + file, {text: fileText, start: oPos.start + PosOffset});
     }
 
@@ -206,8 +202,8 @@ function TokenParser(fileText, viewText, file, PosOffset){
             tokens.push(token);
 
             // --------- 键值属性 ---------
-            let PosEqual = reader.getPos()+PosOffset+1;
             reader.skip(1);        // 跳过等号
+            let PosEqual = reader.getPos()+PosOffset;
             reader.skipBlank(); // 跳过等号右边空白
             oPos = {};
             oPos.start = reader.getPos();
@@ -223,7 +219,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
 
                 if ( reader.eof() || reader.getCurrentChar() !== '"' ) {
                     // 属性值漏一个双引号，如<tag aaa=" />
-                    throw new Err('invalid attribute value format (missing ")', 'file=' + file, {text: fileText, start: PosEqual, end: posStart+PosOffset});
+                    throw new Err('invalid attribute value format (missing ")', 'file=' + file, {text: fileText, start: PosEqual});
                 }
 
                 reader.skip(1);    // 跳过右双引号

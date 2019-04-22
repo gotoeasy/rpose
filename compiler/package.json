@@ -1,6 +1,6 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.4.27",
+  "version": "0.4.29",
   "main": "compiler.js",
   "dependencies": {
     "@rpose/runtime": "0.0.*",
@@ -9,7 +9,7 @@
     "@gotoeasy/file": "0.0.*",
     "@gotoeasy/util": "0.0.*",
     "@gotoeasy/btf": "1.1.*",
-    "@gotoeasy/err": "0.0.*",
+    "@gotoeasy/err": "0.1.*",
     "@gotoeasy/csjs": "0.2.*",
     "@gotoeasy/postobject": "0.0.*",
     "@gotoeasy/cache": "0.1.*",
