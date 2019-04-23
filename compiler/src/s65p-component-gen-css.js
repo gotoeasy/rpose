@@ -15,6 +15,7 @@ bus.on('编译插件', function(){
         style.less && ary.push(style.less);
         style.scss && ary.push(style.scss);
         style.css && ary.push(style.css);
+        style.atclasscss && ary.push(...style.atclasscss);
         
         context.result.css = bus.at('组件样式类名哈希化', context.input.file, ary.join('\n'));
 
