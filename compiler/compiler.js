@@ -4173,6 +4173,171 @@ console.time("load");
     // ------- g35p-astedit-process-attribtue-style end
 })();
 
+/* ------- g40m-@class-gen-css ------- */
+(() => {
+    // ------- g40m-@class-gen-css start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const hash = require("@gotoeasy/hash");
+    const Err = require("@gotoeasy/err");
+
+    bus.on(
+        "创建@class样式",
+        (function() {
+            // @class="color-red width-100px height--calc(100%_-_50px) box-sizing--border-box padding-5px_10px"
+            return (classname, atclass, file) => {
+                let css = [],
+                    oSetValues = new Set(
+                        atclass
+                            .trim()
+                            .toLowerCase()
+                            .split(/\s+/)
+                    );
+                oSetValues.forEach(v => css.push(bus.at("原子样式", v, file)));
+                return `.${classname}{ ${css.join(" ")} }`;
+            };
+        })()
+    );
+
+    bus.on(
+        "原子样式",
+        (function() {
+            return (atomcss, file) => {
+                // 按最后一个双减号或单减号分割为键值数组
+                let kv = splitAtomicKeyValue(atomcss); // color-red => ['color', 'red'], align-items--flex-end => ['align-items', 'flex-end']
+                if (!kv) {
+                    console.warn(`invalid @class value (${atomcss}) in file (${file})`);
+                    return "";
+                }
+
+                // 自定义样式属性名缩写
+                let map = new Map();
+                map.set("bg", "background");
+                map.set("bgcolor", "background-color");
+                map.has(kv[0]) && (kv[0] = map.get(kv[0])); // 输入的是缩写时，替换为全名输出
+
+                return `${kv[0]}:${kv[1]};`;
+            };
+        })()
+    );
+
+    // 按最后一个双减号或单减号分割为键值数组
+    function splitAtomicKeyValue(atomcss) {
+        let key, value;
+
+        // 优先按'--'分割
+        let idx = atomcss.lastIndexOf("--");
+        if (idx > 0) {
+            key = atomcss.substring(0, idx);
+            value = atomcss.substring(idx + 2).replace(/_/g, " "); // 下划线按空格处理
+            return [key, value];
+        }
+
+        // 默认按'-'分割
+        idx = atomcss.lastIndexOf("-");
+        if (idx > 0) {
+            key = atomcss.substring(0, idx);
+            value = atomcss.substring(idx + 1).replace(/_/g, " "); // 下划线按空格处理
+            return [key, value];
+        }
+        return null;
+    }
+
+    // ------- g40m-@class-gen-css end
+})();
+
+/* ------- g43p-astedit-process-attribtue-@class ------- */
+(() => {
+    // ------- g43p-astedit-process-attribtue-@class start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const hash = require("@gotoeasy/hash");
+    const Err = require("@gotoeasy/err");
+
+    bus.on(
+        "编译插件",
+        (function() {
+            // --------------------------------------
+            // 处理标签中的 @class 属性
+            //
+            // 找出@class
+            // 创建类名（atclass-hashxxxx）插入到class属性
+            // 创建atclass样式
+            // --------------------------------------
+            return postobject.plugin("g43p-astedit-process-attribtue-@class", function(root, context) {
+                let style = context.style;
+                let atclasscss = (style.atclasscss = style.atclasscss || []);
+
+                root.walk("Tag", (node, object) => {
+                    if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
+
+                    // 查找Attributes
+                    let attrsNode;
+                    for (let i = 0, nd; (nd = node.nodes[i++]); ) {
+                        if (nd.type === "Attributes") {
+                            attrsNode = nd;
+                            break;
+                        }
+                    }
+                    if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) return; // 没有相关属性节点，跳过
+
+                    // --------------------------------------
+                    // 找出@class
+                    // --------------------------------------
+                    let ary = [];
+                    attrsNode.nodes.forEach(nd => {
+                        /^@class$/i.test(nd.object.name) && ary.push(nd); // 找到 【@class】属性
+                    });
+
+                    if (!ary.length) return; // 没有找到相关节点，跳过
+
+                    if (ary.legnth > 1) {
+                        // 属性 @class 不能重复
+                        throw new Err("duplicate attribute of @class", {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: ary[1].object.loc.start.pos,
+                            end: ary[1].object.loc.end.pos
+                        });
+                    }
+
+                    let atclassNode = ary[0]; // @class节点
+                    let atclassValue = atclassNode.object.value; // @class="font-size-16px" => font-size-16px
+                    let atclassName = "atclass-" + hash(atclassValue); // 样式类名 @class="font-size-16px" => atclass-xxxxx
+
+                    // --------------------------------------
+                    // 类名（atclass-hashxxxx）插入到class属性
+                    // --------------------------------------
+                    ary = [];
+                    attrsNode.nodes.forEach(nd => {
+                        /^class$/i.test(nd.object.name) && ary.push(nd); // 找到 【class】属性
+                    });
+
+                    if (!ary.length) {
+                        let oNode = atclassNode.clone(); // 没有找到class节点，插入一个class节点（简化的克隆@class节点，修改类型和值）
+                        oNode.type = "class";
+                        oNode.object.type = "class";
+                        oNode.object.name = "class";
+                        oNode.object.value = atclassName;
+                        attrsNode.addChild(oNode); // 添加到属性节点下
+                    } else {
+                        ary[0].object.value += " " + atclass;
+                    }
+
+                    // --------------------------------------
+                    // 创建atclass样式
+                    // --------------------------------------
+                    atclasscss.push(bus.at("创建@class样式", atclassName, atclassValue, context.input.file));
+
+                    atclassNode.remove(); // 删除@class节点
+                });
+            });
+        })()
+    );
+
+    // ------- g43p-astedit-process-attribtue-@class end
+})();
+
 /* ------- g45p-astedit-process-attribtue-class ------- */
 (() => {
     // ------- g45p-astedit-process-attribtue-class start
@@ -7218,6 +7383,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 style.less && ary.push(style.less);
                 style.scss && ary.push(style.scss);
                 style.css && ary.push(style.css);
+                style.atclasscss && ary.push(...style.atclasscss);
 
                 context.result.css = bus.at("组件样式类名哈希化", context.input.file, ary.join("\n"));
 
