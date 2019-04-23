@@ -178,7 +178,6 @@ function Dom(queryResult){
             return this;
         }
 
-        name = name.replace(/\./g, '');
         for ( let i=0,el; i<els.length; i++ ) {
             el = els[i];
             if ( !el ) continue;
@@ -210,7 +209,7 @@ function Dom(queryResult){
 	// ---------------------------
 	// 删除class $$('.xxxx').removeClass('js-active')
 	this.removeClass = function (name){ 
-		name && (name = name.replace(/\./g, '')) && els.forEach(el => {
+		name && els.forEach(el => {
 			if (IS_IE){
 				var ary = el.className.split(' ');
 				var idx = ary.indexOf(name);
@@ -221,6 +220,22 @@ function Dom(queryResult){
 			}else{
 				let nms = name.split(/\s+/);
 				nms.forEach(nm => el.classList.remove(nm))
+			}
+		});
+		return this;
+	}
+
+	// ---------------------------
+	// 切换class $$('.xxxx').toggleClass('js-active')
+	this.toggleClass = function (name){ 
+		name && els.forEach(el => {
+			if (IS_IE){
+				var ary = el.className.split(' ');
+				var idx = ary.indexOf(name);
+                idx >= 0 ? ary.slice(idx, 1) : ary.push(name);                                      // 找到则删除，找不到则添加
+    			el.className = ary.join(' ');
+			}else{
+                el.classList.contains(name) ? el.classList.remove(name) : el.classList.add(name);   // 找到则删除，找不到则添加
 			}
 		});
 		return this;

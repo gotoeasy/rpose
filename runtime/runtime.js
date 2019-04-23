@@ -362,7 +362,6 @@
             if (!name) {
                 return this;
             }
-            name = name.replace(/\./g, "");
             for (let i = 0, el; i < els.length; i++) {
                 el = els[i];
                 if (!el) {
@@ -389,7 +388,7 @@
             return this;
         };
         this.removeClass = function(name) {
-            name && (name = name.replace(/\./g, "")) && els.forEach(el => {
+            name && els.forEach(el => {
                 if (IS_IE) {
                     var ary = el.className.split(" ");
                     var idx = ary.indexOf(name);
@@ -400,6 +399,19 @@
                 } else {
                     let nms = name.split(/\s+/);
                     nms.forEach(nm => el.classList.remove(nm));
+                }
+            });
+            return this;
+        };
+        this.toggleClass = function(name) {
+            name && els.forEach(el => {
+                if (IS_IE) {
+                    var ary = el.className.split(" ");
+                    var idx = ary.indexOf(name);
+                    idx >= 0 ? ary.slice(idx, 1) : ary.push(name);
+                    el.className = ary.join(" ");
+                } else {
+                    el.classList.contains(name) ? el.classList.remove(name) : el.classList.add(name);
                 }
             });
             return this;
