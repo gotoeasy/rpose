@@ -4186,16 +4186,23 @@ console.time("load");
         "创建@class样式",
         (function() {
             // @class="color-red width-100px height--calc(100%_-_50px) box-sizing--border-box padding-5px_10px"
-            return (classname, atclass, file) => {
+            // 样式类名和样式内容相关，以减少样式类名的变动
+            return (atclass, file) => {
                 let css = [],
-                    oSetValues = new Set(
-                        atclass
-                            .trim()
-                            .toLowerCase()
-                            .split(/\s+/)
-                    );
-                oSetValues.forEach(v => css.push(bus.at("原子样式", v, file)));
-                return `.${classname}{ ${css.join(" ")} }`;
+                    ary = [
+                        ...new Set(
+                            atclass
+                                .trim()
+                                .toLowerCase()
+                                .split(/\s+/)
+                        )
+                    ];
+                ary.sort();
+                ary.forEach(v => css.push(bus.at("原子样式", v, file)));
+                css = css.join(" ");
+                let name = "atclass-" + hash(css);
+                css = `.${name}{ ${css} }`;
+                return { name, css };
             };
         })()
     );
@@ -4204,7 +4211,7 @@ console.time("load");
         "原子样式",
         (function() {
             return (atomcss, file) => {
-                // 按最后一个双减号或单减号分割为键值数组
+                // 按首双减号或末单减号分割为键值数组
                 let kv = splitAtomicKeyValue(atomcss); // color-red => ['color', 'red'], align-items--flex-end => ['align-items', 'flex-end']
                 if (!kv) {
                     console.warn(`invalid @class value (${atomcss}) in file (${file})`);
@@ -4222,19 +4229,19 @@ console.time("load");
         })()
     );
 
-    // 按最后一个双减号或单减号分割为键值数组
+    // 按首双减号或末单减号分割为键值数组
     function splitAtomicKeyValue(atomcss) {
         let key, value;
 
-        // 优先按'--'分割
-        let idx = atomcss.lastIndexOf("--");
+        // 优先按首双减号'--'分割
+        let idx = atomcss.indexOf("--");
         if (idx > 0) {
             key = atomcss.substring(0, idx);
             value = atomcss.substring(idx + 2).replace(/_/g, " "); // 下划线按空格处理
             return [key, value];
         }
 
-        // 默认按'-'分割
+        // 默认按末单减号'-'分割
         idx = atomcss.lastIndexOf("-");
         if (idx > 0) {
             key = atomcss.substring(0, idx);
@@ -4303,8 +4310,7 @@ console.time("load");
                     }
 
                     let atclassNode = ary[0]; // @class节点
-                    let atclassValue = atclassNode.object.value; // @class="font-size-16px" => font-size-16px
-                    let atclassName = "atclass-" + hash(atclassValue); // 样式类名 @class="font-size-16px" => atclass-xxxxx
+                    let atclass = atclassNode.object.value; // @class="font-size-16px" => font-size-16px
 
                     // --------------------------------------
                     // 类名（atclass-hashxxxx）插入到class属性
@@ -4314,21 +4320,25 @@ console.time("load");
                         /^class$/i.test(nd.object.name) && ary.push(nd); // 找到 【class】属性
                     });
 
+                    let oNode;
                     if (!ary.length) {
-                        let oNode = atclassNode.clone(); // 没有找到class节点，插入一个class节点（简化的克隆@class节点，修改类型和值）
+                        oNode = atclassNode.clone(); // 没有找到class节点，插入一个class节点（简化的克隆@class节点，修改类型和值）
                         oNode.type = "class";
                         oNode.object.type = "class";
                         oNode.object.name = "class";
-                        oNode.object.value = atclassName;
+                        oNode.object.value = ""; // 样式类名，待下一步填入
                         attrsNode.addChild(oNode); // 添加到属性节点下
                     } else {
-                        ary[0].object.value += " " + atclassName;
+                        oNode = ary[0];
+                        oNode.object.value += " "; // 样式类名，加个空格隔开，待下一步追加类名
                     }
 
                     // --------------------------------------
                     // 创建atclass样式
                     // --------------------------------------
-                    atclasscss.push(bus.at("创建@class样式", atclassName, atclassValue, context.input.file));
+                    let oCss = bus.at("创建@class样式", atclass, context.input.file);
+                    oNode.object.value += oCss.name; // 样式类名
+                    atclasscss.push(oCss.css);
 
                     atclassNode.remove(); // 删除@class节点
                 });
@@ -7046,7 +7056,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                             // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
 
                             // 第一参数不是字符串时，无可修改，忽略
-                            if (!node.arguments || node.arguments[0].type !== "Literal") {
+                            if (!node.arguments || !node.arguments[0] || node.arguments[0].type !== "Literal") {
                                 return;
                             }
 

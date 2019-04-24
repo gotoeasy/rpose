@@ -47,8 +47,7 @@ bus.on('编译插件', function(){
             }
 
             let atclassNode = ary[0];                                                   // @class节点
-            let atclassValue = atclassNode.object.value;                                // @class="font-size-16px" => font-size-16px
-            let atclassName = 'atclass-' + hash(atclassValue);                          // 样式类名 @class="font-size-16px" => atclass-xxxxx
+            let atclass = atclassNode.object.value;                                     // @class="font-size-16px" => font-size-16px
 
             // --------------------------------------
             // 类名（atclass-hashxxxx）插入到class属性
@@ -58,21 +57,25 @@ bus.on('编译插件', function(){
                 /^class$/i.test(nd.object.name) && ary.push(nd);                        // 找到 【class】属性
             });
 
+            let oNode;
             if ( !ary.length ){
-                let oNode = atclassNode.clone();                                        // 没有找到class节点，插入一个class节点（简化的克隆@class节点，修改类型和值）
+                oNode = atclassNode.clone();                                            // 没有找到class节点，插入一个class节点（简化的克隆@class节点，修改类型和值）
                 oNode.type = 'class';
                 oNode.object.type = 'class';
                 oNode.object.name = 'class';
-                oNode.object.value = atclassName;
+                oNode.object.value = '';                                                // 样式类名，待下一步填入
                 attrsNode.addChild(oNode);                                              // 添加到属性节点下
             }else{
-                ary[0].object.value += ' ' + atclassName;
+                oNode = ary[0];
+                oNode.object.value += ' ';                                              // 样式类名，加个空格隔开，待下一步追加类名
             }
 
             // --------------------------------------
             // 创建atclass样式
             // --------------------------------------
-            atclasscss.push( bus.at('创建@class样式', atclassName, atclassValue, context.input.file) );
+            let oCss = bus.at('创建@class样式', atclass, context.input.file);
+            oNode.object.value += oCss.name;                                            // 样式类名
+            atclasscss.push( oCss.css );
 
             atclassNode.remove();                                                       // 删除@class节点
         });

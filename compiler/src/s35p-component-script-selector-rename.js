@@ -80,7 +80,7 @@ bus.on('编译插件', function(){
                     // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
 
                     // 第一参数不是字符串时，无可修改，忽略
-                    if ( !node.arguments || node.arguments[0].type !== 'Literal' ) {
+                    if ( !node.arguments || !node.arguments[0] || node.arguments[0].type !== 'Literal' ) {
                         return;
                     }
 
