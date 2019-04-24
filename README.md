@@ -92,43 +92,20 @@ body
 
 
 <details>
-<summary><strong>layout</strong></summary>
+<summary><strong>layout (@class)</strong></summary>
 
 ```
 // layout-foo.rpose
 [view]
-<div class='layout'>
-    <div class='layout-header'><slot name="header"/></div> 
-    <div class='layout-body'><slot name="body"/></div> 
-    <div class='layout-footer'><slot name="footer"/></div> 
+<div @class="height-100vh display-flex flex-direction-column overflow-hidden color-#333">
+    <div @class="height-50px color-#fff bgcolor-#555"><slot name="header"/></div> 
+    <div @class="height--calc(100vh_-_80px) bgcolor-#eee"><slot name="body"/></div> 
+    <div @class="height-30px bgcolor-#d5d5d5"><slot name="footer"/></div> 
 </div> 
 
 [less]
 body{
     margin: 0;
-}
-
-.layout {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.layout-header {
-    height: 50px;
-    color: #fff;
-    background-color: #385691;
-}
-
-.layout-body {
-    height: calc(100vh - 80px);
-    background-color: #F8F8F8;
-}
-
-.layout-footer {
-    height: 30px;
-    background-color: #F2F2F2;
 }
 ```
 
@@ -137,13 +114,13 @@ body{
 [view]
 <layout-foo>
     <div slot="header">
-        <div style="text-align:center;padding-top:13px">Welcome</div>
+        <div @class="text-align-center padding-top-13px">Header</div>
     </div> 
     <div slot="body">
-        <div style="margin-top:150px;text-align:center;font-size:3rem">FOO</div>
+        <div @class="margin-top-150px text-align-center font-size-3rem">Content</div>
     </div>
     <div slot="footer">
-        <div style="text-align:center;padding-top:3px">footer</div>
+        <div @class="text-align-center padding-top-3px">Footer</div>
     </div> 
 </layout-foo> 
 
@@ -187,7 +164,7 @@ body
 
 - [x] 源文件使用BTF的单文档格式，人性化强，可读性高
 - [x] 数据驱动、组件式、响应式、声明式的开发过程
-- [x] 提供指令`@ref`、`@show`、`@if`、`@for`、`@taglib`、`@csslib`
+- [x] 提供指令`@ref`、`@show`、`@if`、`@for`、`@taglib`、`@csslib`、`@class`
 - [x] 提供组件级和项目级的`[taglib]`配置，和`@taglib`有影响范围区别
 - [x] 提供组件级和项目级的`[csslib]`配置，和`@csslib`有影响范围区别
 - [x] 项目可发布为npm模块，发布内容为项目配置及源码和资源，开发工程可直接引用自动安装按需编译使用
@@ -244,7 +221,7 @@ body
 * `other`
 
 - [x] 简易实现热刷新服务器替代第三方包，方便按需刷新、按需打开窗口
-- [x] 按需引用normalize样式，间接的可通过配置样式库实现
+- [x] 可通过配置样式库实现按需引用normalize样式
 - [x] 监视模式下修改`.browserslistrc`文件，重新编译全部页面
 - [x] 监视模式下修改`rpose.config.btf`文件，重新编译整个项目
 - [ ] 测试及覆盖率
@@ -255,6 +232,12 @@ body
 <br>
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.5.x</strong></summary>
+
+- [x] 新增指令`@class`，支持以灵活的原子方式书写样式
+</details>
+
 <details>
 <summary><strong>Ver 0.4.x</strong></summary>
 

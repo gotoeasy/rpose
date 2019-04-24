@@ -66,7 +66,7 @@ bus.on('编译插件', function(){
                 oNode.object.value = atclassName;
                 attrsNode.addChild(oNode);                                              // 添加到属性节点下
             }else{
-                ary[0].object.value += ' ' + atclass;
+                ary[0].object.value += ' ' + atclassName;
             }
 
             // --------------------------------------

@@ -31,7 +31,7 @@ bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbt
                     bus.at('browserslist', true) > await bus.at('重新编译全部页面');   // 重新查询目标浏览器，然后重新编译全部页面
 
                 }else if ( file === rposeconfigbtf ) {
-                    // 配置文件 rpose.config.btf 修改
+                    // 配置文件 rpose.config.btf 添加
                     let hashRposeconfigbtf = hash(File.read(rposeconfigbtf));
                     console.info('add ......', file);
                     await bus.at('全部重新编译');
@@ -60,6 +60,7 @@ bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbt
                     // 配置文件 .browserslistrc 修改
                     let hashcode = hash(File.read(browserslistrc));
                     if ( hashBrowserslistrc !== hashcode ) {
+                        hashBrowserslistrc = hashcode;
                         console.info('change ......', file);
                         bus.at('browserslist', true) > await bus.at('重新编译全部页面');   // 重新查询目标浏览器，然后重新编译全部页面
                     }

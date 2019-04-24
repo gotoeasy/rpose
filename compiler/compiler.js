@@ -430,7 +430,7 @@ console.time("load");
                                 console.info("add ......", file);
                                 bus.at("browserslist", true) > (await bus.at("重新编译全部页面")); // 重新查询目标浏览器，然后重新编译全部页面
                             } else if (file === rposeconfigbtf) {
-                                // 配置文件 rpose.config.btf 修改
+                                // 配置文件 rpose.config.btf 添加
                                 let hashRposeconfigbtf = hash(File.read(rposeconfigbtf));
                                 console.info("add ......", file);
                                 await bus.at("全部重新编译");
@@ -457,6 +457,7 @@ console.time("load");
                                 // 配置文件 .browserslistrc 修改
                                 let hashcode = hash(File.read(browserslistrc));
                                 if (hashBrowserslistrc !== hashcode) {
+                                    hashBrowserslistrc = hashcode;
                                     console.info("change ......", file);
                                     bus.at("browserslist", true) > (await bus.at("重新编译全部页面")); // 重新查询目标浏览器，然后重新编译全部页面
                                 }
@@ -4321,7 +4322,7 @@ console.time("load");
                         oNode.object.value = atclassName;
                         attrsNode.addChild(oNode); // 添加到属性节点下
                     } else {
-                        ary[0].object.value += " " + atclass;
+                        ary[0].object.value += " " + atclassName;
                     }
 
                     // --------------------------------------
@@ -6998,7 +6999,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let oCsslib = context.result.oCsslib;
                 let oCsslibPkgs = context.result.oCsslibPkgs;
                 let script = context.script;
-                let reg = /(\.getElementsByClassName\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
+                let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
                 let classnames = (script.classnames = script.classnames || []); // 脚本代码中用到的样式类
                 if (script.actions && reg.test(script.actions)) {
@@ -7016,7 +7017,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         clsname = "." + ary[0]; // 类名
                         asname = ary.length > 1 ? ary[1] : "*"; // 库别名
 
-                        if (asname) {
+                        if (asname !== "*") {
                             // 别名样式类，按需引用别名库
                             csslib = oCsslib[asname];
                             if (!csslib) {
@@ -7024,7 +7025,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                                 throw new Error("csslib not found: " + asname + "\nfile: " + context.input.file); // TODO 友好定位提示
                             }
 
-                            if (asname !== "*" && !csslib.has(clsname)) {
+                            if (!csslib.has(clsname)) {
                                 // 指定样式库中找不到指定的样式类，无名库的话可以是纯js控制用，非无名库就是要引用样式，不存在就得报错
                                 throw new Error("css class not found: " + clspkg + "\nfile: " + context.input.file); // TODO 友好定位提示
                             }
@@ -7061,8 +7062,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                             } else if (node.callee.type === "MemberExpression") {
                                 // 对象成员函数调用
                                 fnName = node.callee.property.name;
-                                if (fnName === "getElementsByClassName") {
-                                    // document.getElementsByClassName('foo')
+                                if (fnName === "getElementsByClassName" || fnName === "toggleClass") {
+                                    // document.getElementsByClassName('foo'), $$el.toggleClass('foo')
                                     classname = getClassPkg(node.arguments[0].value);
                                     node.arguments[0].value = bus.at("哈希样式类名", srcFile, classname);
                                     classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
