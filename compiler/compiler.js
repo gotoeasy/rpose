@@ -5354,6 +5354,7 @@ console.time("load");
                     }
 
                     let oPkg = bus.at("模块组件信息", pkg);
+                    bus.at("标签库定义", `${pkg}:${comp}`, oPkg.config);
                     let srcFile = bus.at("标签库引用", `${pkg}:${comp}`, oPkg.config); // 从指定模块查找
                     if (!srcFile) {
                         throw new Err("component not found: " + object.value, {
