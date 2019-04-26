@@ -538,7 +538,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
 }
 
 
-bus.on('视图TOKEN解析器', function(fileText, srcView, file, PosOffset){
+bus.on('视图TOKEN解析器', function(fileText, srcView, file, PosOffset=0){
     return new TokenParser(fileText, srcView, file, PosOffset);
 });
 

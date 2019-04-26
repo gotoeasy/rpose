@@ -9,7 +9,7 @@ bus.on('是否表达式', function (){
         if ( !val ) return false;
     
         // TODO 使用常量
-        let tmp = val.replace(/\\\{/g, '').replace(/\\\}/g, '');
+        let tmp = (val+'').replace(/\\\{/g, '').replace(/\\\}/g, '');
         return /\{.*\}/.test(tmp);
     }
 

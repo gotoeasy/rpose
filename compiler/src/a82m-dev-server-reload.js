@@ -158,9 +158,53 @@ bus.on('热刷新服务器', function (hasQuery){
 
 
             if ( File.existsFile(reqfile) ) {
-                if ( /\.css$/i.test(reqfile) ) {
-                    res.writeHead(200, {'Content-Type': 'text/css;charset=UFT8'});              // 避免浏览器控制台警告
-                }else{
+                if (/\.html$/i.test(reqfile) || /\.htm$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "text/html;charset=UFT8" }); // 避免浏览器控制台警告
+                } else if (/\.css$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "text/css;charset=UFT8" });
+                } else if (/\.js$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/javascript;charset=UFT8" });
+                } else if (/\.json$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/json;charset=UFT8" });
+                } else if (/\.jsonp$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/jsonp;charset=UFT8" });
+                } else if (/\.svg$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "image/svg+xml;charset=UFT8" });
+                } else if (/\.svgz$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "image/svg+xml-compressed;charset=UFT8" });
+                } else if (/\.jpg$/i.test(reqfile) || /\.jpeg$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "image/jpeg" });
+                } else if (/\.gif$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "image/gif" });
+                } else if (/\.bmp$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "image/bmp" });
+                } else if (/\.png$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "image/png" });
+                } else if (/\.pdf$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/pdf" });
+                } else if (/\.xml$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "text/xml;charset=UFT8" });
+                } else if (/\.dtd$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "text/xml-dtd;charset=UFT8" });
+                } else if (/\.zip$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/zip" });
+                } else if (/\.gzip$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/gzip" });
+                } else if (/\.xls$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/vnd.ms-excel" });
+                } else if (/\.xlsx$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                } else if (/\.doc$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/msword" });
+                } else if (/\.docx$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+                } else if (/\.ppt$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/vnd.ms-powerpoint" });
+                } else if (/\.pptx$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
+                } else if (/\.dll$/i.test(reqfile) || /\.exe$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "application/x-msdownload" });
+                } else {
                     res.writeHead(200);
                 }
                 fs.createReadStream(reqfile).pipe(res);                                         // 非html文件，直接输出文件流
