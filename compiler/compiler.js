@@ -540,7 +540,7 @@ console.time("load");
                                 } else {
                                     console.info("ignored ...... add", file);
                                 }
-                            } else if (/\.svg$/i.test(file)) {
+                            } else if (isValidSvgiconFile(file)) {
                                 // svg文件添加
                                 console.info("add svg ......", file);
                                 let text = File.read(file);
@@ -584,7 +584,7 @@ console.time("load");
                                 } else {
                                     console.info("ignored ...... change", file);
                                 }
-                            } else if (/\.svg$/i.test(file)) {
+                            } else if (isValidSvgiconFile(file)) {
                                 // svg文件修改
                                 let text = File.read(file);
                                 let hashcode = hash(text);
@@ -621,7 +621,7 @@ console.time("load");
                                         console.info("ignored ...... del", file);
                                     }
                                 }
-                            } else if (/\.svg$/i.test(file)) {
+                            } else if (isValidSvgiconFile(file)) {
                                 // svg文件删除
                                 console.info("del svg ......", file);
                                 delete oSvgHash[file];
@@ -657,6 +657,15 @@ console.time("load");
             return false;
         }
         return true;
+    }
+
+    function isValidSvgiconFile(file) {
+        let env = bus.at("编译环境");
+        let buildPath = env.path.build + "/";
+        let node_modulesPath = env.path.root + "/node_modules/";
+        let dotPath = env.path.root + "/.";
+
+        return /\/.+\.svg$/i.test(file) && !file.startsWith(buildPath) && !file.startsWith(node_modulesPath) && !file.startsWith(dotPath);
     }
 
     // ------- a22m-file-watcher end
@@ -4259,7 +4268,11 @@ console.time("load");
                         }
 
                         let oPkg = bus.at("模块组件信息", pkg);
+                        if (filter.indexOf("*") < 0) {
+                            filter.startsWith("/") ? (filter = "**" + filter) : (filter = "**/" + filter); // 没有通配符时默认添加任意目录的通配符
+                        }
                         let files = File.files(oPkg.path, filter);
+
                         if (!files.length) {
                             throw new Err("svf icon file not found in package: " + pkg, errLocInfo); // npm包安装目录内找不到指定的图标文件
                         }

@@ -73,7 +73,11 @@ bus.on('编译插件', function(){
                 }
 
                 let oPkg = bus.at('模块组件信息', pkg);
+                if ( filter.indexOf("*") < 0 ) {
+                    filter.startsWith("/") ? (filter = "**" + filter) : (filter = "**/" + filter);          // 没有通配符时默认添加任意目录的通配符
+                }
                 let files = File.files(oPkg.path, filter);
+
                 if ( !files.length ) {
                     throw new Err('svf icon file not found in package: ' + pkg, errLocInfo);                // npm包安装目录内找不到指定的图标文件
                 }
