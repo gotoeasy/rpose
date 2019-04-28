@@ -179,7 +179,7 @@ body
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
-- [x] 内置标签组件 `<svgicon>`，支持src属性指定本地项目或npm包中svg图标文件
+- [x] :new: 内置标签组件 `<svgicon>`，支持src属性指定本地项目或npm包中svg图标文件
 
 * `runtime`
 
