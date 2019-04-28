@@ -5,7 +5,7 @@ const Err = require('@gotoeasy/err');
 const hash = require('@gotoeasy/hash');
 const chokidar = require('chokidar');
 
-bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbtf){
+bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hashRposeconfigbtf){
 
     return function(){
 
@@ -48,6 +48,13 @@ bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbt
                     }else{
                         console.info('ignored ...... add', file);
                     }
+                }else if ( /\.svg$/i.test(file) ) {
+                    // svg文件添加
+                    console.info('add svg ......', file);
+                    let text = File.read(file);
+                    let hashcode = hash(text);
+                    oSvgHash[file] = hashcode;
+                    await busAt('SVG文件添加', file);
                 }
 
             }
@@ -88,6 +95,15 @@ bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbt
                     }else{
                         console.info('ignored ...... change', file);
                     }
+                }else if ( /\.svg$/i.test(file) ) {
+                    // svg文件修改
+                    let text = File.read(file);
+                    let hashcode = hash(text);
+                    if ( oSvgHash[file] !== hashcode ) {
+                        console.info('change svg ......', file);
+                        oSvgHash[file] = hashcode;
+                        await busAt('SVG文件修改', file);
+                    }
                 }
 
             }
@@ -119,6 +135,11 @@ bus.on('文件监视', function (oHash={}, hashBrowserslistrc, hashRposeconfigbt
                             console.info('ignored ...... del', file);
                         }
                     }
+                }else if ( /\.svg$/i.test(file) ) {
+                    // svg文件删除
+                    console.info('del svg ......', file);
+                    delete oSvgHash[file];
+                    await busAt('SVG文件删除', file);
                 }
 
             }

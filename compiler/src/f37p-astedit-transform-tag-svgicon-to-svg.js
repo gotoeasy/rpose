@@ -8,7 +8,7 @@ bus.on('编译插件', function(){
     // 内置标签<svgicon>转换处理
     // 解析替换为<svg>标签
     return postobject.plugin(/**/__filename/**/, function(root, context){
-
+        
         root.walk( 'Tag', (node, object) => {
             if ( !/^svgicon$/i.test(object.value) ) return;
 
@@ -28,8 +28,8 @@ bus.on('编译插件', function(){
                     // src属性是svgicon专用属性，用于指定svg文件
                     nodeSrc = nd;                                   // 属性节点src
                 }else{
-                    // 其他属性全部作为svg标签用属性看待，效果上等同内联svg标签中直接写属性，但viewbox属性除外，viewbox不支持修改以免影响svg大小
-                    !/^viewbox$/i.test(name) && (oAttrs[nd.object.name] = nd.object.value);
+                    // 其他属性全部作为svg标签用属性看待，效果上等同内联svg标签中直接写属性，但viewBox属性除外，viewBox不支持修改以免影响svg大小
+                    !/^viewBox$/i.test(name) && (oAttrs[nd.object.name] = nd.object);
                 }
             });
             
@@ -52,7 +52,12 @@ bus.on('编译插件', function(){
             if ( ary.length > 2 ) {
                 throw new Err('invalid format of src attribute, etc. name:svgfilefilter', errLocInfo);      // 格式有误，多个冒号
             }else if ( ary.length > 1 ) {
-                // 指定NPM包中文件的形式
+                // 简单排除window环境下书写绝对路径的情况
+                if ( File.existsFile(propSrc) ) {
+                    throw new Err('unsupport absolute file path', errLocInfo);                              // 不支持使用绝对路径，避免换机器环境引起混乱
+                }
+
+                // 指定NPM包中文件的形式，npm包视为稳定，支持使用通配符提高灵活性
                 pkg = ary[0].trim();
                 filter = ary[1].trim();
                 if ( !pkg ) {
@@ -73,23 +78,39 @@ bus.on('编译插件', function(){
                     throw new Err('svf icon file not found in package: ' + pkg, errLocInfo);                // npm包安装目录内找不到指定的图标文件
                 }
                 if ( files.length > 1 ) {
-                    throw new Err('multi svf icon file found in package: ' + pkg, files, errLocInfo);       // npm包安装目录内找不到指定的图标文件
+                    throw new Err('multi svf icon file found in package: ' + pkg + '\n' + files.join('\n'), errLocInfo);       // npm包安装目录内找到多个图标文件 （通配符匹配到多个导致，应修改）
                 }
-                svgfile = files[0];     // 找到唯一的一个文件
+                svgfile = files[0];                                                                         // 正常找到唯一的一个文件
 
             }else{
-                // 项目目录范围内指定文件的形式
+                // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
                 filter = propSrc.trim();
 
                 let env = bus.at('编译环境');
-                let files = File.files(env.path.root, filter, '!/node_modules/**', '!/build/**');        // TODO 项目目录
-                if ( !files.length ) {
-                    throw new Err('svf icon file not found', errLocInfo);                                   // 项目范围内找不到指定的图标文件
+                let hasFile;
+                svgfile = File.resolve(context.input.file, filter);                                         // 相对于源文件所在目录，按相对路径查找svg文件
+                if ( File.existsFile(svgfile) ) {
+                    // 优先按源文件相对目录查找
+                    if ( !svgfile.startsWith(env.path.root + '/') ) {
+                        throw new Err('file should not out of project (' + svgfile + ')', errLocInfo);             // 不支持引用项目外文件，避免版本混乱
+                    }
+                    hasFile = true;
+                }else {
+                    // 其次在项目配置指定目录中查找
+                    if ( !/^[\.\/\\]+/.test(filter) ) {
+                        svgfile = env.path.svgicons + '/' + filter.replace(/\\/g, '/');
+                        if ( File.existsFile(svgfile) ) {
+                            hasFile = true;
+                        }
+                    }
                 }
-                if ( files.length > 1 ) {
-                    throw new Err('multi svf icon file found', files, errLocInfo);                          // 项目范围内找不到指定的图标文件
-                }
-                svgfile = files[0];     // 找到唯一的一个文件
+
+                if ( !hasFile ) throw new Err('svf icon file not found', errLocInfo);                       // 项目范围内找不到指定的图标文件
+
+                if ( svgfile === filter ) throw new Err('unsupport absolute file path', errLocInfo);        // 不支持使用绝对路径，避免换机器环境引起混乱
+
+                let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];
+                !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                                // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
             }
 
 

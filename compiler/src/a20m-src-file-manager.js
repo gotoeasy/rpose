@@ -92,10 +92,42 @@ const File = require('@gotoeasy/file');
             return;
         }
 
-        oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);                           // 第一个有效
+        oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);             // 第一个有效
         return bus.at('全部编译');
 
     });
+
+    bus.on('SVG文件添加', function(svgfile){
+
+        // SVG图标文件修改时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
+        let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
+        let needBuild, refFiles = [];
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( context ) {
+                let refsvgicons = context.result.refsvgicons || [];
+                for ( let i=0,f; f=refsvgicons[i++]; ) {
+                    if ( File.name(f) === name ) {                          // 比较的是不含扩展名的单纯svg文件名，通常直接表达图标名
+                        let tag = getTagOfSrcFile(file);                    // 直接关联的组件标签名
+                        refFiles.push(file);                                // 待重新编译的组件
+                        refFiles.push(...getRefPages(tag));                 // 待重新编译的页面
+                    }
+                }
+            }else{
+                needBuild = true;                                           // 存在未编译成功的组件，保险起见同样重新编译
+            }
+        }
+
+        if ( needBuild || refFiles.length ) {
+            (new Set(refFiles)).forEach(pageFile => {
+                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
+            })
+            return bus.at('全部编译');
+        }
+
+        return [];
+    });
+
 
     bus.on('源文件修改', function(oFileIn){
 
@@ -118,6 +150,34 @@ const File = require('@gotoeasy/file');
         bus.at('组件编译缓存', oFile.file, false);                          // 删除当前文件的编译缓存
         return bus.at('全部编译');
     });
+
+    bus.on('SVG文件修改', function(svgfile){
+
+        // SVG图标文件修改时，找出使用该svg文件的组件，以及使用该组件的页面，都清除缓存后重新编译
+        let oFiles = bus.at('源文件对象清单');
+        let refFiles = [];
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( context ) {
+                let refsvgicons = context.result.refsvgicons || [];
+                if ( refsvgicons.includes(svgfile) ) {                      // 比较的是全路径文件名
+                    let tag = getTagOfSrcFile(file);                        // 直接关联的组件标签名
+                    refFiles.push(file);                                    // 待重新编译的组件
+                    refFiles.push(...getRefPages(tag));                     // 待重新编译的页面
+                }
+            }
+        }
+
+        if ( refFiles.length ) {
+            (new Set(refFiles)).forEach(pageFile => {
+                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
+            })
+            return bus.at('全部编译');
+        }
+
+        return [];
+    });
+
 
     bus.on('源文件删除', function(file){
 
@@ -154,6 +214,37 @@ const File = require('@gotoeasy/file');
         return bus.at('全部编译');
     });
 
+
+    bus.on('SVG文件删除', function(svgfile){
+
+        // SVG图标文件修改时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
+        let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
+        let needBuild, refFiles = [];
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( context ) {
+                let refsvgicons = context.result.refsvgicons || [];
+                for ( let i=0,f; f=refsvgicons[i++]; ) {
+                    if ( File.name(f) === name ) {                          // 比较的是不含扩展名的单纯svg文件名，通常直接表达图标名
+                        let tag = getTagOfSrcFile(file);                    // 直接关联的组件标签名
+                        refFiles.push(file);                                // 待重新编译的组件
+                        refFiles.push(...getRefPages(tag));                 // 待重新编译的页面
+                    }
+                }
+            }else{
+                needBuild = true;                                           // 存在未编译成功的组件，保险起见同样重新编译
+            }
+        }
+
+        if ( needBuild || refFiles.length ) {
+            (new Set(refFiles)).forEach(pageFile => {
+                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
+            })
+            return bus.at('全部编译');
+        }
+
+        return [];
+    });
 
 
 

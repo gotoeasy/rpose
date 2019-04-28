@@ -37,8 +37,8 @@ bus.on('SVG图标文件解析插件', function(){
             let text = File.read(object.file);
 
             // 不支持大于50K的svg图标文件
-            if ( text.length > 50 * 1024 ) {
-                throw new Error(`unsupport svg icon file (size>50K) [${file}]`);
+            if ( text.length > 100 * 1024 ) {
+                throw new Error(`unsupport svg icon file (size>100K) [${file}]`);
             }
             // 不支持图标字体文件
             if ( text.indexOf('<font-face') > 0 ) {
@@ -269,34 +269,36 @@ bus.on('SVG图标文件解析插件', function(){
         root.walk( 'Attributes', (node, object) => {
             if ( !node.parent || node.parent.parent !== root ) return;
 
-            // 全部svg属性保存后删除
+            // 过滤svg属性保存后删除
             node.walk( (nd, obj) => {
-                svgAttrs[obj.name] = obj.value;
+                if ( !/^(id|class|xmlns|version|xmlns:xlink|xml:space|x|y|width|height)$/i.test(obj.name) ) {   // 列出的属性都忽略，width、height又是特殊过滤
+                    svgAttrs[obj.name] = { type: 'Attribute', name: obj.name, value: obj.value };               // 保存过滤后的svg属性
+                }
                 nd.remove();
             });
         });
 
-        // 删除svg中的指定属性
-        delete svgAttrs['id'];
-        delete svgAttrs['class'];
-        delete svgAttrs['xmlns'];
-        delete svgAttrs['version'];
-        delete svgAttrs['xmlns:xlink'];
-        delete svgAttrs['xml:space'];
-        delete svgAttrs['x'];
-        delete svgAttrs['y'];
+
+        // 重置loc
+        root.walk( (node, object) => {
+            object.loc = context.input.loc;
+        }, {readonly: true});
 
         // 用svgicon属性覆盖svg属性
-        let oAttrs = Object.assign(svgAttrs, context.input.attrs); 
+        let oAttrs = Object.assign(svgAttrs, context.input.attrs);
+        if ( !context.input.attrs.width && !context.input.attrs.height ) {
+            oAttrs['height'] = {type: "Attribute", name: 'height', value: '16'};                // 在<svgicon>中没有指定高宽时，默认指定为16px高度，宽度不设定让它自动调整，相当于指定默认图标大小为16px
+        }
 
         // 新属性插入节点树
         root.walk( 'Attributes', (node, object) => {
             if ( !node.parent || node.parent.parent !== root ) return;
 
             for ( let name in oAttrs ) {
-                node.addChild( this.createNode({type: 'Attribute', name, value: oAttrs[name]}) );
+                oAttrs[name].value !== '' && node.addChild( this.createNode(oAttrs[name]) );    // 忽略空白属性 <svgicon style=""> 等同删除style属性
             }
-        
+            
+            return false;
         });
 
     });
@@ -306,12 +308,8 @@ bus.on('SVG图标文件解析插件', function(){
 
 bus.on('SVG图标文件解析插件', function(){
     
-    // 最后一步，重置loc，保存解析结果
+    // 最后一步，保存解析结果
     return postobject.plugin('svgicon-plugin-99', function(root, context){
-        root.walk( (node, object) => {
-            object.loc = context.input.loc;
-        }, {readonly: true});
-
         context.result = root.nodes[0];
     });
 
