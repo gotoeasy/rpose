@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
 
 bus.on('解析[taglib]', function(){
@@ -8,14 +7,13 @@ bus.on('解析[taglib]', function(){
     return function parseTaglib(taglibBlockText, context, loc){
         let rs = {};
         let lines = (taglibBlockText == null ? '' : taglibBlockText.trim()).split('\n');
-        let offsetLine = loc.start.line + 1;                            // [taglib]占了一行所以+1
+        let offsetLine = (loc ? loc.start.line : 0) + 1;                                    // [taglib]占了一行所以+1
 
-        for ( let i=0,taglib,oTaglib,oPkg; i<lines.length; i++ ) {
-            taglib = lines[i].split('//')[0].trim();                // 去除注释内容
-            if ( !taglib ) continue;                                // 跳过空白行
+        for ( let i=0,taglib,oTaglib; i<lines.length; i++ ) {
+            taglib = lines[i].split('//')[0].trim();                                        // 去除注释内容
+            if ( !taglib ) continue;                                                        // 跳过空白行
 
             oTaglib = bus.at('normalize-taglib', taglib, i);
-
 
             // 无效的taglib格式
             if ( !oTaglib ) {

@@ -171,7 +171,7 @@ body
 - [x] 提供简易安全的路由方案
 - [x] 提供样式风格模块化方案
 - [x] 提供预渲染模块化方案
-- [x] 提供简便的SVG图标方案
+- [x] 提供简易的SVG图标方案
 
 * `buildin`
 
@@ -179,7 +179,7 @@ body
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
-- [x] :new: 内置标签组件 `<svgicon>`，支持src属性指定本地项目或npm包中svg图标文件
+- [x] 内置标签组件 `<svgicon>`，支持src属性指定本地项目或npm包中svg图标文件
 
 * `runtime`
 

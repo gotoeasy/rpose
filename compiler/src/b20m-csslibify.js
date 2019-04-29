@@ -1,10 +1,9 @@
 const bus = require('@gotoeasy/bus');
-const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
 const hash = require('@gotoeasy/hash');
 const csslibify = require('csslibify');
 
-bus.on('样式库', function(rs={}){
+bus.on('样式库', function(){
     
     // ------------------------------------------------------------------------------------------------------
     // 此编译模块用的样式库建库方法，定义后就按需使用，中途不会作样式库的修改操作
@@ -27,7 +26,7 @@ bus.on('样式库', function(rs={}){
     return function (defCsslib){
 
         let match;
-        let name, pkg, filters = [];
+        let name, pkg, cssfilter, filters = [];
         if ( (match = defCsslib.match(/^(.*?)=(.*?):(.*)$/)) ) {
             // name=pkg:filters
             name = match[1].trim();

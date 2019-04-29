@@ -92,7 +92,7 @@ function getThemeMapByFile(file) {
     }
     fileSet.add(file);
 
-    btf = new Btf(file);
+    let btf = new Btf(file);
     let superPkg = (btf.getText('extend') || '').trim();                    // 继承的模块名
     let superTheme;
     let theme = btf.getMap('theme');

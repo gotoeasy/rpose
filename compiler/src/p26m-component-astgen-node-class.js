@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const Err = require('@gotoeasy/err');
 
 bus.on('astgen-node-class', function(){
 

@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
 const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
 
@@ -253,7 +252,7 @@ const File = require('@gotoeasy/file');
 // 取标签名，无效者undefined
 function getTagOfSrcFile(file){
     let name = File.name(file);
-    if ( /[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name) ) {
+    if ( /[^a-zA-Z0-9_-]/.test(name) || !/^[a-zA-Z]/.test(name) ) {
         return;
     }
     return name.toLowerCase();

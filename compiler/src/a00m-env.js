@@ -1,7 +1,6 @@
 const File = require('@gotoeasy/file');
 const Btf = require('@gotoeasy/btf');
 const bus = require('@gotoeasy/bus');
-const util = require('@gotoeasy/util');
 const Err = require('@gotoeasy/err');
 const npm = require('@gotoeasy/npm');
 const path = require('path');
@@ -69,9 +68,9 @@ function parseRposeConfigBtf(file, defaultFile, opts){
     result.path.build = getConfPath(root, mapPath, 'build', 'build');
     result.path.build_temp = result.path.build + '/temp';
     result.path.build_dist = result.path.build + '/dist';
-    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';       // 打包后的图片目录
-    result.path.cache = mapPath.get('cache');                                           // 缓存大目录
-    result.path.svgicons = mapPath.get('svgicons') || (root + '/resources/svgicons');   // SVG图标文件目录
+    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';               // 打包后的图片目录
+    result.path.cache = mapPath.get('cache');                                                   // 缓存大目录
+    result.path.svgicons = root + '/' + (mapPath.get('svgicons') || 'resources/svgicons');      // SVG图标文件目录
 
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());

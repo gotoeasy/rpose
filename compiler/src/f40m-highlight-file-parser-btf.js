@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const postobject = require('@gotoeasy/postobject');
 
 bus.on('BTF内容解析', function(){
 

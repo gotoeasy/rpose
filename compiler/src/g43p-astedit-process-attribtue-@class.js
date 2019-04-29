@@ -1,6 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const hash = require('@gotoeasy/hash');
 const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
@@ -17,7 +16,7 @@ bus.on('编译插件', function(){
         let style = context.style;
         let atclasscss = style.atclasscss = style.atclasscss || [];
 
-        root.walk( 'Tag', (node, object) => {
+        root.walk( 'Tag', (node) => {
 
             if ( !node.nodes || !node.nodes.length ) return;                            // 节点没有定义属性，跳过
 

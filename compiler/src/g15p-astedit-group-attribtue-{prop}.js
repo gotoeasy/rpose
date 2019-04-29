@@ -6,9 +6,9 @@ bus.on('编译插件', function(){
     // 处理标签中指定类型的属性，提取后新建节点管理
     // 无属性值的对象表达式统一分组，如< div {prop1} {prop2} >
     // 标签节点下新建ObjectExpressionAttributes节点存放
-    return postobject.plugin(/**/__filename/**/, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root){
 
-        root.walk( 'Tag', (node, object) => {
+        root.walk( 'Tag', (node) => {
 
             if ( !node.nodes || !node.nodes.length ) return;                            // 节点没有定义属性，跳过
 

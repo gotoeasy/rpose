@@ -1,42 +1,46 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "main": "compiler.js",
   "dependencies": {
-    "@rpose/runtime": "0.0.*",
-    "@gotoeasy/bus": "0.0.*",
-    "@gotoeasy/npm": "0.0.*",
-    "@gotoeasy/file": "0.0.*",
-    "@gotoeasy/util": "0.0.*",
     "@gotoeasy/btf": "1.1.*",
-    "@gotoeasy/err": "0.1.*",
-    "@gotoeasy/csjs": "0.2.*",
-    "@gotoeasy/postobject": "0.0.*",
+    "@gotoeasy/bus": "0.0.*",
     "@gotoeasy/cache": "0.1.*",
-    "@gotoeasy/theme": "0.0.*",
+    "@gotoeasy/csjs": "0.2.*",
+    "@gotoeasy/err": "0.1.*",
+    "@gotoeasy/file": "0.0.*",
+    "@gotoeasy/npm": "0.0.*",
+    "@gotoeasy/postobject": "0.0.*",
     "@gotoeasy/pre-render": "0.0.*",
-    "csslibify": "0.3.*",
-    "postcss-sort-media": "0.0.*",
-    "csso": "3.5.*",
-    "postcss-import-sync": "7.1.*",
-    "resolve-pkg": "1.0.*",
+    "@gotoeasy/theme": "0.0.*",
+    "@gotoeasy/util": "0.0.*",
+    "@rpose/runtime": "0.0.*",
     "acorn-globals": "4.3.*",
     "acorn-walk": "6.1.*",
     "astring": "1.3.*",
+    "bootstrap": "^4.3.1",
     "chokidar": "2.1.*",
+    "csslibify": "0.3.*",
+    "csso": "3.5.*",
+    "opn": "5.3.*",
+    "postcss-import-sync": "7.1.*",
+    "postcss-sort-media": "0.0.*",
     "refractor": "2.7.*",
     "rehype": "7.0.*",
-    "opn": "5.3.*"
+    "resolve-pkg": "1.0.*",
+    "rpose-theme-demo": "0.0.8"
   },
   "devDependencies": {
     "ava": "*",
-    "nyc": "*"
+    "nyc": "*",
+    "eslint": "*"
   },
   "bin": {
     "rp": "bin/rpose"
   },
   "scripts": {
     "build": "node script/build",
+    "eslint": "node node_modules/eslint/bin/eslint src & node node_modules/eslint/bin/eslint compiler.js",
     "test": "nyc ava",
     "coverage": "nyc ava & nyc report --reporter=html & node coverage"
   },

@@ -9,8 +9,6 @@ bus.on('编译插件', function(){
 
         let oTaglib = Object.assign({}, context.result.oTaglib);                        // 复制(项目[taglib]+组件[taglib])
 
-
-        let ary, clsname, csslib, css;
         root.walk( 'Tag', (node, object) => {
             if ( object.standard ) return;
             

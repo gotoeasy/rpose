@@ -8,7 +8,7 @@ bus.on('编译插件', function(){
     // 处理标签中的 @for 属性
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
-        root.walk( 'Tag', (node, object) => {
+        root.walk( 'Tag', (node) => {
 
             if ( !node.nodes || !node.nodes.length ) return;                            // 节点没有定义属性，跳过
 

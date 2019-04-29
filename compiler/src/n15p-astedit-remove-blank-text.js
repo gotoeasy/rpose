@@ -3,7 +3,7 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(/**/__filename/**/, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root){
 
         const OPTS = bus.at('视图编译选项');
 

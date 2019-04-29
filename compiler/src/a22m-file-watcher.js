@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
 const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 const hash = require('@gotoeasy/hash');
@@ -26,13 +25,13 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
 
                 if ( file === browserslistrc ) {
                     // 配置文件 .browserslistrc 添加
-                    let hashBrowserslistrc = hash(File.read(browserslistrc));
+                    hashBrowserslistrc = hash(File.read(browserslistrc));
                     console.info('add ......', file);
                     bus.at('browserslist', true) > await bus.at('重新编译全部页面');   // 重新查询目标浏览器，然后重新编译全部页面
 
                 }else if ( file === rposeconfigbtf ) {
                     // 配置文件 rpose.config.btf 添加
-                    let hashRposeconfigbtf = hash(File.read(rposeconfigbtf));
+                    hashRposeconfigbtf = hash(File.read(rposeconfigbtf));
                     console.info('add ......', file);
                     await bus.at('全部重新编译');
 
@@ -114,13 +113,13 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
 
                 if ( file === browserslistrc ) {
                     // 配置文件 .browserslistrc 删除
-                    let hashBrowserslistrc = null;
+                    hashBrowserslistrc = null;
                     console.info('del ......', file);
                     bus.at('browserslist', true) > await bus.at('重新编译全部页面');   // 重新查询目标浏览器，然后重新编译全部页面
 
                 }else if ( file === rposeconfigbtf ) {
                     // 配置文件 rpose.config.btf 删除
-                    let hashRposeconfigbtf = null;
+                    hashRposeconfigbtf = null;
                     console.info('del ......', file);
                     await bus.at('全部重新编译');
 
@@ -171,7 +170,7 @@ async function busAt(name, ofile){
 
 function isValidRposeFile(file){
     let name = File.name(file);
-    if ( /[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name) ) {
+    if ( /[^a-zA-Z0-9_-]/.test(name) || !/^[a-zA-Z]/.test(name) ) {
         return false;
     }
     return true;

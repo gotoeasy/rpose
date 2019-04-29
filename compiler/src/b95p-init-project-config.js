@@ -12,7 +12,7 @@ bus.on('编译插件', function(){
 }());
 
 
-bus.on('项目配置处理', function(result={}){
+bus.on('项目配置处理', function(result={}, oDefaultResult){
 
     return function(srcFile, nocahce=false){
         nocahce && (result = {});
@@ -21,7 +21,21 @@ bus.on('项目配置处理', function(result={}){
 
 
         if ( result[btfFile] ) return result[btfFile];
-        if ( !File.existsFile(btfFile) ) return {};
+        if ( !File.existsFile(btfFile) ){
+            // 没有配置文件，仅返回默认路径信息
+            if ( !oDefaultResult ) {
+                let oPath = {};
+                let root = File.path(btfFile);
+                oPath.src = root + '/src';
+                oPath.build = root + '/' + oPath.build;
+                oPath.build_temp = oPath.build + '/temp';
+                oPath.build_dist = oPath.build + '/dist';
+                oPath.build_dist_images = 'images';
+                oPath.svgicons = root + '/resources/svgicons';
+                oDefaultResult = {path: oPath};
+            }
+            return oDefaultResult;
+        }
 
         let plugins = bus.on('项目配置处理插件');
         let rs = postobject(plugins).process({file: btfFile});
@@ -33,16 +47,17 @@ bus.on('项目配置处理', function(result={}){
         return result[btfFile];
     };
 
-}());
 
+
+}());
 
 
 // 解析项目的btf配置文件, 构建语法树
 bus.on('项目配置处理插件', function(){
     
     return postobject.plugin('process-project-config-101', function(root, context){
-        context.input = {};
-        context.result = {};
+        context.input = context.input || {};
+        context.result = context.result || {};
 
         root.walk( (node, object) => {
             context.input.file = object.file;
@@ -69,18 +84,49 @@ bus.on('项目配置处理插件', function(){
 }());
 
 
-// 建立项目样式库
+// 解析[path]块
 bus.on('项目配置处理插件', function(){
+    
     return postobject.plugin('process-project-config-102', function(root, context){
 
-        let hashClassName = bus.on('哈希样式类名')[0];
-        let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );  // 自定义改名函数
-        let opts = {rename};
+        let oPath = {};
+        oPath.root = File.path(context.input.file);
 
-        let oKv, startLine;
+        root.walk( 'path', (node, object) => {
+            let lines = object.value.trim().split('\n');
+            lines.forEach(line => {
+                let bk = '=', idx1 = line.indexOf('='), idx2 = line.indexOf(':');
+                idx2 >= 0 && (idx1 < 0 || idx2 < idx1) && (bk = ':');               // 冒号在前则按冒号分隔
+                let v, kv = line.replace(bk, '\n').split('\n').map(s=>s.trim());
+                if ( kv.length == 2 && kv[0] ) {
+                    v = kv[1].split('//')[0].trim();                                // 去注释
+                    oPath[kv[0]] = v;
+                }
+            });
+        }, {readonly: true});
+
+        oPath.src = oPath.root + '/src';
+        oPath.build = oPath.build ? (oPath.root + '/' + oPath.build).replace(/\/\//g, '/') : (oPath.root + '/build');
+        oPath.build_temp = oPath.build + '/temp';
+        oPath.build_dist = oPath.build + '/dist';
+        !oPath.build_dist_images && (oPath.build_dist_images = 'images');
+//        oPath.cache = oPath.cache;
+        oPath.svgicons = oPath.root + '/' + (oPath.svgicons || 'resources/svgicons');      // SVG图标文件目录
+
+        context.result.path = oPath;
+    });
+
+}());
+
+
+
+// 建立项目样式库
+bus.on('项目配置处理插件', function(){
+    return postobject.plugin('process-project-config-110', function(root, context){
+
+        let oKv;
         root.walk( 'csslib', (node, object) => {
             oKv = bus.at('解析[csslib]', object.value, context, object.loc);
-            startLine = object.loc.start.line;
             node.remove();
         });
         if ( !oKv ) return;
@@ -99,7 +145,7 @@ bus.on('项目配置处理插件', function(){
 
 // 添加内置标签库
 bus.on('项目配置处理插件', function(addBuildinTaglib){
-    return postobject.plugin('process-project-config-103', function(root, context){
+    return postobject.plugin('process-project-config-120', function(){
 
         if ( !addBuildinTaglib ) {
             let pkg = '@rpose/buildin';
@@ -119,7 +165,7 @@ bus.on('项目配置处理插件', function(addBuildinTaglib){
 
 // 建立项目标签库
 bus.on('项目配置处理插件', function(addBuildinTaglib){
-    return postobject.plugin('process-project-config-105', function(root, context){
+    return postobject.plugin('process-project-config-130', function(root, context){
 
         let oKv, startLine;
         root.walk( 'taglib', (node, object) => {
@@ -153,7 +199,7 @@ bus.on('项目配置处理插件', function(addBuildinTaglib){
 
         // 添加内置标签库
         if ( !addBuildinTaglib ) {
-            pkg = '@rpose/buildin';
+            let pkg = '@rpose/buildin';
             if ( !bus.at('自动安装', pkg) ) {
                 throw new Error('package install failed: ' + pkg);
             }

@@ -1,7 +1,5 @@
 const bus = require('@gotoeasy/bus');
-const postobject = require('@gotoeasy/postobject');
 const hash = require('@gotoeasy/hash');
-const Err = require('@gotoeasy/err');
 
 bus.on('创建@class样式', function(){
 

@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.5.6
+0.5.7
 
 [main]
 compiler.js
@@ -39,6 +39,7 @@ opn = 5.3.*
 [devDependencies] // 开发依赖库
 ava = *
 nyc = *
+eslint = *
 
 [description] // 描述
 rpose compiler
@@ -48,6 +49,7 @@ gotoeasy, rpose, compiler
 
 [scripts] // 脚本命令
 build = node script/build
+eslint = node node_modules/eslint/bin/eslint src & node node_modules/eslint/bin/eslint compiler.js
 test = nyc ava
 coverage = nyc ava & nyc report --reporter=html & node coverage
 

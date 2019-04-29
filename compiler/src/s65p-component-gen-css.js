@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const File = require('@gotoeasy/file');
-const csjs = require('@gotoeasy/csjs');
-const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     

@@ -53,7 +53,7 @@ bus.on('编译插件', function(){
 
 
         // 多个属性节点合并为一个标签属性节点
-        root.walk( 'Attribute', (node, object) => {
+        root.walk( 'Attribute', (node) => {
             if ( !node.parent ) return;           // 跳过已删除节点
 
             let ary = [node];

@@ -1,5 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
+const Err = require('@gotoeasy/err');
 const acorn = require('acorn');
 const astring = require('astring');
 
@@ -15,7 +16,7 @@ bus.on('编译插件', function(){
 
             let methods = object.text ? object.text.value.trim() : '';
             if ( methods ) {
-                let rs = generateMethods(methods, object.text.loc);
+                let rs = generateMethods(methods);
                 script.methods = rs.src;
 //                script.$methodkeys = rs.names;
             }
@@ -31,7 +32,7 @@ bus.on('编译插件', function(){
 
 
 // 把对象形式汇总的方法转换成组件对象的一个个方法，同时都直接改成箭头函数（即使function也不确认this，让this指向组件对象）
-function generateMethods(methods, loc){
+function generateMethods(methods){
 
     let env = bus.at('编译环境');
     let oCache = bus.at('缓存');

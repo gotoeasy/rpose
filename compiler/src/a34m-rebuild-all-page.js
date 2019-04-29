@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
-const File = require('@gotoeasy/file');
 
-bus.on('重新编译全部页面', function (bs){
+bus.on('重新编译全部页面', function (){
 
     return async function(){
 

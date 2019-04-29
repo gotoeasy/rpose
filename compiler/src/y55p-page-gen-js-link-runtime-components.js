@@ -23,7 +23,7 @@ bus.on('编译插件', function(){
             // 替换图片相对路径，图片不存在则复制
             let resourcePath = oCache.path + '/resources';
             let imgPath = bus.at('页面图片相对路径', context.input.file);
-            srcComponents = srcComponents.replace(/\%imagepath\%([0-9a-zA-Z]+\.[0-9a-zA-Z]+)/g, function(match, filename){
+            srcComponents = srcComponents.replace(/%imagepath%([0-9a-zA-Z]+\.[0-9a-zA-Z]+)/g, function(match, filename){
                 let from = resourcePath + '/' + filename;
                 let to = env.path.build_dist + '/' + (env.path.build_dist_images ? (env.path.build_dist_images + '/') : '') + filename;
                 File.existsFile(from) && !File.existsFile(to) && File.mkdir(to) > fs.copyFileSync(from, to);
@@ -72,7 +72,7 @@ function getSrcRegisterComponents(allreferences){
 
         return `rpose.registerComponents(${JSON.stringify(obj).replace(/"/g,'')});`;
     }catch(e){
-        throw Err.cat(MODULE + 'gen register stmt failed', allreferences, e);
+        throw Err.cat('gen register stmt failed', allreferences, e);
     }
 }
 
@@ -89,6 +89,6 @@ function getSrcComponents(allreferences){
         }
         return ary.join('\n');
     }catch(e){
-        throw Err.cat(MODULE + 'get component src failed', allreferences, e);
+        throw Err.cat('get component src failed', allreferences, e);
     }
 }

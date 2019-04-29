@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const postobject = require('@gotoeasy/postobject');
 
 // ---------------------------------------------------
 // 项目配置文件解析
@@ -52,7 +51,7 @@ bus.on('项目配置文件解析', function(){
 
 function parse(blocks, lines, lineCounts) {
 
-    let sLine,block,oName,name,comment,value,blockStart = false;
+    let sLine,block,oName,comment,blockStart = false;
     for ( let i=0; i<lines.length; i++ ) {
         sLine = lines[i];
 
@@ -93,7 +92,7 @@ function parse(blocks, lines, lineCounts) {
             if ( blockStart ) {
                 // 当前是块内容行
                 let buf = blocks[blocks.length-1].buf;
-                if ( sLine.charAt(0) === '\\' && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine)) ) {
+                if ( sLine.charAt(0) === '\\' && (/^\\+\[.*\]/.test(sLine) || /^\\+---------/.test(sLine) || /^\\+=========/.test(sLine)) ) {
                     buf.push( sLine.substring(1) );                             // 去除转义字符，拼接当前Block内容
                 }else{
                     buf.push( sLine );

@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
-const File = require('@gotoeasy/file');
 
-bus.on('全部编译', function (bs){
+bus.on('全部编译', function (){
 
     return function(){
 

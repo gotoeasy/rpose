@@ -3,12 +3,12 @@ const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
     
-    return postobject.plugin(/**/__filename/**/, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root){
 
         const OPTS = bus.at('视图编译选项');
 
         // TODO 用选项常量
-        root.walk( /^(Text|Expression)$/, (node, object) => {
+        root.walk( /^(Text|Expression)$/, (node) => {
 
             // 合并连续的文本节点
             let ary = [node];
@@ -20,7 +20,7 @@ bus.on('编译插件', function(){
 
             if ( ary.length < 2 ) return;
 
-            let aryRs = [], tmp;
+            let aryRs = [];
             ary.forEach(nd => {
                 if ( nd.type === OPTS.TypeText ) {
                     aryRs.push('"' + lineString(nd.object.value) + '"');

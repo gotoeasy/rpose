@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const csjs = require('@gotoeasy/csjs');
-const File = require('@gotoeasy/file');
-const hash = require('@gotoeasy/hash');
+const Err = require('@gotoeasy/err');
 const acorn = require('acorn');
 const walk = require("acorn-walk")
 const astring = require('astring');
@@ -25,7 +23,7 @@ bus.on('编译插件', function(){
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let style = context.style;
-        let oCssSet = style.csslibset = style.csslibset || new Set();
+        style.csslibset = style.csslibset || new Set();
         let oCsslib = context.result.oCsslib;
         let oCsslibPkgs = context.result.oCsslibPkgs;
         let script = context.script;
@@ -49,7 +47,7 @@ bus.on('编译插件', function(){
 
                 if ( asname !== '*' ) {
                     // 别名样式类，按需引用别名库
-                    csslib = oCsslib[asname];
+                    let csslib = oCsslib[asname];
                     if ( !csslib ) {
                         // 指定别名的样式库不存在
                         throw new Error('csslib not found: ' + asname + '\nfile: ' + context.input.file);  // TODO 友好定位提示

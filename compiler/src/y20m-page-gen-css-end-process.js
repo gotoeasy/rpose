@@ -1,6 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
-const hash = require('@gotoeasy/hash');
 const Err = require('@gotoeasy/err');
 const postcss = require('postcss');
 const csso = require('csso');

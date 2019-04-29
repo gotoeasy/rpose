@@ -4,10 +4,10 @@ const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
 
 
-bus.on('SVG图标文件解析', function(result={}){
+bus.on('SVG图标文件解析', function(){
 
     return function(file, attrs, loc){
-
+        // TODO 缓存
         let plugins = bus.on('SVG图标文件解析插件');
         let rs = postobject(plugins).process({file, attrs, loc});
 
@@ -99,10 +99,10 @@ bus.on('SVG图标文件解析插件', function(){
 
 bus.on('SVG图标文件解析插件', function(){
     
-    return postobject.plugin('svgicon-plugin-03', function(root, context){
+    return postobject.plugin('svgicon-plugin-03', function(root){
 
         // 多个属性节点合并为一个标签属性节点
-        root.walk( 'Attribute', (node, object) => {
+        root.walk( 'Attribute', (node) => {
             if ( !node.parent ) return;
 
             let ary = [node];
@@ -221,7 +221,7 @@ bus.on('SVG图标文件解析插件', function(){
 bus.on('SVG图标文件解析插件', function(){
     
     // 仅保留顶部svg标签
-    return postobject.plugin('svgicon-plugin-11', function(root, context){
+    return postobject.plugin('svgicon-plugin-11', function(root){
         root.walk( (node, object) => {
             if ( node.parent === root && ( node.type !== 'Tag' || !/^svg$/i.test(object.value) ) ) {
                 node.remove();      // 在顶部的，非<svg>标签全删除 （注释、文本等）
@@ -235,8 +235,8 @@ bus.on('SVG图标文件解析插件', function(){
 bus.on('SVG图标文件解析插件', function(){
     
     // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了，设定的单位不是px也不管了）
-    return postobject.plugin('svgicon-plugin-12', function(root, context){
-        root.walk( 'Attributes', (node, object) => {
+    return postobject.plugin('svgicon-plugin-12', function(root){
+        root.walk( 'Attributes', (node) => {
             if ( !node.parent || node.parent.parent !== root ) return;
 
             // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了）
@@ -266,7 +266,7 @@ bus.on('SVG图标文件解析插件', function(){
     return postobject.plugin('svgicon-plugin-13', function(root, context){
 
         let svgAttrs = context.svgAttrs = {};   // 保存svg属性
-        root.walk( 'Attributes', (node, object) => {
+        root.walk( 'Attributes', (node) => {
             if ( !node.parent || node.parent.parent !== root ) return;
 
             // 过滤svg属性保存后删除
@@ -291,7 +291,7 @@ bus.on('SVG图标文件解析插件', function(){
         }
 
         // 新属性插入节点树
-        root.walk( 'Attributes', (node, object) => {
+        root.walk( 'Attributes', (node) => {
             if ( !node.parent || node.parent.parent !== root ) return;
 
             for ( let name in oAttrs ) {

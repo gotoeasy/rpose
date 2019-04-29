@@ -1,7 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const File = require('@gotoeasy/file');
-const csjs = require('@gotoeasy/csjs');
 const Err = require('@gotoeasy/err');
 
 const AryNm = 'v_Array';
@@ -12,7 +10,7 @@ bus.on('编译插件', function(){
         let writer = context.writer;
         let script = context.script;
 
-        root.walk( 'View', (node, object) => {
+        root.walk( 'View', (node) => {
 
             if ( !node.nodes || node.nodes.length < 1 ) {
                 return writer.write('// 没有节点，无可生成');
@@ -29,9 +27,6 @@ bus.on('编译插件', function(){
             // 视图的模板函数源码
             script.vnodeTemplate = writer.toString();
 
- //   console.info('------------gen js-------------')
- //   console.info(writer.toString())
-        
             return false;
         });
 

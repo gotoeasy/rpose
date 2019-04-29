@@ -47,7 +47,7 @@ bus.on('标签库定义', function(rs={}, rsPkg={}){
         initPkgDefaultTag(oTaglib.pkg);
 
         // 查找已有关联
-        let askey, tagkey, oPkg, searchPkg = bus.at('文件所在模块', file);
+        let askey, tagkey, searchPkg = bus.at('文件所在模块', file);
         askey = searchPkg + ':' + oTaglib.astag;
         tagkey = oTaglib.pkg + ':' + oTaglib.tag;
         if ( rs[tagkey] ){
@@ -67,7 +67,7 @@ bus.on('标签库定义', function(rs={}, rsPkg={}){
             let msg = stack.join('\n => ');
             stack = [];
             // 通常是依赖的package未安装或安装失败导致
-            throw new Error( msg );
+            throw new Err( msg, e );
         }
         let configfile = File.path(pkgfile) + '/rpose.config.btf';
         if ( !File.existsFile(configfile) ) {
@@ -78,17 +78,17 @@ bus.on('标签库定义', function(rs={}, rsPkg={}){
         }
 
         let btf = new Btf(configfile);
-        let oTaglibKv, taglibBlockText = btf.getText('taglib');                                            // 已发布的包，通常不会有错，不必细致检查
+        let oTaglibKv, taglibBlockText = btf.getText('taglib');                                 // 已发布的包，通常不会有错，不必细致检查
         try{
             oTaglibKv = bus.at('解析[taglib]', taglibBlockText, {input:{file: configfile}});
         }catch(e){
-            stack.push(`[${oTaglib.pkg}] ${oTaglib.pkg}:${oTaglib.tag}`);                                         // 错误提示用
+            stack.push(`[${oTaglib.pkg}] ${oTaglib.pkg}:${oTaglib.tag}`);                       // 错误提示用
             stack.push(configfile); 
             stack.unshift(e.message);
             let msg = stack.join('\n => ');
             stack = [];
             // 通常是[taglib]解析失败导致
-            throw new Error( msg );
+            throw new Error( msg, e );
         }
         let oConfTaglib = oTaglibKv[oTaglib.tag];
         if ( !oConfTaglib ) {
@@ -102,14 +102,14 @@ bus.on('标签库定义', function(rs={}, rsPkg={}){
 
         // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
         bus.at('自动安装', oConfTaglib.pkg);
-        return bus.at('标签库定义', oConfTaglib.taglib, configfile);         // 要么成功，要么异常
+        return bus.at('标签库定义', oConfTaglib.taglib, configfile);                            // 要么成功，要么异常
     }
 
     function initPkgDefaultTag(pkg){
         if ( !rsPkg[pkg] ) {
-            let oPkg = bus.at('模块组件信息', pkg);                          // @scope/pkg
+            let oPkg = bus.at('模块组件信息', pkg);                                              // @scope/pkg
             for ( let i=0,file; file=oPkg.files[i++]; ) {
-                rs[oPkg.name + ':' + File.name(file)] = file;               // 包名：标签 = 文件
+                rs[oPkg.name + ':' + File.name(file)] = file;                                   // 包名：标签 = 文件
             }
             rsPkg[pkg] = true;
         }

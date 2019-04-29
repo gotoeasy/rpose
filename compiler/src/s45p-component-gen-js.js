@@ -13,7 +13,6 @@ bus.on('编译插件', function(){
         let env = bus.at('编译环境');
         let result = context.result;
         let script = context.script;
-        let writer = context.writer;
 
         // 模板函数
         let fnTmpl = bus.at('编译模板JS');

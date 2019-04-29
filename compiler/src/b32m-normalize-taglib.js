@@ -1,6 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const postobject = require('@gotoeasy/postobject');
-const Err = require('@gotoeasy/err');
 
 // 解析单个taglib定义，转换为对象形式方便读取
 bus.on('normalize-taglib', function(){

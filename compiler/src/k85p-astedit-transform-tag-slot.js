@@ -105,7 +105,6 @@ bus.on('编译插件', function(){
 
                 let type = options.TypeCodeBlock;
                 let value =  `${AryNm}.push( ...${SlotVnodes}_${hash(nd.slotName)} );`;     // _Ary.push(...(slotVnodes_xxxxx || []));
-                let loc = nd.object.loc;
                 nd.replaceWith( this.createNode({type, value}) );
             });
 
@@ -138,7 +137,7 @@ bus.on('编译插件', function(){
             }
 
 
-            root.walk( 'View', (nd, obj) => {
+            root.walk( 'View', (nd) => {
                 let type = options.TypeCodeBlock;
                 let value =  arySrc.join('\n');
                 nd.addChild( this.createNode({type, value}), 0 );   // 根节点前插入代码块节点

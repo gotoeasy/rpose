@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
         let universal = false;                                                                              // 不查取通用样式
         let opts = {rename, strict, universal};
 
-        let ary, clsname, oQuerys = {};
+        let ary, oQuerys = {};
         root.walk( 'Class', (node, object) => {
             // 按样式库单位汇总组件内全部样式类
             for ( let i=0,clspkg,clsname,asname; clspkg=object.classes[i++]; ) {
@@ -41,7 +41,7 @@ bus.on('编译插件', function(){
 
             // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]）中是否存在
             if ( asname !== '*' && !oCsslib[asname] ) {
-                throw new Err('csslib not found: '+ asname, {file:context.input.file, text:context.input.text, start:object.loc.start.pos, end:object.loc.end.pos});
+                throw new Err('csslib not found (check classname in script): '+ asname + '\nfile:' + context.input.file);
             }
         }
 

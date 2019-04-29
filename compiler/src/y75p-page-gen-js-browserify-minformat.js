@@ -18,7 +18,6 @@ bus.on('编译插件', function(){
 
         context.result.browserifyJs = new Promise((resolve, reject) => {
 
-            let stime = new Date().getTime();
             csjs.browserify(context.result.babelJs, null).then( js => {
                 js = env.release ? csjs.miniJs(js) : csjs.formatJs(js);
                 oCache.set(cacheKey, js);

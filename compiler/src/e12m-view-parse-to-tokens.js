@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 
 // 自闭合标签
@@ -44,8 +43,9 @@ function TokenParser(fileText, viewText, file, PosOffset){
     // ------------ 接口方法 ------------
     // 解析
     this.parse = function() {
-        while ( parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseHighlight() || parseText() ) {}
-        //while ( parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseText() ) {}
+        while ( parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseHighlight() || parseText() ) {
+            // 无内容
+        }
 
         tokens.forEach(token => {
             token.loc = getLocation(fileText, token.pos.start, token.pos.end, PosOffset);
@@ -101,7 +101,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
         oPos = {};
         oPos.start = reader.getPos();
         reader.skip(1);    // 跳过起始【<】
-        while ( /[^\s\/>]/.test(reader.getCurrentChar())  ) {
+        while ( /[^\s/>]/.test(reader.getCurrentChar())  ) {
             tagNm += reader.readChar(); // 非空白都按名称处理
         }
 
@@ -109,7 +109,9 @@ function TokenParser(fileText, viewText, file, PosOffset){
         tokens.push(tokenTagNm);
 
         // 全部属性
-        while ( parseAttr() ) {}
+        while ( parseAttr() ) {
+            // 无内容
+        }
 
         // 跳过空白
         reader.skipBlank();
@@ -180,7 +182,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
             if ( !key ) return 0;
 
         }else{
-            while ( /[^\s=\/>]/.test(reader.getCurrentChar()) ) {
+            while ( /[^\s=/>]/.test(reader.getCurrentChar()) ) {
                 key += reader.readChar();    // 只要不是【空白、等号、斜杠、大于号】就算属性名
             }
             if ( !key ) return 0;
@@ -211,7 +213,6 @@ function TokenParser(fileText, viewText, file, PosOffset){
             if ( reader.getCurrentChar() === '"' ) {
                 // 值由双引号包围
                 reader.skip(1);    // 跳过左双引号
-                let posStart = reader.getPos();
                 while ( !reader.eof() && reader.getCurrentChar() !== '"' ) {
                     let ch = reader.readChar();
                     (ch !== '\r' && ch !== '\n') && (val += ch);    // 忽略回车换行，其他只要不是【"】就算属性值
@@ -274,7 +275,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
                 tokens.push(token);
             }else{
                 // 值应该是单纯数值
-                while ( /[^\s\/>]/.test(reader.getCurrentChar()) ) {
+                while ( /[^\s/>]/.test(reader.getCurrentChar()) ) {
                     val += reader.readChar();    // 连续可见字符就放进去
                 }
 
@@ -381,7 +382,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
         let len = rs[0].length;
 
         // 【Token】 <```>
-        let token, oPos={};
+        let token;
         start = pos;
         end = pos + len;
         token = { type: options.TypeTagSelfClose, value: '```', pos: {start, end} };            // Token: 代码标签
@@ -402,7 +403,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
         }
 
         // 【Token】 height
-        match = rs[1].match(/\b\d+(\%|px)/i);                        // 带单位（%或px）的高度
+        match = rs[1].match(/\b\d+(%|px)/i);                         // 带单位（%或px）的高度
         let height;
         if ( match ) {
             height = match[0];

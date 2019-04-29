@@ -23,7 +23,7 @@ bus.on('编译插件', function(){
             }
             
 
-            let name, pkg, comp, match, taglib = object.value;
+            let pkg, comp, match, taglib = object.value;
 
             if ( (match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/)) ) {
                 // @taglib = "name=@scope/pkg:component"

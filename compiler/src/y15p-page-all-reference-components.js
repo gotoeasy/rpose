@@ -1,4 +1,5 @@
 const bus = require('@gotoeasy/bus');
+const Err = require('@gotoeasy/err');
 const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
@@ -43,9 +44,6 @@ function addRefComponent(tagpkg, oSetAllRequires, oStatus){
     oStatus[tagpkg] = true;
 
     let srcFile = bus.at('标签源文件', tagpkg);
-//    if ( !srcFile ) {
-//        throw new Error('file not found of tag: ' + tagpkg);
-//    }
     let context = bus.at('组件编译缓存', srcFile);
     if ( !context ) {
         context = bus.at('编译组件', srcFile);

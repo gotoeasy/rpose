@@ -5,7 +5,6 @@ console.time("load");
     const File = require("@gotoeasy/file");
     const Btf = require("@gotoeasy/btf");
     const bus = require("@gotoeasy/bus");
-    const util = require("@gotoeasy/util");
     const Err = require("@gotoeasy/err");
     const npm = require("@gotoeasy/npm");
     const path = require("path");
@@ -76,7 +75,7 @@ console.time("load");
         result.path.build_dist = result.path.build + "/dist";
         result.path.build_dist_images = mapPath.get("build_dist_images") || "images"; // 打包后的图片目录
         result.path.cache = mapPath.get("cache"); // 缓存大目录
-        result.path.svgicons = mapPath.get("svgicons") || root + "/resources/svgicons"; // SVG图标文件目录
+        result.path.svgicons = root + "/" + (mapPath.get("svgicons") || "resources/svgicons"); // SVG图标文件目录
 
         result.theme = btf.getText("theme") == null || !btf.getText("theme").trim() ? "@gotoeasy/theme" : btf.getText("theme").trim();
         result.prerender =
@@ -215,7 +214,6 @@ console.time("load");
 (() => {
     // ------- a20m-src-file-manager start
     const bus = require("@gotoeasy/bus");
-    const os = require("@gotoeasy/os");
     const hash = require("@gotoeasy/hash");
     const File = require("@gotoeasy/file");
 
@@ -459,7 +457,7 @@ console.time("load");
     // 取标签名，无效者undefined
     function getTagOfSrcFile(file) {
         let name = File.name(file);
-        if (/[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name)) {
+        if (/[^a-zA-Z0-9_-]/.test(name) || !/^[a-zA-Z]/.test(name)) {
             return;
         }
         return name.toLowerCase();
@@ -491,7 +489,6 @@ console.time("load");
 (() => {
     // ------- a22m-file-watcher start
     const bus = require("@gotoeasy/bus");
-    const os = require("@gotoeasy/os");
     const File = require("@gotoeasy/file");
     const Err = require("@gotoeasy/err");
     const hash = require("@gotoeasy/hash");
@@ -520,12 +517,12 @@ console.time("load");
 
                             if (file === browserslistrc) {
                                 // 配置文件 .browserslistrc 添加
-                                let hashBrowserslistrc = hash(File.read(browserslistrc));
+                                hashBrowserslistrc = hash(File.read(browserslistrc));
                                 console.info("add ......", file);
                                 bus.at("browserslist", true) > (await bus.at("重新编译全部页面")); // 重新查询目标浏览器，然后重新编译全部页面
                             } else if (file === rposeconfigbtf) {
                                 // 配置文件 rpose.config.btf 添加
-                                let hashRposeconfigbtf = hash(File.read(rposeconfigbtf));
+                                hashRposeconfigbtf = hash(File.read(rposeconfigbtf));
                                 console.info("add ......", file);
                                 await bus.at("全部重新编译");
                             } else if (file.startsWith(bus.at("编译环境").path.src + "/") && /\.rpose$/i.test(file)) {
@@ -602,12 +599,12 @@ console.time("load");
 
                             if (file === browserslistrc) {
                                 // 配置文件 .browserslistrc 删除
-                                let hashBrowserslistrc = null;
+                                hashBrowserslistrc = null;
                                 console.info("del ......", file);
                                 bus.at("browserslist", true) > (await bus.at("重新编译全部页面")); // 重新查询目标浏览器，然后重新编译全部页面
                             } else if (file === rposeconfigbtf) {
                                 // 配置文件 rpose.config.btf 删除
-                                let hashRposeconfigbtf = null;
+                                hashRposeconfigbtf = null;
                                 console.info("del ......", file);
                                 await bus.at("全部重新编译");
                             } else if (file.startsWith(bus.at("编译环境").path.src + "/") && /\.rpose$/i.test(file)) {
@@ -653,7 +650,7 @@ console.time("load");
 
     function isValidRposeFile(file) {
         let name = File.name(file);
-        if (/[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name)) {
+        if (/[^a-zA-Z0-9_-]/.test(name) || !/^[a-zA-Z]/.test(name)) {
             return false;
         }
         return true;
@@ -675,12 +672,10 @@ console.time("load");
 (() => {
     // ------- a30m-compile-all-page start
     const bus = require("@gotoeasy/bus");
-    const os = require("@gotoeasy/os");
-    const File = require("@gotoeasy/file");
 
     bus.on(
         "全部编译",
-        (function(bs) {
+        (function() {
             return function() {
                 let oFiles = bus.at("源文件对象清单");
                 let env = bus.at("编译环境");
@@ -719,6 +714,7 @@ console.time("load");
     const bus = require("@gotoeasy/bus");
     const File = require("@gotoeasy/file");
     const hash = require("@gotoeasy/hash");
+    const Err = require("@gotoeasy/err");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
@@ -762,12 +758,10 @@ console.time("load");
 (() => {
     // ------- a34m-rebuild-all-page start
     const bus = require("@gotoeasy/bus");
-    const os = require("@gotoeasy/os");
-    const File = require("@gotoeasy/file");
 
     bus.on(
         "重新编译全部页面",
-        (function(bs) {
+        (function() {
             return async function() {
                 let time,
                     time1,
@@ -809,12 +803,10 @@ console.time("load");
 (() => {
     // ------- a36m-rebuild-all start
     const bus = require("@gotoeasy/bus");
-    const os = require("@gotoeasy/os");
-    const File = require("@gotoeasy/file");
 
     bus.on(
         "全部重新编译",
-        (function(bs) {
+        (function() {
             return async function() {
                 let time,
                     time1,
@@ -1094,7 +1086,7 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("b00p-log", function(root, context) {
+            return postobject.plugin("b00p-log", function(/* root, context */) {
                 //        console.info('[b00p-log]', JSON.stringify(root,null,4));
             });
         })()
@@ -1144,7 +1136,6 @@ console.time("load");
 (() => {
     // ------- b10m-file-parser-config-btf start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
 
     // ---------------------------------------------------
     // 项目配置文件解析
@@ -1199,9 +1190,7 @@ console.time("load");
         let sLine,
             block,
             oName,
-            name,
             comment,
-            value,
             blockStart = false;
         for (let i = 0; i < lines.length; i++) {
             sLine = lines[i];
@@ -1242,7 +1231,7 @@ console.time("load");
                 if (blockStart) {
                     // 当前是块内容行
                     let buf = blocks[blocks.length - 1].buf;
-                    if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine))) {
+                    if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+---------/.test(sLine) || /^\\+=========/.test(sLine))) {
                         buf.push(sLine.substring(1)); // 去除转义字符，拼接当前Block内容
                     } else {
                         buf.push(sLine);
@@ -1299,14 +1288,13 @@ console.time("load");
 (() => {
     // ------- b20m-csslibify start
     const bus = require("@gotoeasy/bus");
-    const Err = require("@gotoeasy/err");
     const File = require("@gotoeasy/file");
     const hash = require("@gotoeasy/hash");
     const csslibify = require("csslibify");
 
     bus.on(
         "样式库",
-        (function(rs = {}) {
+        (function() {
             // ------------------------------------------------------------------------------------------------------
             // 此编译模块用的样式库建库方法，定义后就按需使用，中途不会作样式库的修改操作
             // 使用【包名：文件列表】作为缓存用的样式库名称，以提高性能
@@ -1329,6 +1317,7 @@ console.time("load");
                 let match;
                 let name,
                     pkg,
+                    cssfilter,
                     filters = [];
                 if ((match = defCsslib.match(/^(.*?)=(.*?):(.*)$/))) {
                     // name=pkg:filters
@@ -1415,7 +1404,6 @@ console.time("load");
 (() => {
     // ------- b22m-parser-[csslib] start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
 
     bus.on(
@@ -1526,7 +1514,6 @@ console.time("load");
                 // 查找已有关联
                 let askey,
                     tagkey,
-                    oPkg,
                     searchPkg = bus.at("文件所在模块", file);
                 askey = searchPkg + ":" + oTaglib.astag;
                 tagkey = oTaglib.pkg + ":" + oTaglib.tag;
@@ -1547,7 +1534,7 @@ console.time("load");
                     let msg = stack.join("\n => ");
                     stack = [];
                     // 通常是依赖的package未安装或安装失败导致
-                    throw new Error(msg);
+                    throw new Err(msg, e);
                 }
                 let configfile = File.path(pkgfile) + "/rpose.config.btf";
                 if (!File.existsFile(configfile)) {
@@ -1569,7 +1556,7 @@ console.time("load");
                     let msg = stack.join("\n => ");
                     stack = [];
                     // 通常是[taglib]解析失败导致
-                    throw new Error(msg);
+                    throw new Error(msg, e);
                 }
                 let oConfTaglib = oTaglibKv[oTaglib.tag];
                 if (!oConfTaglib) {
@@ -1604,8 +1591,6 @@ console.time("load");
 (() => {
     // ------- b32m-normalize-taglib start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     // 解析单个taglib定义，转换为对象形式方便读取
     bus.on(
@@ -1645,7 +1630,6 @@ console.time("load");
 (() => {
     // ------- b34m-parser-[taglib] start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
 
     bus.on(
@@ -1655,9 +1639,9 @@ console.time("load");
             return function parseTaglib(taglibBlockText, context, loc) {
                 let rs = {};
                 let lines = (taglibBlockText == null ? "" : taglibBlockText.trim()).split("\n");
-                let offsetLine = loc.start.line + 1; // [taglib]占了一行所以+1
+                let offsetLine = (loc ? loc.start.line : 0) + 1; // [taglib]占了一行所以+1
 
-                for (let i = 0, taglib, oTaglib, oPkg; i < lines.length; i++) {
+                for (let i = 0, taglib, oTaglib; i < lines.length; i++) {
                     taglib = lines[i].split("//")[0].trim(); // 去除注释内容
                     if (!taglib) continue; // 跳过空白行
 
@@ -1725,7 +1709,7 @@ console.time("load");
 
     bus.on(
         "项目配置处理",
-        (function(result = {}) {
+        (function(result = {}, oDefaultResult) {
             return function(srcFile, nocahce = false) {
                 nocahce && (result = {});
                 let time,
@@ -1733,7 +1717,21 @@ console.time("load");
                 let btfFile = srcFile.endsWith("/rpose.config.btf") ? srcFile : bus.at("文件所在项目配置文件", srcFile);
 
                 if (result[btfFile]) return result[btfFile];
-                if (!File.existsFile(btfFile)) return {};
+                if (!File.existsFile(btfFile)) {
+                    // 没有配置文件，仅返回默认路径信息
+                    if (!oDefaultResult) {
+                        let oPath = {};
+                        let root = File.path(btfFile);
+                        oPath.src = root + "/src";
+                        oPath.build = root + "/" + oPath.build;
+                        oPath.build_temp = oPath.build + "/temp";
+                        oPath.build_dist = oPath.build + "/dist";
+                        oPath.build_dist_images = "images";
+                        oPath.svgicons = root + "/resources/svgicons";
+                        oDefaultResult = { path: oPath };
+                    }
+                    return oDefaultResult;
+                }
 
                 let plugins = bus.on("项目配置处理插件");
                 let rs = postobject(plugins).process({ file: btfFile });
@@ -1752,8 +1750,8 @@ console.time("load");
         "项目配置处理插件",
         (function() {
             return postobject.plugin("process-project-config-101", function(root, context) {
-                context.input = {};
-                context.result = {};
+                context.input = context.input || {};
+                context.result = context.result || {};
 
                 root.walk((node, object) => {
                     context.input.file = object.file;
@@ -1778,19 +1776,58 @@ console.time("load");
         })()
     );
 
-    // 建立项目样式库
+    // 解析[path]块
     bus.on(
         "项目配置处理插件",
         (function() {
             return postobject.plugin("process-project-config-102", function(root, context) {
-                let hashClassName = bus.on("哈希样式类名")[0];
-                let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? cls + "@" + pkg : cls); // 自定义改名函数
-                let opts = { rename };
+                let oPath = {};
+                oPath.root = File.path(context.input.file);
 
-                let oKv, startLine;
+                root.walk(
+                    "path",
+                    (node, object) => {
+                        let lines = object.value.trim().split("\n");
+                        lines.forEach(line => {
+                            let bk = "=",
+                                idx1 = line.indexOf("="),
+                                idx2 = line.indexOf(":");
+                            idx2 >= 0 && (idx1 < 0 || idx2 < idx1) && (bk = ":"); // 冒号在前则按冒号分隔
+                            let v,
+                                kv = line
+                                    .replace(bk, "\n")
+                                    .split("\n")
+                                    .map(s => s.trim());
+                            if (kv.length == 2 && kv[0]) {
+                                v = kv[1].split("//")[0].trim(); // 去注释
+                                oPath[kv[0]] = v;
+                            }
+                        });
+                    },
+                    { readonly: true }
+                );
+
+                oPath.src = oPath.root + "/src";
+                oPath.build = oPath.build ? (oPath.root + "/" + oPath.build).replace(/\/\//g, "/") : oPath.root + "/build";
+                oPath.build_temp = oPath.build + "/temp";
+                oPath.build_dist = oPath.build + "/dist";
+                !oPath.build_dist_images && (oPath.build_dist_images = "images");
+                //        oPath.cache = oPath.cache;
+                oPath.svgicons = oPath.root + "/" + (oPath.svgicons || "resources/svgicons"); // SVG图标文件目录
+
+                context.result.path = oPath;
+            });
+        })()
+    );
+
+    // 建立项目样式库
+    bus.on(
+        "项目配置处理插件",
+        (function() {
+            return postobject.plugin("process-project-config-110", function(root, context) {
+                let oKv;
                 root.walk("csslib", (node, object) => {
                     oKv = bus.at("解析[csslib]", object.value, context, object.loc);
-                    startLine = object.loc.start.line;
                     node.remove();
                 });
                 if (!oKv) return;
@@ -1810,7 +1847,7 @@ console.time("load");
     bus.on(
         "项目配置处理插件",
         (function(addBuildinTaglib) {
-            return postobject.plugin("process-project-config-103", function(root, context) {
+            return postobject.plugin("process-project-config-120", function() {
                 if (!addBuildinTaglib) {
                     let pkg = "@rpose/buildin";
                     if (!bus.at("自动安装", pkg)) {
@@ -1829,7 +1866,7 @@ console.time("load");
     bus.on(
         "项目配置处理插件",
         (function(addBuildinTaglib) {
-            return postobject.plugin("process-project-config-105", function(root, context) {
+            return postobject.plugin("process-project-config-130", function(root, context) {
                 let oKv, startLine;
                 root.walk("taglib", (node, object) => {
                     oKv = bus.at("解析[taglib]", object.value, context, object.loc);
@@ -1866,7 +1903,7 @@ console.time("load");
 
                 // 添加内置标签库
                 if (!addBuildinTaglib) {
-                    pkg = "@rpose/buildin";
+                    let pkg = "@rpose/buildin";
                     if (!bus.at("自动安装", pkg)) {
                         throw new Error("package install failed: " + pkg);
                     }
@@ -1886,7 +1923,6 @@ console.time("load");
 (() => {
     // ------- c00m-file-parser-rpose start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
 
     // ---------------------------------------------------
     // RPOSE源文件解析
@@ -1945,9 +1981,7 @@ console.time("load");
         let sLine,
             block,
             oName,
-            name,
             comment,
-            value,
             blockStart = false;
         for (let i = 0; i < lines.length; i++) {
             sLine = lines[i];
@@ -1988,7 +2022,7 @@ console.time("load");
                 if (blockStart) {
                     // 当前是块内容行
                     let buf = blocks[blocks.length - 1].buf;
-                    if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine))) {
+                    if (sLine.charAt(0) === "\\" && (/^\\+\[.*\]/.test(sLine) || /^\\+---------/.test(sLine) || /^\\+=========/.test(sLine))) {
                         buf.push(sLine.substring(1)); // 去除转义字符，拼接当前Block内容
                     } else {
                         buf.push(sLine);
@@ -2136,21 +2170,21 @@ console.time("load");
             idx = value.lastIndexOf("//");
             idx >= 0 && (value = value.substring(0, idx).trim()); // 去注释，无语法分析，可能会误判
 
-            if (/^option[\-]?keys$/i.test(key)) {
+            if (/^option[-]?keys$/i.test(key)) {
                 key = "optionkeys";
                 value = value.split(/[,;]/).map(v => v.trim());
                 rs[key] = value;
-            } else if (/^state[\-]?keys$/i.test(key)) {
+            } else if (/^state[-]?keys$/i.test(key)) {
                 key = "statekeys";
                 value = value.split(/[,;]/).map(v => v.trim());
                 rs[key] = value;
-            } else if (/^pre[\-]?render$/i.test(key)) {
+            } else if (/^pre[-]?render$/i.test(key)) {
                 key = "prerender";
                 rs[key] = value;
-            } else if (/^desktop[\-]?first$/i.test(key)) {
+            } else if (/^desktop[-]?first$/i.test(key)) {
                 key = "desktopfirst"; // 移动优先时，min-width => max-width => min-device-width => max-device-width => other;桌面优先时，max-width => max-device-width => min-width => min-device-width => other
                 rs[key] = toBoolean(value);
-            } else if (/^mobile[\-]?first$/i.test(key)) {
+            } else if (/^mobile[-]?first$/i.test(key)) {
                 key = "desktopfirst";
                 rs[key] = !toBoolean(value);
             } else if (/^strict$/i.test(key)) {
@@ -2291,7 +2325,7 @@ console.time("load");
         }
         fileSet.add(file);
 
-        btf = new Btf(file);
+        let btf = new Btf(file);
         let superPkg = (btf.getText("extend") || "").trim(); // 继承的模块名
         let superTheme;
         let theme = btf.getMap("theme");
@@ -2449,7 +2483,7 @@ console.time("load");
                 plugins.push(require("postcss-url")(postcssUrlOpt)); // url资源复制
                 plugins.push(require("postcss-nested")()); // 支持嵌套（配合下面变量处理）
                 plugins.push(require("postcss-css-variables")()); // 把css变量静态化输出
-                plugins.push(require("postcss-discard-comments")({ remove: x => 1 })); // 删除所有注释
+                plugins.push(require("postcss-discard-comments")({ remove: () => 1 })); // 删除所有注释
                 plugins.push(require("postcss-minify-selectors")); // 压缩删除选择器空白（h1 + p, h2, h3, h2{color:blue} => h1+p,h2,h3{color:blue}）
                 plugins.push(require("postcss-minify-params")); // 压缩删除参数空白（@media only screen   and ( min-width: 400px, min-height: 500px    ){} => @media only screen and (min-width:400px,min-height:500px){}）
                 plugins.push(require("postcss-normalize-string")); // 统一写法（'\\'abc\\'' => "'abc'"）
@@ -2478,7 +2512,6 @@ console.time("load");
     // ------- d35p-normalize-component-css start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const File = require("@gotoeasy/file");
 
     bus.on(
         "编译插件",
@@ -2537,7 +2570,7 @@ console.time("load");
 
                     let actions = object.text ? object.text.value.trim() : "";
                     if (actions) {
-                        let rs = generateActions(actions, object.text.loc);
+                        let rs = generateActions(actions);
                         script.actions = rs.src;
                         script.$actionkeys = rs.names;
                     }
@@ -2548,7 +2581,7 @@ console.time("load");
         })()
     );
 
-    function generateActions(code, loc) {
+    function generateActions(code) {
         let env = bus.at("编译环境");
         let oCache = bus.at("缓存");
         let cacheKey = JSON.stringify(["generateActions", code]);
@@ -2559,15 +2592,15 @@ console.time("load");
 
         let rs;
         if (code.startsWith("{")) {
-            rs = generateObjActions(code, loc);
+            rs = generateObjActions(code);
         } else {
-            rs = generateFunActions(code, loc);
+            rs = generateFunActions(code);
         }
 
         return oCache.set(cacheKey, rs);
     }
 
-    function generateFunActions(code, loc) {
+    function generateFunActions(code) {
         let ast;
         try {
             ast = acorn.parse(code, { ecmaVersion: 10, sourceType: "module", locations: true });
@@ -2618,7 +2651,7 @@ console.time("load");
         return rs;
     }
 
-    function generateObjActions(code, loc) {
+    function generateObjActions(code) {
         let src = `this.$actions     = ${code}`;
         let ast;
 
@@ -2661,6 +2694,7 @@ console.time("load");
     // ------- d55p-normalize-component-methods start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
     const acorn = require("acorn");
     const astring = require("astring");
 
@@ -2675,7 +2709,7 @@ console.time("load");
 
                     let methods = object.text ? object.text.value.trim() : "";
                     if (methods) {
-                        let rs = generateMethods(methods, object.text.loc);
+                        let rs = generateMethods(methods);
                         script.methods = rs.src;
                         //                script.$methodkeys = rs.names;
                     }
@@ -2687,7 +2721,7 @@ console.time("load");
     );
 
     // 把对象形式汇总的方法转换成组件对象的一个个方法，同时都直接改成箭头函数（即使function也不确认this，让this指向组件对象）
-    function generateMethods(methods, loc) {
+    function generateMethods(methods) {
         let env = bus.at("编译环境");
         let oCache = bus.at("缓存");
         let cacheKey = JSON.stringify(["generateMethods", methods]);
@@ -2921,8 +2955,6 @@ console.time("load");
     bus.on(
         "是否表达式",
         (function() {
-            const OPTS = bus.at("视图编译选项");
-
             return function(val) {
                 if (!val) return false;
 
@@ -3032,7 +3064,6 @@ console.time("load");
 (() => {
     // ------- e12m-view-parse-to-tokens start
     const bus = require("@gotoeasy/bus");
-    const File = require("@gotoeasy/file");
     const Err = require("@gotoeasy/err");
 
     // 自闭合标签
@@ -3081,8 +3112,9 @@ console.time("load");
         // ------------ 接口方法 ------------
         // 解析
         this.parse = function() {
-            while (parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseHighlight() || parseText()) {}
-            //while ( parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseText() ) {}
+            while (parseNode() || parseComment() || parseCdata() || parseCodeBlock() || parseExpression() || parseHighlight() || parseText()) {
+                // 无内容
+            }
 
             tokens.forEach(token => {
                 token.loc = getLocation(fileText, token.pos.start, token.pos.end, PosOffset);
@@ -3146,7 +3178,7 @@ console.time("load");
             oPos = {};
             oPos.start = reader.getPos();
             reader.skip(1); // 跳过起始【<】
-            while (/[^\s\/>]/.test(reader.getCurrentChar())) {
+            while (/[^\s/>]/.test(reader.getCurrentChar())) {
                 tagNm += reader.readChar(); // 非空白都按名称处理
             }
 
@@ -3154,7 +3186,9 @@ console.time("load");
             tokens.push(tokenTagNm);
 
             // 全部属性
-            while (parseAttr()) {}
+            while (parseAttr()) {
+                // 无内容
+            }
 
             // 跳过空白
             reader.skipBlank();
@@ -3223,7 +3257,7 @@ console.time("load");
                 }
                 if (!key) return 0;
             } else {
-                while (/[^\s=\/>]/.test(reader.getCurrentChar())) {
+                while (/[^\s=/>]/.test(reader.getCurrentChar())) {
                     key += reader.readChar(); // 只要不是【空白、等号、斜杠、大于号】就算属性名
                 }
                 if (!key) return 0;
@@ -3254,7 +3288,6 @@ console.time("load");
                 if (reader.getCurrentChar() === '"') {
                     // 值由双引号包围
                     reader.skip(1); // 跳过左双引号
-                    let posStart = reader.getPos();
                     while (!reader.eof() && reader.getCurrentChar() !== '"') {
                         let ch = reader.readChar();
                         ch !== "\r" && ch !== "\n" && (val += ch); // 忽略回车换行，其他只要不是【"】就算属性值
@@ -3325,7 +3358,7 @@ console.time("load");
                     tokens.push(token);
                 } else {
                     // 值应该是单纯数值
-                    while (/[^\s\/>]/.test(reader.getCurrentChar())) {
+                    while (/[^\s/>]/.test(reader.getCurrentChar())) {
                         val += reader.readChar(); // 连续可见字符就放进去
                     }
 
@@ -3444,8 +3477,7 @@ console.time("load");
             let len = rs[0].length;
 
             // 【Token】 <```>
-            let token,
-                oPos = {};
+            let token;
             start = pos;
             end = pos + len;
             token = { type: options.TypeTagSelfClose, value: "```", pos: { start, end } }; // Token: 代码标签
@@ -3466,7 +3498,7 @@ console.time("load");
             }
 
             // 【Token】 height
-            match = rs[1].match(/\b\d+(\%|px)/i); // 带单位（%或px）的高度
+            match = rs[1].match(/\b\d+(%|px)/i); // 带单位（%或px）的高度
             let height;
             if (match) {
                 height = match[0];
@@ -3718,7 +3750,7 @@ console.time("load");
                 });
 
                 // 多个属性节点合并为一个标签属性节点
-                root.walk("Attribute", (node, object) => {
+                root.walk("Attribute", node => {
                     if (!node.parent) return; // 跳过已删除节点
 
                     let ary = [node];
@@ -3752,7 +3784,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 自关闭标签统一转换为Tag类型节点
-            return postobject.plugin("f25p-astedit-normolize-tag-of-self-close", function(root, context) {
+            return postobject.plugin("f25p-astedit-normolize-tag-of-self-close", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeTagSelfClose, (node, object) => {
@@ -3861,8 +3893,9 @@ console.time("load");
 
     bus.on(
         "SVG图标文件解析",
-        (function(result = {}) {
+        (function() {
             return function(file, attrs, loc) {
+                // TODO 缓存
                 let plugins = bus.on("SVG图标文件解析插件");
                 let rs = postobject(plugins).process({ file, attrs, loc });
 
@@ -3958,9 +3991,9 @@ console.time("load");
     bus.on(
         "SVG图标文件解析插件",
         (function() {
-            return postobject.plugin("svgicon-plugin-03", function(root, context) {
+            return postobject.plugin("svgicon-plugin-03", function(root) {
                 // 多个属性节点合并为一个标签属性节点
-                root.walk("Attribute", (node, object) => {
+                root.walk("Attribute", node => {
                     if (!node.parent) return;
 
                     let ary = [node];
@@ -4079,7 +4112,7 @@ console.time("load");
         "SVG图标文件解析插件",
         (function() {
             // 仅保留顶部svg标签
-            return postobject.plugin("svgicon-plugin-11", function(root, context) {
+            return postobject.plugin("svgicon-plugin-11", function(root) {
                 root.walk((node, object) => {
                     if (node.parent === root && (node.type !== "Tag" || !/^svg$/i.test(object.value))) {
                         node.remove(); // 在顶部的，非<svg>标签全删除 （注释、文本等）
@@ -4093,8 +4126,8 @@ console.time("load");
         "SVG图标文件解析插件",
         (function() {
             // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了，设定的单位不是px也不管了）
-            return postobject.plugin("svgicon-plugin-12", function(root, context) {
-                root.walk("Attributes", (node, object) => {
+            return postobject.plugin("svgicon-plugin-12", function(root) {
+                root.walk("Attributes", node => {
                     if (!node.parent || node.parent.parent !== root) return;
 
                     // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了）
@@ -4122,7 +4155,7 @@ console.time("load");
             // 删除svg标签中一些要忽略的属性，同时用svgicon标签中的自定义属性覆盖(viewBox不覆盖)，达到像直接写svg属性一样的效果
             return postobject.plugin("svgicon-plugin-13", function(root, context) {
                 let svgAttrs = (context.svgAttrs = {}); // 保存svg属性
-                root.walk("Attributes", (node, object) => {
+                root.walk("Attributes", node => {
                     if (!node.parent || node.parent.parent !== root) return;
 
                     // 过滤svg属性保存后删除
@@ -4150,7 +4183,7 @@ console.time("load");
                 }
 
                 // 新属性插入节点树
-                root.walk("Attributes", (node, object) => {
+                root.walk("Attributes", node => {
                     if (!node.parent || node.parent.parent !== root) return;
 
                     for (let name in oAttrs) {
@@ -4241,73 +4274,15 @@ console.time("load");
                     !/\.svg$/i.test(propSrc) && (propSrc += ".svg");
 
                     let svgfile,
-                        pkg,
-                        filter,
                         ary = propSrc.split(":");
                     if (ary.length > 2) {
-                        throw new Err("invalid format of src attribute, etc. name:svgfilefilter", errLocInfo); // 格式有误，多个冒号
+                        throw new Err("invalid format of src attribute, etc. name:filefilter", errLocInfo); // 格式有误，多个冒号
                     } else if (ary.length > 1) {
-                        // 简单排除window环境下书写绝对路径的情况
-                        if (File.existsFile(propSrc)) {
-                            throw new Err("unsupport absolute file path", errLocInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
-                        }
-
-                        // 指定NPM包中文件的形式，npm包视为稳定，支持使用通配符提高灵活性
-                        pkg = ary[0].trim();
-                        filter = ary[1].trim();
-                        if (!pkg) {
-                            throw new Err("missing npm package name, etc. name:svgfilefilter", errLocInfo); // 输入有误，漏包名
-                        }
-                        if (!filter) {
-                            throw new Err("missing svf icon file filter, etc. name:svgfilefilter", errLocInfo); // 输入有误，漏文件名
-                        }
-
-                        let ok = bus.at("自动安装", pkg);
-                        if (!ok) {
-                            throw new Err("npm package install failed: " + pkg, errLocInfo); // 指定包安装失败
-                        }
-
-                        let oPkg = bus.at("模块组件信息", pkg);
-                        if (filter.indexOf("*") < 0) {
-                            filter.startsWith("/") ? (filter = "**" + filter) : (filter = "**/" + filter); // 没有通配符时默认添加任意目录的通配符
-                        }
-                        let files = File.files(oPkg.path, filter);
-
-                        if (!files.length) {
-                            throw new Err("svf icon file not found in package: " + pkg, errLocInfo); // npm包安装目录内找不到指定的图标文件
-                        }
-                        if (files.length > 1) {
-                            throw new Err("multi svf icon file found in package: " + pkg + "\n" + files.join("\n"), errLocInfo); // npm包安装目录内找到多个图标文件 （通配符匹配到多个导致，应修改）
-                        }
-                        svgfile = files[0]; // 正常找到唯一的一个文件
+                        svgfile = findSvgByPkgFilter(ary, propSrc, errLocInfo); // 从npm包中查找
                     } else {
-                        // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
-                        filter = propSrc.trim();
+                        svgfile = findSvgInProject(propSrc, errLocInfo, context); // 从项目中查找
 
-                        let env = bus.at("编译环境");
-                        let hasFile;
-                        svgfile = File.resolve(context.input.file, filter); // 相对于源文件所在目录，按相对路径查找svg文件
-                        if (File.existsFile(svgfile)) {
-                            // 优先按源文件相对目录查找
-                            if (!svgfile.startsWith(env.path.root + "/")) {
-                                throw new Err("file should not out of project (" + svgfile + ")", errLocInfo); // 不支持引用项目外文件，避免版本混乱
-                            }
-                            hasFile = true;
-                        } else {
-                            // 其次在项目配置指定目录中查找
-                            if (!/^[\.\/\\]+/.test(filter)) {
-                                svgfile = env.path.svgicons + "/" + filter.replace(/\\/g, "/");
-                                if (File.existsFile(svgfile)) {
-                                    hasFile = true;
-                                }
-                            }
-                        }
-
-                        if (!hasFile) throw new Err("svf icon file not found", errLocInfo); // 项目范围内找不到指定的图标文件
-
-                        if (svgfile === filter) throw new Err("unsupport absolute file path", errLocInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
-
-                        let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []);
+                        let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
                         !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
                     }
 
@@ -4331,6 +4306,89 @@ console.time("load");
         })()
     );
 
+    function findSvgByPkgFilter(ary, propSrc, errLocInfo) {
+        // 简单排除window环境下书写绝对路径的情况
+        if (File.existsFile(propSrc)) {
+            throw new Err("unsupport absolute file path", errLocInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
+        }
+
+        // 指定NPM包中文件的形式，npm包视为稳定，支持使用通配符提高灵活性
+        let pkg = ary[0].trim();
+        let filter = ary[1].trim();
+        if (!pkg) {
+            throw new Err("missing npm package name, etc. name:svgfilefilter", errLocInfo); // 输入有误，漏包名
+        }
+        if (!filter) {
+            throw new Err("missing svf icon file filter, etc. name:svgfilefilter", errLocInfo); // 输入有误，漏文件名
+        }
+
+        let ok = bus.at("自动安装", pkg);
+        if (!ok) {
+            throw new Err("npm package install failed: " + pkg, errLocInfo); // 指定包安装失败
+        }
+
+        // 检查缓存
+        let env = bus.at("编译环境");
+        let oCache = bus.at("缓存");
+        let cacheKey = JSON.stringify(["search-svgicon-by-pkg-filter", env.path.root, pkg, filter]);
+        if (!env.nocache) {
+            let cacheValue = oCache.get(cacheKey);
+            if (cacheValue) return cacheValue;
+        }
+
+        let oPkg = bus.at("模块组件信息", pkg);
+        let files = File.files(oPkg.path, filter);
+        if (!files.length && !filter.startsWith("**/")) {
+            // 默认找不到时，任意上级目录下下再找一遍
+            filter = ("**/" + filter).replace(/\/\//g, "/");
+            files = File.files(oPkg.path, filter);
+
+            // 找到唯一一个就算对，否则按没找到处理
+            if (files.length != 1) {
+                throw new Err("svf icon file not found in package: " + pkg, errLocInfo); // npm包安装目录内找不到指定的图标文件
+            }
+        }
+
+        if (!files.length) {
+            throw new Err("svf icon file not found in package: " + pkg, errLocInfo); // npm包安装目录内找不到指定的图标文件
+        }
+        if (files.length > 1) {
+            throw new Err("multi svf icon file found in package: " + pkg + "\n" + files.join("\n"), errLocInfo); // npm包安装目录内找到多个图标文件 （通配符匹配到多个导致，应修改）
+        }
+
+        return oCache.set(cacheKey, files[0]); // 正常找到唯一的一个文件
+    }
+
+    function findSvgInProject(propSrc, errLocInfo, context) {
+        // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
+        let filter = propSrc.trim();
+
+        let oPjt = bus.at("项目配置处理", context.input.file);
+        let svgfile = File.resolve(context.input.file, filter); // 相对于源文件所在目录，按相对路径查找svg文件
+        if (File.existsFile(svgfile)) {
+            // 优先按源文件相对目录查找，如果找到的svg不在该文件所在项目范围，报错
+            if (!svgfile.startsWith(oPjt.path.root + "/")) {
+                throw new Err("file should not out of project\nsrc: " + context.input.file + "\nsvg: " + svgfile, errLocInfo); // 不支持引用项目外文件，避免版本混乱
+            }
+        } else {
+            // 其次在文件所在的项目配置指定目录中查找
+            if (!/^[./\\]+/.test(filter)) {
+                svgfile = oPjt.path.svgicons + "/" + filter.replace(/\\/g, "/");
+                if (!File.existsFile(svgfile)) {
+                    throw new Err("svf icon file not found", errLocInfo); // 项目范围内找不到指定的图标文件
+                }
+            } else {
+                throw new Err("svf icon file not found", errLocInfo); // 项目范围内找不到指定的图标文件
+            }
+        }
+
+        if (svgfile === filter) {
+            throw new Err("unsupport absolute file path", errLocInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
+        }
+
+        return svgfile;
+    }
+
     // ------- f37p-astedit-transform-tag-svgicon-to-svg end
 })();
 
@@ -4338,7 +4396,6 @@ console.time("load");
 (() => {
     // ------- f40m-highlight-file-parser-btf start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
 
     bus.on(
         "BTF内容解析",
@@ -4544,13 +4601,12 @@ console.time("load");
     // ------- f45p-astedit-transform-tag-``` start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
         (function() {
             // 给```节点添加@taglib指令
-            return postobject.plugin("f45p-astedit-transform-tag-```", function(root, context) {
+            return postobject.plugin("f45p-astedit-transform-tag-```", function(root) {
                 root.walk("Tag", (node, object) => {
                     if (object.value !== "```") return;
 
@@ -4603,7 +4659,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 判断是否为SVG标签或SVG子标签，并加上标记
-            return postobject.plugin("f55p-astedit-normolize-flag-is-svg-tag", function(root, context) {
+            return postobject.plugin("f55p-astedit-normolize-flag-is-svg-tag", function(root) {
                 root.walk(
                     "Tag",
                     (node, object) => {
@@ -4642,7 +4698,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 判断是否为标准标签，并加上标记
-            return postobject.plugin("f65p-astedit-normolize-flag-is-standard-tag", function(root, context) {
+            return postobject.plugin("f65p-astedit-normolize-flag-is-standard-tag", function(root) {
                 root.walk(
                     "Tag",
                     (node, object) => {
@@ -4669,8 +4725,8 @@ console.time("load");
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 无属性值的对象表达式统一分组，如< div {prop1} {prop2} >
             // 标签节点下新建ObjectExpressionAttributes节点存放
-            return postobject.plugin("g15p-astedit-group-attribtue-{prop}", function(root, context) {
-                root.walk("Tag", (node, object) => {
+            return postobject.plugin("g15p-astedit-group-attribtue-{prop}", function(root) {
+                root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
                     // 查找Attributes
@@ -4724,8 +4780,8 @@ console.time("load");
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 标准标签的事件统一分组
             // 标签节点下新建Events节点存放
-            return postobject.plugin("g25p-astedit-group-attribtue-events", function(root, context) {
-                root.walk("Tag", (node, object) => {
+            return postobject.plugin("g25p-astedit-group-attribtue-events", function(root) {
+                root.walk("Tag", node => {
                     if (!node.object.standard) return; // 非标准标签，跳过
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -4778,7 +4834,7 @@ console.time("load");
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 style 属性
             return postobject.plugin("g35p-astedit-process-attribtue-style", function(root, context) {
-                root.walk("Tag", (node, object) => {
+                root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
                     // 查找Attributes
@@ -4828,9 +4884,7 @@ console.time("load");
 (() => {
     // ------- g40m-@class-gen-css start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
     const hash = require("@gotoeasy/hash");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "创建@class样式",
@@ -4909,7 +4963,6 @@ console.time("load");
     // ------- g43p-astedit-process-attribtue-@class start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const hash = require("@gotoeasy/hash");
     const Err = require("@gotoeasy/err");
 
     bus.on(
@@ -4926,7 +4979,7 @@ console.time("load");
                 let style = context.style;
                 let atclasscss = (style.atclasscss = style.atclasscss || []);
 
-                root.walk("Tag", (node, object) => {
+                root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
                     // 查找Attributes
@@ -5012,7 +5065,7 @@ console.time("load");
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 class 属性
             return postobject.plugin("g45p-astedit-process-attribtue-class", function(root, context) {
-                root.walk("Tag", (node, object) => {
+                root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
                     // 查找Attributes
@@ -5177,7 +5230,7 @@ console.time("load");
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @if 属性
             return postobject.plugin("h25p-astedit-process-attribtue-@if", function(root, context) {
-                root.walk("Tag", (node, object) => {
+                root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
                     // 查找Attributes
@@ -5303,7 +5356,7 @@ console.time("load");
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @for 属性
             return postobject.plugin("h45p-astedit-process-attribtue-@for", function(root, context) {
-                root.walk("Tag", (node, object) => {
+                root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
                     // 查找Attributes
@@ -5668,13 +5721,12 @@ console.time("load");
     // ------- k25p-astedit-transform-attribtue-@if start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
         (function() {
             // 转换处理指令节点 @ref
-            return postobject.plugin("k25p-astedit-transform-attribtue-@if", function(root, context) {
+            return postobject.plugin("k25p-astedit-transform-attribtue-@if", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk("@if", (node, object) => {
@@ -5704,14 +5756,13 @@ console.time("load");
     // ------- k35p-astedit-transform-attribtue-@show start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
         (function() {
             // 转换处理指令节点 @show
             // 转换为 style中的 display 属性
-            return postobject.plugin("k35p-astedit-transform-attribtue-@show", function(root, context) {
+            return postobject.plugin("k35p-astedit-transform-attribtue-@show", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk("@show", (node, object) => {
@@ -5978,8 +6029,7 @@ console.time("load");
                         });
                     }
 
-                    let name,
-                        pkg,
+                    let pkg,
                         comp,
                         match,
                         taglib = object.value;
@@ -6067,7 +6117,6 @@ console.time("load");
                 function(root, context) {
                     let oTaglib = Object.assign({}, context.result.oTaglib); // 复制(项目[taglib]+组件[taglib])
 
-                    let ary, clsname, csslib, css;
                     root.walk("Tag", (node, object) => {
                         if (object.standard) return;
 
@@ -6293,7 +6342,6 @@ console.time("load");
 
                         let type = options.TypeCodeBlock;
                         let value = `${AryNm}.push( ...${SlotVnodes}_${hash(nd.slotName)} );`; // _Ary.push(...(slotVnodes_xxxxx || []));
-                        let loc = nd.object.loc;
                         nd.replaceWith(this.createNode({ type, value }));
                     });
 
@@ -6326,7 +6374,7 @@ console.time("load");
                         );
                     }
 
-                    root.walk("View", (nd, obj) => {
+                    root.walk("View", nd => {
                         let type = options.TypeCodeBlock;
                         let value = arySrc.join("\n");
                         nd.addChild(this.createNode({ type, value }), 0); // 根节点前插入代码块节点
@@ -6441,16 +6489,12 @@ console.time("load");
         (function() {
             // 含@csslib的标签，按需查询引用样式库
             return postobject.plugin("m17p-csslibify-gen-css-@csslib", function(root, context) {
-                let style = context.style;
                 let oCsslibPkgs = context.result.oCsslibPkgs; // 样式库匿名集合
                 let hashClassName = bus.on("哈希样式类名")[0];
                 let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? cls + "@" + pkg : cls); // 自定义改名函数
                 let strict = true; // 样式库严格匹配模式
-                let universal = false; // 不查取通用样式
-                let opts = { rename, strict, universal };
                 let atcsslibtagcss = (context.result.atcsslibtagcss = context.result.atcsslibtagcss || []); // @csslib的标准标签样式
 
-                let ary, clsname;
                 root.walk("Class", (node, object) => {
                     // 查找@csslib属性节点，@csslib仅作用于当前所在标签，汇总当前标签和样式类，用当前样式库按严格匹配模式一次性取出
                     let csslibNode,
@@ -6466,14 +6510,14 @@ console.time("load");
                         atcsslib = bus.at("样式库", csslibNode.object.value);
                         oCsslibPkgs[atcsslib.name] = atcsslib.pkg; // 保存样式库匿名关系，用于脚本类名转换
                         node.parent.object.standard && querys.push(node.parent.object.value); // 标准标签名
-                        for (let i = 0, clspkg, clsname, asname; (clspkg = object.classes[i++]); ) {
+                        for (let i = 0, ary, clspkg, clsname, asname; (clspkg = object.classes[i++]); ) {
                             ary = clspkg.split("@");
                             clsname = "." + ary[0]; // 类名
                             asname = ary.length > 1 ? ary[1] : "*"; // 库别名
                             if (atcsslib.pkg === asname) {
                                 querys.push(clsname); // 匹配当前样式库待查的样式类
 
-                                if (!csslib.has(clsname)) {
+                                if (!atcsslib.has(clsname)) {
                                     // 按宽松模式检查样式库是否有指定样式类，没有则报错
                                     throw new Err("css class not found: " + clsname, {
                                         file: context.input.file,
@@ -6504,7 +6548,7 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n15p-astedit-remove-blank-text", function(root, context) {
+            return postobject.plugin("n15p-astedit-remove-blank-text", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeText, (node, object) => {
@@ -6540,10 +6584,10 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n25p-astedit-remove-html-comment", function(root, context) {
+            return postobject.plugin("n25p-astedit-remove-html-comment", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
-                root.walk(OPTS.TypeHtmlComment, (node, object) => {
+                root.walk(OPTS.TypeHtmlComment, node => {
                     node.remove(); // 删除注释节点
                 });
             });
@@ -6562,11 +6606,11 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n35p-astedit-join-text-node", function(root, context) {
+            return postobject.plugin("n35p-astedit-join-text-node", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 // TODO 用选项常量
-                root.walk(/^(Text|Expression)$/, (node, object) => {
+                root.walk(/^(Text|Expression)$/, node => {
                     // 合并连续的文本节点
                     let ary = [node];
                     let nAfter = node.after();
@@ -6577,8 +6621,7 @@ console.time("load");
 
                     if (ary.length < 2) return;
 
-                    let aryRs = [],
-                        tmp;
+                    let aryRs = [];
                     ary.forEach(nd => {
                         if (nd.type === OPTS.TypeText) {
                             aryRs.push('"' + lineString(nd.object.value) + '"');
@@ -6651,7 +6694,7 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n45p-astedit-remove-jscode-blank-comment", function(root, context) {
+            return postobject.plugin("n45p-astedit-remove-jscode-blank-comment", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeCodeBlock, (node, object) => {
@@ -6727,7 +6770,7 @@ console.time("load");
                 let str = txt
                     .replace(/\r/g, "\\r")
                     .replace(/\n/g, "\\n")
-                    .replace(/\'/g, "\\'");
+                    .replace(/'/g, "\\'");
                 return isPreCode ? "s+='" + str + "'" : ary.pop() + "+'" + str + "'";
             };
 
@@ -6951,7 +6994,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- p17p-components-reference-standard-tags start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
@@ -7135,7 +7177,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- p24m-component-astgen-node-style start
     const bus = require("@gotoeasy/bus");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "astgen-node-style",
@@ -7143,7 +7184,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             // 标签样式属性生成json属性值形式代码
             // "size:12px;color:{color};height:100;" => ("size:12px;color:" + (color) + ";height:100;")
             // @show在前面已转换为display一起合并进style
-            return function(tagNode, context) {
+            return function(tagNode) {
                 if (!tagNode.nodes) return "";
 
                 // 查找检查事件属性节点
@@ -7222,7 +7263,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- p26m-component-astgen-node-class start
     const bus = require("@gotoeasy/bus");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "astgen-node-class",
@@ -7304,7 +7344,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- p28m-component-astgen-node-{prop} start
     const bus = require("@gotoeasy/bus");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "astgen-node-{prop}",
@@ -7312,7 +7351,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             // 标签对象表达式属性生成对象复制语句代码片段
             // 如 {prop1} {prop2}，最终rpose.assign( {attrs属性对象}, prop1, prop2)
             // 生成： (prop1), (prop2)
-            return function(tagNode, context) {
+            return function(tagNode) {
                 if (!tagNode.nodes) return "";
 
                 // 查找检查事件属性节点
@@ -7345,7 +7384,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- p30m-component-astgen-node-tag start
     const bus = require("@gotoeasy/bus");
-    const hash = require("@gotoeasy/hash");
 
     bus.on(
         "astgen-node-tag",
@@ -7408,7 +7446,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     }
 
     // TODO
-    function isStaticTagNode(node) {
+    function isStaticTagNode(/* node */) {
         return false;
     }
 
@@ -7497,7 +7535,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     const postobject = require("@gotoeasy/postobject");
     const File = require("@gotoeasy/file");
     const csjs = require("@gotoeasy/csjs");
-    const Err = require("@gotoeasy/err");
 
     class JsWriter {
         constructor() {
@@ -7549,8 +7586,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- s25p-component-ast-jsify-root start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const File = require("@gotoeasy/file");
-    const csjs = require("@gotoeasy/csjs");
     const Err = require("@gotoeasy/err");
 
     const AryNm = "v_Array";
@@ -7562,7 +7597,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let writer = context.writer;
                 let script = context.script;
 
-                root.walk("View", (node, object) => {
+                root.walk("View", node => {
                     if (!node.nodes || node.nodes.length < 1) {
                         return writer.write("// 没有节点，无可生成");
                     }
@@ -7577,9 +7612,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                     // 视图的模板函数源码
                     script.vnodeTemplate = writer.toString();
-
-                    //   console.info('------------gen js-------------')
-                    //   console.info(writer.toString())
 
                     return false;
                 });
@@ -7655,9 +7687,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- s35p-component-script-selector-rename start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const csjs = require("@gotoeasy/csjs");
-    const File = require("@gotoeasy/file");
-    const hash = require("@gotoeasy/hash");
+    const Err = require("@gotoeasy/err");
     const acorn = require("acorn");
     const walk = require("acorn-walk");
     const astring = require("astring");
@@ -7680,7 +7710,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             // ---------------------------------------------------------------
             return postobject.plugin("s35p-component-script-selector-rename", function(root, context) {
                 let style = context.style;
-                let oCssSet = (style.csslibset = style.csslibset || new Set());
+                style.csslibset = style.csslibset || new Set();
                 let oCsslib = context.result.oCsslib;
                 let oCsslibPkgs = context.result.oCsslibPkgs;
                 let script = context.script;
@@ -7704,7 +7734,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                         if (asname !== "*") {
                             // 别名样式类，按需引用别名库
-                            csslib = oCsslib[asname];
+                            let csslib = oCsslib[asname];
                             if (!csslib) {
                                 // 指定别名的样式库不存在
                                 throw new Error("csslib not found: " + asname + "\nfile: " + context.input.file); // TODO 友好定位提示
@@ -7853,7 +7883,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let env = bus.at("编译环境");
                 let result = context.result;
                 let script = context.script;
-                let writer = context.writer;
 
                 // 模板函数
                 let fnTmpl = bus.at("编译模板JS");
@@ -7934,9 +7963,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 /* ------- s50m-component-css-classname-rename ------- */
 (() => {
     // ------- s50m-component-css-classname-rename start
-    const Err = require("@gotoeasy/err");
     const bus = require("@gotoeasy/bus");
-    const hash = require("@gotoeasy/hash");
     const postcss = require("postcss");
     const tokenizer = require("css-selector-tokenizer");
 
@@ -7944,7 +7971,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         "组件样式类名哈希化",
         (function() {
             return function(srcFile, css) {
-                let fnPostcssPlugin = (root, result) => {
+                let fnPostcssPlugin = root => {
                     root.walkRules(rule => {
                         let ast = tokenizer.parse(rule.selector);
                         let nodes = ast.nodes || [];
@@ -7998,7 +8025,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let opts = { rename, strict, universal };
 
                 let ary,
-                    clsname,
                     oQuerys = {};
                 root.walk("Class", (node, object) => {
                     // 按样式库单位汇总组件内全部样式类
@@ -8028,12 +8054,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                     // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]）中是否存在
                     if (asname !== "*" && !oCsslib[asname]) {
-                        throw new Err("csslib not found: " + asname, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("csslib not found (check classname in script): " + asname + "\nfile:" + context.input.file);
                     }
                 }
 
@@ -8056,8 +8077,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const File = require("@gotoeasy/file");
-    const csjs = require("@gotoeasy/csjs");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
@@ -8093,10 +8112,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- w15p-component-complie-result-cache start
     const bus = require("@gotoeasy/bus");
-    const csjs = require("@gotoeasy/csjs");
-    const File = require("@gotoeasy/file");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
@@ -8114,6 +8130,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- y15p-page-all-reference-components start
     const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
@@ -8156,9 +8173,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         oStatus[tagpkg] = true;
 
         let srcFile = bus.at("标签源文件", tagpkg);
-        //    if ( !srcFile ) {
-        //        throw new Error('file not found of tag: ' + tagpkg);
-        //    }
         let context = bus.at("组件编译缓存", srcFile);
         if (!context) {
             context = bus.at("编译组件", srcFile);
@@ -8218,7 +8232,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- y20m-page-gen-css-end-process start
     const bus = require("@gotoeasy/bus");
     const csjs = require("@gotoeasy/csjs");
-    const hash = require("@gotoeasy/hash");
     const Err = require("@gotoeasy/err");
     const postcss = require("postcss");
     const csso = require("csso");
@@ -8367,10 +8380,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- y35p-page-gen-html start
     const bus = require("@gotoeasy/bus");
-    const csjs = require("@gotoeasy/csjs");
     const File = require("@gotoeasy/file");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
 
     bus.on(
         "编译插件",
@@ -8443,7 +8454,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     // 替换图片相对路径，图片不存在则复制
                     let resourcePath = oCache.path + "/resources";
                     let imgPath = bus.at("页面图片相对路径", context.input.file);
-                    srcComponents = srcComponents.replace(/\%imagepath\%([0-9a-zA-Z]+\.[0-9a-zA-Z]+)/g, function(match, filename) {
+                    srcComponents = srcComponents.replace(/%imagepath%([0-9a-zA-Z]+\.[0-9a-zA-Z]+)/g, function(match, filename) {
                         let from = resourcePath + "/" + filename;
                         let to = env.path.build_dist + "/" + (env.path.build_dist_images ? env.path.build_dist_images + "/" : "") + filename;
                         File.existsFile(from) && !File.existsFile(to) && File.mkdir(to) > fs.copyFileSync(from, to);
@@ -8489,7 +8500,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
             return `rpose.registerComponents(${JSON.stringify(obj).replace(/"/g, "")});`;
         } catch (e) {
-            throw Err.cat(MODULE + "gen register stmt failed", allreferences, e);
+            throw Err.cat("gen register stmt failed", allreferences, e);
         }
     }
 
@@ -8506,7 +8517,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             }
             return ary.join("\n");
         } catch (e) {
-            throw Err.cat(MODULE + "get component src failed", allreferences, e);
+            throw Err.cat("get component src failed", allreferences, e);
         }
     }
 
@@ -8570,7 +8581,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 }
 
                 context.result.browserifyJs = new Promise((resolve, reject) => {
-                    let stime = new Date().getTime();
                     csjs.browserify(context.result.babelJs, null)
                         .then(js => {
                             js = env.release ? csjs.miniJs(js) : csjs.formatJs(js);
@@ -8594,12 +8604,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 (() => {
     // ------- y85p-write-page start
     const bus = require("@gotoeasy/bus");
-    const csjs = require("@gotoeasy/csjs");
     const hash = require("@gotoeasy/hash");
     const File = require("@gotoeasy/file");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
-    const fs = require("fs");
 
     bus.on(
         "编译插件",
@@ -8607,7 +8614,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             return postobject.plugin("y85p-write-page", function(root, context) {
                 if (!context.result.isPage) return false; // 仅针对页面
                 let env = bus.at("编译环境");
-                let browserslist = bus.at("browserslist");
 
                 let stime = new Date().getTime(),
                     time;
@@ -8728,14 +8734,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- z20m-rename-css-classname end
 })();
 
-/* ------- z30m-util ------- */
+/* ------- z30m-util-get-tagpkg-fullname-of-src-file ------- */
 (() => {
-    // ------- z30m-util start
+    // ------- z30m-util-get-tagpkg-fullname-of-src-file start
     const File = require("@gotoeasy/file");
     const bus = require("@gotoeasy/bus");
-    const npm = require("@gotoeasy/npm");
-    const hash = require("@gotoeasy/hash");
-    const findNodeModules = require("find-node-modules");
 
     bus.on(
         "标签全名",
@@ -8763,6 +8766,14 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             };
         })()
     );
+
+    // ------- z30m-util-get-tagpkg-fullname-of-src-file end
+})();
+
+/* ------- z32m-util-get-src-file-of-tag ------- */
+(() => {
+    // ------- z32m-util-get-src-file-of-tag start
+    const bus = require("@gotoeasy/bus");
 
     bus.on(
         "标签源文件",
@@ -8805,27 +8816,39 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    // 当前项目文件时，返回'/'
+    // ------- z32m-util-get-src-file-of-tag end
+})();
+
+/* ------- z34m-util-get-class-name-of-src-file ------- */
+(() => {
+    // ------- z34m-util-get-class-name-of-src-file start
+    const bus = require("@gotoeasy/bus");
+
     bus.on(
-        "文件所在模块",
+        "组件类名",
         (function() {
             return file => {
-                let pkg = "/",
-                    idx = file.lastIndexOf("/node_modules/");
-                if (idx > 0) {
-                    let rs = [];
-                    let ary = file.substring(idx + 14).split("/");
-                    if (ary[0].startsWith("@")) {
-                        pkg = ary[0] + "/" + ary[1]; // xxx/node_modules/@aaa/bbb/xxxxxx => @aaa/bbb
-                    } else {
-                        pkg = ary[0]; // xxx/node_modules/aaa/bbb/xxxxxx => aaa
-                    }
-                }
-
-                return pkg;
+                let tagpkg = bus.at("标签全名", bus.at("标签源文件", file)); // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
+                tagpkg = tagpkg
+                    .replace(/[@/`]/g, "$")
+                    .replace(/\./g, "_")
+                    .replace(":", "$-"); // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc
+                tagpkg = ("-" + tagpkg)
+                    .split("-")
+                    .map(s => s.substring(0, 1).toUpperCase() + s.substring(1))
+                    .join(""); // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
+                return tagpkg;
             };
         })()
     );
+
+    // ------- z34m-util-get-class-name-of-src-file end
+})();
+
+/* ------- z36m-util-get-project-root-path-of-file ------- */
+(() => {
+    // ------- z36m-util-get-project-root-path-of-file start
+    const bus = require("@gotoeasy/bus");
 
     bus.on(
         "文件所在项目根目录",
@@ -8855,6 +8878,14 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
+    // ------- z36m-util-get-project-root-path-of-file end
+})();
+
+/* ------- z38m-util-get-project-config-file-by-file ------- */
+(() => {
+    // ------- z38m-util-get-project-config-file-by-file start
+    const bus = require("@gotoeasy/bus");
+
     bus.on(
         "文件所在项目配置文件",
         (function() {
@@ -8879,13 +8910,49 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     btfFile = env.path.root + "/rpose.config.btf";
                 }
 
-                if (File.existsFile(btfFile)) {
-                    return btfFile;
-                }
-                // 不存在时返回undefined
+                // 只管返回配置文件路径，不管该文件是否存在
+                return btfFile;
             };
         })()
     );
+
+    // ------- z38m-util-get-project-config-file-by-file end
+})();
+
+/* ------- z40m-util-auto-install-npm-package ------- */
+(() => {
+    // ------- z40m-util-auto-install-npm-package start
+    const bus = require("@gotoeasy/bus");
+    const npm = require("@gotoeasy/npm");
+
+    bus.on(
+        "自动安装",
+        (function(rs = {}) {
+            return function autoinstall(pkg) {
+                pkg.indexOf(":") > 0 && (pkg = pkg.substring(0, pkg.indexOf(":"))); // @scope/pkg:component => @scope/pkg
+                pkg.lastIndexOf("@") > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf("@"))); // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
+
+                if (!rs[pkg]) {
+                    if (!npm.isInstalled(pkg)) {
+                        rs[pkg] = npm.install(pkg, { timeout: 60000 }); // 安装超时1分钟则异常
+                    } else {
+                        rs[pkg] = true;
+                    }
+                }
+                return rs[pkg];
+            };
+        })()
+    );
+
+    // ------- z40m-util-auto-install-npm-package end
+})();
+
+/* ------- z42m-util-get-package-info-by-name ------- */
+(() => {
+    // ------- z42m-util-get-package-info-by-name start
+    const File = require("@gotoeasy/file");
+    const bus = require("@gotoeasy/bus");
+    const findNodeModules = require("find-node-modules");
 
     bus.on(
         "模块组件信息",
@@ -8921,23 +8988,97 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
+    // ------- z42m-util-get-package-info-by-name end
+})();
+
+/* ------- z44m-util-get-package-name-of-file ------- */
+(() => {
+    // ------- z44m-util-get-package-name-of-file start
+    const bus = require("@gotoeasy/bus");
+
+    // 当前项目文件时，返回'/'
     bus.on(
-        "组件类名",
+        "文件所在模块",
         (function() {
             return file => {
-                let tagpkg = bus.at("标签全名", bus.at("标签源文件", file)); // xxx/node_modules/@aaa/bbb/ui-abc.rpose => @aaa/bbb:ui-abc
-                tagpkg = tagpkg
-                    .replace(/[@\/`]/g, "$")
-                    .replace(/\./g, "_")
-                    .replace(":", "$-"); // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc
-                tagpkg = ("-" + tagpkg)
-                    .split("-")
-                    .map(s => s.substring(0, 1).toUpperCase() + s.substring(1))
-                    .join(""); // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
-                return tagpkg;
+                let pkg = "/",
+                    idx = file.lastIndexOf("/node_modules/");
+                if (idx > 0) {
+                    let ary = file.substring(idx + 14).split("/");
+                    if (ary[0].startsWith("@")) {
+                        pkg = ary[0] + "/" + ary[1]; // xxx/node_modules/@aaa/bbb/xxxxxx => @aaa/bbb
+                    } else {
+                        pkg = ary[0]; // xxx/node_modules/aaa/bbb/xxxxxx => aaa
+                    }
+                }
+
+                return pkg;
             };
         })()
     );
+
+    // ------- z44m-util-get-package-name-of-file end
+})();
+
+/* ------- z50m-util-get-build-page-css-file-name-of-src-file ------- */
+(() => {
+    // ------- z50m-util-get-build-page-css-file-name-of-src-file start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "页面目标CSS文件名",
+        (function() {
+            return function(srcFile) {
+                let env = bus.at("编译环境");
+                return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".css";
+            };
+        })()
+    );
+
+    // ------- z50m-util-get-build-page-css-file-name-of-src-file end
+})();
+
+/* ------- z52m-util-get-build-page-html-file-name-of-src-file ------- */
+(() => {
+    // ------- z52m-util-get-build-page-html-file-name-of-src-file start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "页面目标HTML文件名",
+        (function() {
+            return function(srcFile) {
+                let env = bus.at("编译环境");
+                return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".html";
+            };
+        })()
+    );
+
+    // ------- z52m-util-get-build-page-html-file-name-of-src-file end
+})();
+
+/* ------- z54m-util-get-build-page-js-file-name-of-src-file ------- */
+(() => {
+    // ------- z54m-util-get-build-page-js-file-name-of-src-file start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "页面目标JS文件名",
+        (function() {
+            return function(srcFile) {
+                let env = bus.at("编译环境");
+                return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".js";
+            };
+        })()
+    );
+
+    // ------- z54m-util-get-build-page-js-file-name-of-src-file end
+})();
+
+/* ------- z56m-util-get-build-tmp-file-name-of-src-file ------- */
+(() => {
+    // ------- z56m-util-get-build-tmp-file-name-of-src-file start
+    const File = require("@gotoeasy/file");
+    const bus = require("@gotoeasy/bus");
 
     bus.on(
         "组件目标文件名",
@@ -8954,54 +9095,13 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    bus.on(
-        "页面目标JS文件名",
-        (function() {
-            return function(srcFile) {
-                let env = bus.at("编译环境");
-                return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".js";
-            };
-        })()
-    );
+    // ------- z56m-util-get-build-tmp-file-name-of-src-file end
+})();
 
-    bus.on(
-        "页面目标CSS文件名",
-        (function() {
-            return function(srcFile) {
-                let env = bus.at("编译环境");
-                return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".css";
-            };
-        })()
-    );
-
-    bus.on(
-        "页面目标HTML文件名",
-        (function() {
-            return function(srcFile) {
-                let env = bus.at("编译环境");
-                return env.path.build_dist + srcFile.substring(env.path.src.length, srcFile.length - 6) + ".html";
-            };
-        })()
-    );
-
-    bus.on(
-        "自动安装",
-        (function(rs = {}) {
-            return function autoinstall(pkg) {
-                pkg.indexOf(":") > 0 && (pkg = pkg.substring(0, pkg.indexOf(":"))); // @scope/pkg:component => @scope/pkg
-                pkg.lastIndexOf("@") > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf("@"))); // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
-
-                if (!rs[pkg]) {
-                    if (!npm.isInstalled(pkg)) {
-                        rs[pkg] = npm.install(pkg, { timeout: 60000 }); // 安装超时1分钟则异常
-                    } else {
-                        rs[pkg] = true;
-                    }
-                }
-                return rs[pkg];
-            };
-        })()
-    );
+/* ------- z60m-util-get-image-relative-path-of-page-src-file ------- */
+(() => {
+    // ------- z60m-util-get-image-relative-path-of-page-src-file start
+    const bus = require("@gotoeasy/bus");
 
     bus.on(
         "页面图片相对路径",
@@ -9015,7 +9115,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    // ------- z30m-util end
+    // ------- z60m-util-get-image-relative-path-of-page-src-file end
 })();
 
 /* ------- z99p-log ------- */
@@ -9027,7 +9127,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("z99p-log", function(root, result) {
+            return postobject.plugin("z99p-log", function(/* root, result */) {
                 //        console.info('[999-log]', '-----------root JSON----------');
                 //        console.info(JSON.stringify(root,null,4));
                 //        console.info('[999-log]', '-----------result JSON----------');
@@ -9043,14 +9143,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 console.timeEnd("load");
 /* ------- index ------- */
 const bus = require("@gotoeasy/bus");
-const npm = require("@gotoeasy/npm");
 const Err = require("@gotoeasy/err");
-const File = require("@gotoeasy/file");
-const postobject = require("@gotoeasy/postobject");
 
 /*
 console.time('load');
-    npm.requireAll(__dirname, 'src/**.js');
+    require('@gotoeasy/npm').requireAll(__dirname, 'src/**.js');
 console.timeEnd('load');
 
 
@@ -9059,7 +9156,7 @@ async function build(opts) {
     console.time("build");
 
     try {
-        let env = bus.at("编译环境", opts);
+        bus.at("编译环境", opts);
         bus.at("clean");
 
         await Promise.all(bus.at("全部编译"));
@@ -9074,7 +9171,7 @@ function clean(opts) {
     console.time("clean");
 
     try {
-        let env = bus.at("编译环境", opts);
+        bus.at("编译环境", opts);
         bus.at("clean");
     } catch (e) {
         console.error(Err.cat("clean failed", e).toString());
