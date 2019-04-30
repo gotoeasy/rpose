@@ -74,7 +74,7 @@ bus.on('样式库', function(){
         let csslib = csslibify(pkg, name, libid);
         !csslib._imported.length && cssfiles.forEach( cssfile => csslib.imp(cssfile) );     // 未曾导入时，做导入
 
-		return csslib;
+        return csslib;
     }
 
 }());
@@ -83,7 +83,7 @@ bus.on('样式库', function(){
 function getNodeModulePath(npmpkg){
     bus.at('自动安装', npmpkg);
 
-	let node_modules = [...require('find-node-modules')({ cwd: process.cwd(), relative: false }), ...require('find-node-modules')({ cwd: __dirname, relative: false })];
+    let node_modules = [...require('find-node-modules')({ cwd: process.cwd(), relative: false }), ...require('find-node-modules')({ cwd: __dirname, relative: false })];
 
     for ( let i=0,modulepath,dir; modulepath=node_modules[i++]; ) {
         dir = File.resolve(modulepath, npmpkg);

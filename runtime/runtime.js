@@ -155,7 +155,7 @@
             return pattern.indexOf("*") < 0 ? pattern == path : patternToRegExp(pattern).test(path);
         };
         let patternToRegExp = pattern => {
-            let reg = pattern.replace(/[\^\$\.\+\-\=\!\(\)\[\]\{\}\/\?]{1}/g, ch => "\\" + ch);
+            let reg = pattern.replace(/[$.+=!()[\]{}/?^-]{1}/g, ch => "\\" + ch);
             reg = reg.replace(/\*+/g, ".*");
             return new RegExp("^" + reg + "$");
         };

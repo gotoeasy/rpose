@@ -1,6 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const File = require('@gotoeasy/file');
-const hash = require('@gotoeasy/hash');
 const fs = require('fs');
 const url = require('url');
 const path = require('path');
@@ -43,27 +42,16 @@ bus.on('热刷新服务器', function (hasQuery){
         if ( File.existsFile(srcFile) ) {
             let context = bus.at('组件编译缓存', srcFile);
             if ( context ) {
-                hashcode = context.result.hashcode || '';
+                hashcode = context.result.hashcode || REBUILDING;                               // 如果已经编译成功就会有值，否则可能是编译失败，或者是正编译中
+            }else{
+                hashcode = REBUILDING;                                                          // 返回'rebuilding...'状态，前端自行判断数次后按错误处理
             }
-            if ( !hashcode ) {
-                let fileHtml = bus.at('页面目标HTML文件名', srcFile);
-                let fileCss = bus.at('页面目标CSS文件名', srcFile);
-                let fileJs = bus.at('页面目标JS文件名', srcFile);
-                if ( File.existsFile(fileHtml) ) {
-                    let html = File.read(fileHtml);
-                    if ( html.indexOf('<body>Page build failed or src file removed<p/>') > 0 ) {
-                        hashcode = REBUILDING;
-                    }else{
-                        let css = File.existsFile(fileCss) ? File.read(fileCss) : '';
-                        let js = File.existsFile(fileJs) ? File.read(fileJs) : '';
-                        hashcode = hash(html + css + js);                                           // 确保有值返回避免两次刷新
-                    }
-                }
-            }
+        }else{
+            hashcode = '404';                                                                   // 源码文件不存在，显示404
         }
 
         res.writeHead(200);
-        res.end(hashcode);                                                                      // 文件找不到或未成功编译时，返回空白串
+        res.end(hashcode);                                                                      // 未成功编译时，返回空白串
     }
 
     // html注入脚本
@@ -71,20 +59,49 @@ bus.on('热刷新服务器', function (hasQuery){
 
         let env = bus.at('编译环境');
         let srcFile = File.resolve(env.path.src, htmlfile.substring(env.path.build_dist.length+1, htmlfile.length-5) + '.rpose');
-        let context = bus.at('组件编译缓存', srcFile);
-        let hashcode = context ? (context.result.hashcode || '') : null;
-        if ( !hashcode ) {
-            let fileHtml = bus.at('页面目标HTML文件名', srcFile);
-            let fileCss = bus.at('页面目标CSS文件名', srcFile);
-            let fileJs = bus.at('页面目标JS文件名', srcFile);
-            if ( File.existsFile(fileHtml) ) {
-                let html = File.read(fileHtml);
-                let css = File.existsFile(fileCss) ? File.read(fileCss) : '';
-                let js = File.existsFile(fileJs) ? File.read(fileJs) : '';
-                hashcode = hash(html + css + js);                                               // 确保有值返回避免两次刷新
-            }
-        }
         let htmlpage = htmlfile.substring(env.path.build_dist.length+1);
+
+        let html, hashcode = '';
+        if ( File.existsFile(srcFile) ) {
+
+            let context = bus.at('组件编译缓存', srcFile);
+            if ( context ) {
+                hashcode = context.result.hashcode || '';                                       // 如果已经编译成功就会有值，否则是正编译中
+            }
+
+            if ( !hashcode ) {
+                // 当前不是编译成功状态，都显示500编译失败
+                html = `
+                    <!doctype html>
+                    <html lang="en">
+                        <head>
+                        <title>500</title>
+                        </head>
+                    <body>
+                        <pre style="background:#333;color:#ddd;padding:20px;font-size:24px;">500 Compile Failed</pre>
+                    </body>
+                    </html>
+                    `;
+                hashcode = '500';
+            }else{
+                html = File.read(htmlfile);
+            }
+
+        }else{
+            // 源码文件不存在则404
+            html = `
+                <!doctype html>
+                <html lang="en">
+                    <head>
+                    <title>404</title>
+                    </head>
+                <body>
+                    <pre style="background:#943E03;color:#fff;padding:20px;font-size:24px;">404 Not Found</pre>
+                </body>
+                </html>
+                `;
+            hashcode = '404';
+        }
 
         let script = `
         <script>
@@ -124,8 +141,9 @@ bus.on('热刷新服务器', function (hasQuery){
             setTimeout(refresh, 3000);
         </script>`;
 
-        let html = File.read(htmlfile).replace(/<head>/i, '<head>' + script);                   // 极简实现，注入脚本，定时轮询服务端
-        res.writeHead(200, {'Content-Type': 'text/html;charset=UFT8'});
+
+        html = html.replace(/<head>/i, '<head>' + script);                                      // 极简实现，注入脚本，定时轮询服务端
+        res.writeHead(200, {'Content-Type': 'text/html;charset=UFT8'});                         // 即使404请求，也是被当正常注入返回
         res.end(html);
     }
 
@@ -147,21 +165,14 @@ bus.on('热刷新服务器', function (hasQuery){
             }
 
             if ( /\.html$/i.test(reqfile) ) {
-                if ( File.existsFile(reqfile) ) {
-                    htmlHandle(req, res, oUrl, reqfile);                                        // html文件存在时，拦截注入脚本后返回
-                }else{
-                    res.writeHead(404);
-                    res.end('404 Not Found');                                                   // 文件找不到
-                }
+                htmlHandle(req, res, oUrl, reqfile);                                            // 拦截注入脚本后返回
                 return;
             }
 
 
             if ( File.existsFile(reqfile) ) {
-                if (/\.html$/i.test(reqfile) || /\.htm$/i.test(reqfile)) {
-                    res.writeHead(200, { "Content-Type": "text/html;charset=UFT8" }); // 避免浏览器控制台警告
-                } else if (/\.css$/i.test(reqfile)) {
-                    res.writeHead(200, { "Content-Type": "text/css;charset=UFT8" });
+                if (/\.css$/i.test(reqfile)) {
+                    res.writeHead(200, { "Content-Type": "text/css;charset=UFT8" });            // 避免浏览器控制台警告
                 } else if (/\.js$/i.test(reqfile)) {
                     res.writeHead(200, { "Content-Type": "application/javascript;charset=UFT8" });
                 } else if (/\.json$/i.test(reqfile)) {

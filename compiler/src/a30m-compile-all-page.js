@@ -1,4 +1,5 @@
 const bus = require('@gotoeasy/bus');
+const Err = require('@gotoeasy/err');
 
 bus.on('全部编译', function (){
 
@@ -10,6 +11,7 @@ bus.on('全部编译', function (){
         bus.at('项目配置处理', env.path.root + 'rpose.config.btf');
 
         let promises = [];
+        let errSet = new Set();
         let stime, time;
         for ( let file in oFiles ) {
             try{
@@ -24,9 +26,13 @@ bus.on('全部编译', function (){
                 }
             }catch(e){
                 bus.at('组件编译缓存', file , false);     // 出错时确保删除缓存（可能组件编译过程成功，页面编译过程失败）
-                throw e;
+                errSet.add(Err.cat(e).toString());
             }
         }
+
+        // 输出汇总的错误信息
+        errSet.size && console.error([...errSet].join('\n\n'));
+       
         return promises;
     }
 

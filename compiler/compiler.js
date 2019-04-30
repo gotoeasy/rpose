@@ -306,7 +306,7 @@ console.time("load");
         });
 
         bus.on("SVG文件添加", function(svgfile) {
-            // SVG图标文件修改时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
+            // SVG图标文件添加时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
             let oFiles = bus.at("源文件对象清单"),
                 name = File.name(svgfile);
             let needBuild,
@@ -324,6 +324,7 @@ console.time("load");
                         }
                     }
                 } else {
+                    // 添加的svg文件被作为图片用途时，此处理分支也满足
                     needBuild = true; // 存在未编译成功的组件，保险起见同样重新编译
                 }
             }
@@ -331,8 +332,22 @@ console.time("load");
             if (needBuild || refFiles.length) {
                 new Set(refFiles).forEach(pageFile => {
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
+                    removeHtmlCssJsFile(pageFile);
                 });
                 return bus.at("全部编译");
+            }
+
+            return [];
+        });
+
+        bus.on("图片文件添加", function() {
+            // 图片文件添加时，重新编译未编译成功的组件
+            let oFiles = bus.at("源文件对象清单");
+            for (let file in oFiles) {
+                let context = bus.at("组件编译缓存", file);
+                if (!context) {
+                    return bus.at("全部编译");
+                }
             }
 
             return [];
@@ -353,9 +368,10 @@ console.time("load");
             oFiles[oFile.file] = Object.assign({}, oFileIn);
             refFiles.forEach(file => {
                 bus.at("组件编译缓存", file, false); // 删除关联页面的编译缓存
-                writeInfoPage(file, `rebuilding for component [${tag}] changed`);
+                removeHtmlCssJsFile(file);
             });
             bus.at("组件编译缓存", oFile.file, false); // 删除当前文件的编译缓存
+            removeHtmlCssJsFile(oFile.file);
             return bus.at("全部编译");
         });
 
@@ -373,12 +389,50 @@ console.time("load");
                         refFiles.push(file); // 待重新编译的组件
                         refFiles.push(...getRefPages(tag)); // 待重新编译的页面
                     }
+
+                    // 添加的svg文件被作为图片用途时的处理
+                    let refimages = context.result.refimages || [];
+                    if (refimages.includes(svgfile)) {
+                        // 比较的是全路径文件名
+                        let tag = getTagOfSrcFile(file); // 直接关联的组件标签名
+                        refFiles.push(file); // 待重新编译的组件
+                        refFiles.push(...getRefPages(tag)); // 待重新编译的页面
+                    }
                 }
             }
 
             if (refFiles.length) {
                 new Set(refFiles).forEach(pageFile => {
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
+                    removeHtmlCssJsFile(pageFile);
+                });
+                return bus.at("全部编译");
+            }
+
+            return [];
+        });
+
+        bus.on("图片文件修改", function(imgfile) {
+            // 图片文件修改时，找出使用该图片文件的组件，以及使用该组件的页面，都清除缓存后重新编译
+            let oFiles = bus.at("源文件对象清单");
+            let refFiles = [];
+            for (let file in oFiles) {
+                let context = bus.at("组件编译缓存", file);
+                if (context) {
+                    let refimages = context.result.refimages || [];
+                    if (refimages.includes(imgfile)) {
+                        // 比较的是全路径文件名
+                        let tag = getTagOfSrcFile(file); // 直接关联的组件标签名
+                        refFiles.push(file); // 待重新编译的组件
+                        refFiles.push(...getRefPages(tag)); // 待重新编译的页面
+                    }
+                }
+            }
+
+            if (refFiles.length) {
+                new Set(refFiles).forEach(pageFile => {
+                    bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
+                    removeHtmlCssJsFile(pageFile);
                 });
                 return bus.at("全部编译");
             }
@@ -414,14 +468,16 @@ console.time("load");
             // 删除关联编译缓存，重新编译
             refFiles.forEach(file => {
                 bus.at("组件编译缓存", file, false); // 删除关联页面的编译缓存
-                writeInfoPage(file, `rebuilding for component [${tag}] removed`);
+                removeHtmlCssJsFile(file);
             });
             bus.at("组件编译缓存", oFile.file, false); // 删除当前文件的编译缓存
+            removeHtmlCssJsFile(oFile.file);
+
             return bus.at("全部编译");
         });
 
         bus.on("SVG文件删除", function(svgfile) {
-            // SVG图标文件修改时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
+            // SVG图标文件删除时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
             let oFiles = bus.at("源文件对象清单"),
                 name = File.name(svgfile);
             let needBuild,
@@ -446,11 +502,17 @@ console.time("load");
             if (needBuild || refFiles.length) {
                 new Set(refFiles).forEach(pageFile => {
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
+                    removeHtmlCssJsFile(pageFile);
                 });
                 return bus.at("全部编译");
             }
 
             return [];
+        });
+
+        bus.on("图片文件删除", function(imgfile) {
+            // 图片文件删除时，处理等同图片文件修改
+            return bus.at("图片文件修改", imgfile);
         });
     })();
 
@@ -463,23 +525,15 @@ console.time("load");
         return name.toLowerCase();
     }
 
-    function writeInfoPage(file, msg) {
+    // 文件改变时，先删除生成的最终html等文件
+    function removeHtmlCssJsFile(file) {
         let fileHtml = bus.at("页面目标HTML文件名", file);
         let fileCss = bus.at("页面目标CSS文件名", file);
         let fileJs = bus.at("页面目标JS文件名", file);
 
-        if (File.existsFile(fileHtml)) {
-            File.write(fileHtml, syncHtml(msg)); // html文件存在，可能正被访问，要替换
-            File.remove(fileCss);
-            File.remove(fileJs);
-        }
-    }
-
-    // 在watch模式下，文件改变时，生成的html文件不删除，便于浏览器同步提示信息
-    function syncHtml(msg = "") {
-        return `<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>Page build failed or src file removed<p/>
-        <pre style="background:#333;color:#ddd;padding:10px;">${msg.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
-    </body>`;
+        File.remove(fileHtml);
+        File.remove(fileCss);
+        File.remove(fileJs);
     }
 
     // ------- a20m-src-file-manager end
@@ -496,7 +550,7 @@ console.time("load");
 
     bus.on(
         "文件监视",
-        (function(oHash = {}, oSvgHash = {}, hashBrowserslistrc, hashRposeconfigbtf) {
+        (function(oSrcHash = {}, oOthHash = {}, hashBrowserslistrc, hashRposeconfigbtf) {
             return function() {
                 let env = bus.at("编译环境");
                 if (!env.watch) {
@@ -532,7 +586,7 @@ console.time("load");
                                     let text = File.read(file);
                                     let hashcode = hash(text);
                                     let oFile = { file, text, hashcode };
-                                    oHash[file] = oFile;
+                                    oSrcHash[file] = oFile;
                                     await busAt("源文件添加", oFile);
                                 } else {
                                     console.info("ignored ...... add", file);
@@ -542,8 +596,14 @@ console.time("load");
                                 console.info("add svg ......", file);
                                 let text = File.read(file);
                                 let hashcode = hash(text);
-                                oSvgHash[file] = hashcode;
+                                oOthHash[file] = hashcode;
                                 await busAt("SVG文件添加", file);
+                            } else if (isValidImageFile(file)) {
+                                // 图片文件添加
+                                console.info("add img ......", file);
+                                let hashcode = hash({ file });
+                                oOthHash[file] = hashcode;
+                                await busAt("图片文件添加"); // 只是把没编译成功的都再编译一遍，不需要传文件名
                             }
                         }
                     })
@@ -572,10 +632,10 @@ console.time("load");
                                 if (isValidRposeFile(file)) {
                                     let text = File.read(file);
                                     let hashcode = hash(text);
-                                    if (!oHash[file] || oHash[file].hashcode !== hashcode) {
+                                    if (!oSrcHash[file] || oSrcHash[file].hashcode !== hashcode) {
                                         console.info("change ......", file);
                                         let oFile = { file, text, hashcode };
-                                        oHash[file] = oFile;
+                                        oSrcHash[file] = oFile;
                                         await busAt("源文件修改", oFile);
                                     }
                                 } else {
@@ -585,10 +645,18 @@ console.time("load");
                                 // svg文件修改
                                 let text = File.read(file);
                                 let hashcode = hash(text);
-                                if (oSvgHash[file] !== hashcode) {
+                                if (oOthHash[file] !== hashcode) {
                                     console.info("change svg ......", file);
-                                    oSvgHash[file] = hashcode;
+                                    oOthHash[file] = hashcode;
                                     await busAt("SVG文件修改", file);
+                                }
+                            } else if (isValidImageFile(file)) {
+                                // 图片文件修改
+                                let hashcode = hash({ file });
+                                if (oOthHash[file] !== hashcode) {
+                                    console.info("change img ......", file);
+                                    oOthHash[file] = hashcode;
+                                    await busAt("图片文件修改", file);
                                 }
                             }
                         }
@@ -612,7 +680,7 @@ console.time("load");
                                 if (/\.rpose$/i.test(file)) {
                                     if (isValidRposeFile(file)) {
                                         console.info("del ......", file);
-                                        delete oHash[file];
+                                        delete oSrcHash[file];
                                         await busAt("源文件删除", file);
                                     } else {
                                         console.info("ignored ...... del", file);
@@ -621,8 +689,13 @@ console.time("load");
                             } else if (isValidSvgiconFile(file)) {
                                 // svg文件删除
                                 console.info("del svg ......", file);
-                                delete oSvgHash[file];
+                                delete oOthHash[file];
                                 await busAt("SVG文件删除", file);
+                            } else if (isValidImageFile(file)) {
+                                // 图片文件删除
+                                console.info("del img ......", file);
+                                delete oOthHash[file];
+                                await busAt("图片文件删除", file);
                             }
                         }
                     })
@@ -662,7 +735,18 @@ console.time("load");
         let node_modulesPath = env.path.root + "/node_modules/";
         let dotPath = env.path.root + "/.";
 
-        return /\/.+\.svg$/i.test(file) && !file.startsWith(buildPath) && !file.startsWith(node_modulesPath) && !file.startsWith(dotPath);
+        return /\.svg$/i.test(file) && !file.startsWith(buildPath) && !file.startsWith(node_modulesPath) && !file.startsWith(dotPath);
+    }
+
+    function isValidImageFile(file) {
+        let env = bus.at("编译环境");
+        let buildPath = env.path.build + "/";
+        let node_modulesPath = env.path.root + "/node_modules/";
+        let dotPath = env.path.root + "/.";
+
+        return (
+            /\.(jpg|png|gif|bmp|jpeg)$/i.test(file) && !file.startsWith(buildPath) && !file.startsWith(node_modulesPath) && !file.startsWith(dotPath)
+        );
     }
 
     // ------- a22m-file-watcher end
@@ -672,6 +756,7 @@ console.time("load");
 (() => {
     // ------- a30m-compile-all-page start
     const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
 
     bus.on(
         "全部编译",
@@ -683,6 +768,7 @@ console.time("load");
                 bus.at("项目配置处理", env.path.root + "rpose.config.btf");
 
                 let promises = [];
+                let errSet = new Set();
                 let stime, time;
                 for (let file in oFiles) {
                     try {
@@ -697,9 +783,13 @@ console.time("load");
                         }
                     } catch (e) {
                         bus.at("组件编译缓存", file, false); // 出错时确保删除缓存（可能组件编译过程成功，页面编译过程失败）
-                        throw e;
+                        errSet.add(Err.cat(e).toString());
                     }
                 }
+
+                // 输出汇总的错误信息
+                errSet.size && console.error([...errSet].join("\n\n"));
+
                 return promises;
             };
         })()
@@ -846,7 +936,6 @@ console.time("load");
     // ------- a82m-dev-server-reload start
     const bus = require("@gotoeasy/bus");
     const File = require("@gotoeasy/file");
-    const hash = require("@gotoeasy/hash");
     const fs = require("fs");
     const url = require("url");
     const path = require("path");
@@ -889,47 +978,64 @@ console.time("load");
                 if (File.existsFile(srcFile)) {
                     let context = bus.at("组件编译缓存", srcFile);
                     if (context) {
-                        hashcode = context.result.hashcode || "";
+                        hashcode = context.result.hashcode || REBUILDING; // 如果已经编译成功就会有值，否则可能是编译失败，或者是正编译中
+                    } else {
+                        hashcode = REBUILDING; // 返回'rebuilding...'状态，前端自行判断数次后按错误处理
                     }
-                    if (!hashcode) {
-                        let fileHtml = bus.at("页面目标HTML文件名", srcFile);
-                        let fileCss = bus.at("页面目标CSS文件名", srcFile);
-                        let fileJs = bus.at("页面目标JS文件名", srcFile);
-                        if (File.existsFile(fileHtml)) {
-                            let html = File.read(fileHtml);
-                            if (html.indexOf("<body>Page build failed or src file removed<p/>") > 0) {
-                                hashcode = REBUILDING;
-                            } else {
-                                let css = File.existsFile(fileCss) ? File.read(fileCss) : "";
-                                let js = File.existsFile(fileJs) ? File.read(fileJs) : "";
-                                hashcode = hash(html + css + js); // 确保有值返回避免两次刷新
-                            }
-                        }
-                    }
+                } else {
+                    hashcode = "404"; // 源码文件不存在，显示404
                 }
 
                 res.writeHead(200);
-                res.end(hashcode); // 文件找不到或未成功编译时，返回空白串
+                res.end(hashcode); // 未成功编译时，返回空白串
             }
 
             // html注入脚本
             function htmlHandle(req, res, oUrl, htmlfile) {
                 let env = bus.at("编译环境");
                 let srcFile = File.resolve(env.path.src, htmlfile.substring(env.path.build_dist.length + 1, htmlfile.length - 5) + ".rpose");
-                let context = bus.at("组件编译缓存", srcFile);
-                let hashcode = context ? context.result.hashcode || "" : null;
-                if (!hashcode) {
-                    let fileHtml = bus.at("页面目标HTML文件名", srcFile);
-                    let fileCss = bus.at("页面目标CSS文件名", srcFile);
-                    let fileJs = bus.at("页面目标JS文件名", srcFile);
-                    if (File.existsFile(fileHtml)) {
-                        let html = File.read(fileHtml);
-                        let css = File.existsFile(fileCss) ? File.read(fileCss) : "";
-                        let js = File.existsFile(fileJs) ? File.read(fileJs) : "";
-                        hashcode = hash(html + css + js); // 确保有值返回避免两次刷新
-                    }
-                }
                 let htmlpage = htmlfile.substring(env.path.build_dist.length + 1);
+
+                let html,
+                    hashcode = "";
+                if (File.existsFile(srcFile)) {
+                    let context = bus.at("组件编译缓存", srcFile);
+                    if (context) {
+                        hashcode = context.result.hashcode || ""; // 如果已经编译成功就会有值，否则是正编译中
+                    }
+
+                    if (!hashcode) {
+                        // 当前不是编译成功状态，都显示500编译失败
+                        html = `
+                    <!doctype html>
+                    <html lang="en">
+                        <head>
+                        <title>500</title>
+                        </head>
+                    <body>
+                        <pre style="background:#333;color:#ddd;padding:20px;font-size:24px;">500 Compile Failed</pre>
+                    </body>
+                    </html>
+                    `;
+                        hashcode = "500";
+                    } else {
+                        html = File.read(htmlfile);
+                    }
+                } else {
+                    // 源码文件不存在则404
+                    html = `
+                <!doctype html>
+                <html lang="en">
+                    <head>
+                    <title>404</title>
+                    </head>
+                <body>
+                    <pre style="background:#943E03;color:#fff;padding:20px;font-size:24px;">404 Not Found</pre>
+                </body>
+                </html>
+                `;
+                    hashcode = "404";
+                }
 
                 let script = `
         <script>
@@ -969,8 +1075,8 @@ console.time("load");
             setTimeout(refresh, 3000);
         </script>`;
 
-                let html = File.read(htmlfile).replace(/<head>/i, "<head>" + script); // 极简实现，注入脚本，定时轮询服务端
-                res.writeHead(200, { "Content-Type": "text/html;charset=UFT8" });
+                html = html.replace(/<head>/i, "<head>" + script); // 极简实现，注入脚本，定时轮询服务端
+                res.writeHead(200, { "Content-Type": "text/html;charset=UFT8" }); // 即使404请求，也是被当正常注入返回
                 res.end(html);
             }
 
@@ -990,20 +1096,13 @@ console.time("load");
                     }
 
                     if (/\.html$/i.test(reqfile)) {
-                        if (File.existsFile(reqfile)) {
-                            htmlHandle(req, res, oUrl, reqfile); // html文件存在时，拦截注入脚本后返回
-                        } else {
-                            res.writeHead(404);
-                            res.end("404 Not Found"); // 文件找不到
-                        }
+                        htmlHandle(req, res, oUrl, reqfile); // 拦截注入脚本后返回
                         return;
                     }
 
                     if (File.existsFile(reqfile)) {
-                        if (/\.html$/i.test(reqfile) || /\.htm$/i.test(reqfile)) {
-                            res.writeHead(200, { "Content-Type": "text/html;charset=UFT8" }); // 避免浏览器控制台警告
-                        } else if (/\.css$/i.test(reqfile)) {
-                            res.writeHead(200, { "Content-Type": "text/css;charset=UFT8" });
+                        if (/\.css$/i.test(reqfile)) {
+                            res.writeHead(200, { "Content-Type": "text/css;charset=UFT8" }); // 避免浏览器控制台警告
                         } else if (/\.js$/i.test(reqfile)) {
                             res.writeHead(200, { "Content-Type": "application/javascript;charset=UFT8" });
                         } else if (/\.json$/i.test(reqfile)) {
@@ -5582,8 +5681,8 @@ console.time("load");
 
                         if (!/^\s*http(s?):\/\//i.test(srcAttrNode.object.value)) {
                             // 非网络文件时，复制文件
-                            let imgname = hashImageName(context, srcAttrNode);
-                            if (imgname === -1) {
+                            let oImage = hashImageName(context, srcAttrNode);
+                            if (oImage.code === -1) {
                                 // 文件不存在
                                 throw new Err("image file not found", {
                                     file: context.input.file,
@@ -5591,15 +5690,15 @@ console.time("load");
                                     start: srcAttrNode.object.loc.start.pos,
                                     end: srcAttrNode.object.loc.end.pos
                                 });
-                            } else if (imgname === -2) {
+                            } else if (oImage.code === -2) {
                                 // 不支持项目外文件（会引起版本管理混乱）
-                                throw new Err("file should not out of project (" + File.resolve(context.input.file, srcAttrNode.object.value) + ")", {
+                                throw new Err("file should not out of project (" + oImage.file + ")", {
                                     file: context.input.file,
                                     text: context.input.text,
                                     start: srcAttrNode.object.loc.start.pos,
                                     end: srcAttrNode.object.loc.end.pos
                                 });
-                            } else if (imgname === -3) {
+                            } else if (oImage.code === -3) {
                                 // 不支持用绝对路径，避免换机器环境引起混乱
                                 throw new Err("unsupport absolute file path", {
                                     file: context.input.file,
@@ -5609,8 +5708,11 @@ console.time("load");
                                 });
                             }
                             // 修改成替换用目录，文件名用哈希
-                            srcAttrNode.object.value = "%imagepath%" + imgname;
+                            srcAttrNode.object.value = "%imagepath%" + oImage.name;
                             context.result.hasImg = true; // 上下文中保存是否包含img标签的标记，便于判断是否需替换目录
+
+                            let refimages = (context.result.refimages = context.result.refimages || []);
+                            !refimages.includes(oImage.file) && refimages.push(oImage.file); // 保存文件引用关系，便于文件修改删除时重新编译
                         }
                     },
                     { readonly: true }
@@ -5621,32 +5723,37 @@ console.time("load");
 
     function hashImageName(context, srcAttrNode) {
         let srcFile = context.input.file;
-        let imgFile = srcAttrNode.object.value;
-        let file = File.resolve(srcFile, imgFile);
+        let imgFile = srcAttrNode.object.value.trim();
+        let code,
+            name,
+            file = File.resolve(srcFile, imgFile);
         if (!File.exists(file)) {
-            return -1; // 文件不存在
+            code = -1; // 文件不存在
+            return { file, name, code };
         }
 
         let env = bus.at("编译环境");
         if (!file.startsWith(env.path.root + "/")) {
-            return -2; // 不支持项目外文件（版本管理混乱）
+            code = -2; // 不支持项目外文件（版本管理混乱）
+            return { file, name, code };
         }
         if (imgFile === file) {
-            return -3; // 不支持用绝对路径（版本管理混乱）
+            code = -3; // 不支持用绝对路径（版本管理混乱）
+            return { file, name, code };
         }
 
-        let name = hash({ file }) + File.extname(file); // 去除目录，文件名哈希化，后缀名不变
+        name = hash({ file }) + File.extname(file); // 去除目录，文件名哈希化，后缀名不变
 
         let oCache = bus.at("缓存");
-        // 复制文件
         let distDir = oCache.path + "/resources"; // 统一目录，资源都复制到 %缓存目录%/resources
         let distFile = distDir + "/" + name;
         if (!File.exists(distFile)) {
             !File.existsDir(distDir) && File.mkdir(distDir);
-            fs.copyFileSync(file, distFile);
+            fs.copyFileSync(file, distFile); // 复制文件
         }
 
-        return name;
+        code = 0;
+        return { file, name, code };
     }
 
     // ------- j15p-astedit-process-tag-img end

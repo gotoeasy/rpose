@@ -4,7 +4,7 @@ const Err = require('@gotoeasy/err');
 const hash = require('@gotoeasy/hash');
 const chokidar = require('chokidar');
 
-bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hashRposeconfigbtf){
+bus.on('文件监视', function (oSrcHash={}, oOthHash={}, hashBrowserslistrc, hashRposeconfigbtf){
 
     return function(){
 
@@ -15,11 +15,11 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
 
         bus.at('热刷新服务器');
 
-		// 监视文件变化
+        // 监视文件变化
         let browserslistrc = env.path.root + '/.browserslistrc';
         let rposeconfigbtf = env.path.root + '/rpose.config.btf';
-		let ready, watcher = chokidar.watch(env.path.root, {ignored: [env.path.build+'/', env.path.root+'/node_modules/']});
-		watcher.on('add', async file => {
+        let ready, watcher = chokidar.watch(env.path.root, {ignored: [env.path.build+'/', env.path.root+'/node_modules/']});
+        watcher.on('add', async file => {
             if ( ready ) {
                 file = file.replace(/\\/g, '/');
 
@@ -42,7 +42,7 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
                         let text = File.read(file);
                         let hashcode = hash(text);
                         let oFile = {file, text, hashcode};
-                        oHash[file] = oFile;
+                        oSrcHash[file] = oFile;
                         await busAt('源文件添加', oFile);
                     }else{
                         console.info('ignored ...... add', file);
@@ -52,8 +52,14 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
                     console.info('add svg ......', file);
                     let text = File.read(file);
                     let hashcode = hash(text);
-                    oSvgHash[file] = hashcode;
+                    oOthHash[file] = hashcode;
                     await busAt('SVG文件添加', file);
+                }else if ( isValidImageFile(file) ) {
+                    // 图片文件添加
+                    console.info('add img ......', file);
+                    let hashcode = hash({file});
+                    oOthHash[file] = hashcode;
+                    await busAt('图片文件添加');                                     // 只是把没编译成功的都再编译一遍，不需要传文件名
                 }
 
             }
@@ -85,10 +91,10 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
                     if ( isValidRposeFile(file) ) {
                         let text = File.read(file);
                         let hashcode = hash(text);
-                        if ( !oHash[file] || oHash[file].hashcode !== hashcode ) {
+                        if ( !oSrcHash[file] || oSrcHash[file].hashcode !== hashcode ) {
                             console.info('change ......', file);
                             let oFile = {file, text, hashcode};
-                            oHash[file] = oFile;
+                            oSrcHash[file] = oFile;
                             await busAt('源文件修改', oFile);
                         }
                     }else{
@@ -98,16 +104,24 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
                     // svg文件修改
                     let text = File.read(file);
                     let hashcode = hash(text);
-                    if ( oSvgHash[file] !== hashcode ) {
+                    if ( oOthHash[file] !== hashcode ) {
                         console.info('change svg ......', file);
-                        oSvgHash[file] = hashcode;
+                        oOthHash[file] = hashcode;
                         await busAt('SVG文件修改', file);
+                    }
+                }else if ( isValidImageFile(file) ) {
+                    // 图片文件修改
+                    let hashcode = hash({file});
+                    if ( oOthHash[file] !== hashcode ) {
+                        console.info('change img ......', file);
+                        oOthHash[file] = hashcode;
+                        await busAt('图片文件修改', file);
                     }
                 }
 
             }
 
-		}).on('unlink', async file => {
+        }).on('unlink', async file => {
             if ( ready ) {
                 file = file.replace(/\\/g, '/');
 
@@ -128,7 +142,7 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
                     if ( /\.rpose$/i.test(file) ) {
                         if ( isValidRposeFile(file) ) {
                             console.info('del ......', file);
-                            delete oHash[file];
+                            delete oSrcHash[file];
                             await busAt('源文件删除', file);
                         }else{
                             console.info('ignored ...... del', file);
@@ -137,15 +151,20 @@ bus.on('文件监视', function (oHash={}, oSvgHash={}, hashBrowserslistrc, hash
                 }else if ( isValidSvgiconFile(file) ) {
                     // svg文件删除
                     console.info('del svg ......', file);
-                    delete oSvgHash[file];
+                    delete oOthHash[file];
                     await busAt('SVG文件删除', file);
+                }else if ( isValidImageFile(file) ) {
+                    // 图片文件删除
+                    console.info('del img ......', file);
+                    delete oOthHash[file];
+                    await busAt('图片文件删除', file);
                 }
 
             }
 
-		}).on('ready', () => {
-			ready = true;
-		});
+        }).on('ready', () => {
+            ready = true;
+        });
 
     }
 
@@ -182,7 +201,19 @@ function isValidSvgiconFile(file){
     let node_modulesPath = env.path.root + '/node_modules/';
     let dotPath = env.path.root + '/.';
 
-    return /\/.+\.svg$/i.test(file) 
+    return /\.svg$/i.test(file) 
+        && !file.startsWith(buildPath)
+        && !file.startsWith(node_modulesPath)
+        && !file.startsWith(dotPath);
+}
+
+function isValidImageFile(file){
+    let env = bus.at('编译环境');
+    let buildPath = env.path.build + '/';
+    let node_modulesPath = env.path.root + '/node_modules/';
+    let dotPath = env.path.root + '/.';
+
+    return /\.(jpg|png|gif|bmp|jpeg)$/i.test(file) 
         && !file.startsWith(buildPath)
         && !file.startsWith(node_modulesPath)
         && !file.startsWith(dotPath);

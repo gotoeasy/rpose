@@ -98,7 +98,4 @@ bus.on('语法高亮转换', function (tagpkgHighlight='@rpose/buildin:```', oCl
         });
     }
 
-
-
-
 }());

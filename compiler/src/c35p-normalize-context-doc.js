@@ -63,7 +63,7 @@ function parseBlockApi(api){
 
 // 直接运算为false则返回false，字符串（不区分大小写）‘0’、‘f’、‘false’、‘n’、‘no’ 都为false，其他为true
 function toBoolean(arg){
-	if ( !arg ) return false;
-	if ( typeof arg !== 'string' ) return true;
-	return !/^(0|false|f|no|n)$/i.test((arg + '').trim());
+    if ( !arg ) return false;
+    if ( typeof arg !== 'string' ) return true;
+    return !/^(0|false|f|no|n)$/i.test((arg + '').trim());
 }

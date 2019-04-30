@@ -79,11 +79,11 @@ function getClasses(clas){
     });
     
 
-	let ary = clas.split(/\s+/);
-	for ( let i=0; i<ary.length; i++) {
+    let ary = clas.split(/\s+/);
+    for ( let i=0; i<ary.length; i++) {
         ary[i].trim() && result.push(ary[i].trim());
-	}
+    }
 
-	return result;
+    return result;
 }
 
