@@ -1,15 +1,22 @@
 [api]
-optionkeys = path, params, text
+optionkeys = path, params, title
 
 [view]
-<a href={ /^http[s]?:/i.test(path) ? path : ('#' + ($options.path || '')) } onclick="click">{text}</a>
+<a title={title} href={ /^(http[s]?:|\.+)/i.test(path) ? path : ('#' + (path || '')) } onclick="click"><slot/></a>
+
 
 [actions]
 {
     click: e => {
-        e.preventDefault(); // 取消事件，避免自动触发路由变更事件，改由程序代码控制
-        let path = this.$options.path || '';
-        let state = this.$options.params;
-        rpose.router.page({path, state});
+
+        if ( !/^(http[s]?:|\.+)/i.test(this.$options.path) ) {
+            e.preventDefault();                     // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制
+            let path = this.$options.path || '';
+            let state = this.$options.params;
+            rpose.router.page({path, state});
+        }else{
+            location.href = this.$options.path;
+        }
+
     }
 }
