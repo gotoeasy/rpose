@@ -15,7 +15,9 @@ bus.on('编译插件', function(){
         let type = context.doc.api.prerender;
         let nocss = !context.result.pageCss
         
-        context.result.html = require(env.prerender)({srcPath, file, name, type, nocss});
+        let svgsymbols = bus.at('生成SVG-SYMBOL', context.input.file);
+
+        context.result.html = require(env.prerender)({srcPath, file, name, type, nocss, svgsymbols});
     });
 
 }());

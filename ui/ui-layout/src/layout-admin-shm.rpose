@@ -17,7 +17,7 @@
 statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
 
 [view]
-<div @class="height-100vh display-flex">
+<div @class="height-100vh display-flex overflow-hidden">
     <aside class="layout side-menubar" onclick="closeMobileMenu">
         <slot name="side-menubar"/>
     </aside>
@@ -29,7 +29,7 @@ statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
             <svgicon src="circle-right" class="layout menubar-icon-right" fill="#e74c3c" height="20" />
             <svgicon src="circle-left" class="layout menubar-icon-left" fill="#e74c3c" height="20" />
         </a>
-        <header class="layout-header">
+        <header class="layout-header" @class="display-flex">
             <a class="layout menubar-icon-mobile" href="#" onclick="mobileToggle">
                 <svgicon src="system-menu" height="25" />
             </a>
@@ -104,12 +104,20 @@ html,body{
     background-color: var(--LASHM-side-bgcolor-272c33, #272c33);
     width: var(--LASHM-menubar-width-250px, 250px);
     z-index: @z-index-sidebar;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 /* 侧边图标栏，平板中屏时显示用，电脑大屏也可切换显示 */
 .side-iconbar {
     background-color: var(--LASHM-side-bgcolor-272c33, #272c33);
     width: var(--LASHM-iconbar-width-50px, 50px);
     z-index: @z-index-sidebar;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 /* 侧边菜单栏和图标栏的切换图标 */
 .menubar-icon-pc {
@@ -120,25 +128,24 @@ html,body{
 }
 /* 手机小屏时显示的菜单图标，用于触发打开菜单栏 */
 .menubar-icon-mobile {
-    position: fixed;
-    top: 10px;
-    margin-left: 10px;
+    width: var(--LASHM-iconbar-width-50px, 50px);
 }
 
 /* 右边主区 */
 .side-page {
     height: 100%;
-    overflow-y: hidden;                                                 /* 页头不滚动，内容区滚动自行控制 */
+    overflow: hidden;                                                   /* 页头不滚动，内容区滚动自行控制 */
 }
 .layout-header {
-    min-height: var(--LASHM-header-height-50px, 50px);
-    max-height: var(--LASHM-header-height-50px, 50px);
+    height: var(--LASHM-header-height-50px, 50px);
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
 }
 .layout-main {
     width: 100%;
-    height: 100%;
+    min-width: 350px;
+    height: calc(100% - var(--LASHM-header-height-50px, 50px));         /* 主内容栏宽度计算 */
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* 满屏遮罩层，手机显示菜单栏时显示用 */
@@ -162,7 +169,6 @@ html,body{
         display: none;                                                  /* 隐藏侧边图标栏，隐藏手机小屏菜单图标 */
     }
     .side-page {
-        height: 100%;
         width: calc(100% - var(--LASHM-menubar-width-250px, 250px));    /* 主内容栏宽度计算 */
     }
 
@@ -214,7 +220,9 @@ html,body{
         display: none;                                                  /* 隐藏菜单栏、侧边图标栏、侧边栏切换图标 */
     }
     .menubar-icon-mobile {
-        display: block;                                                 /* 显示小屏菜单图标 */
+        display: flex;                                                  /* 显示小屏菜单图标 */
+        align-items: center;
+        margin-left: 10px;
     }
     .side-page {
         width: 100%;                                                    /* 主内容栏宽度占满 */

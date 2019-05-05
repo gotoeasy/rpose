@@ -14,19 +14,24 @@ bus.on('编译插件', function(){
 
             // 查找Attributes
             let attrsNode;
-            for ( let i=0,nd; nd=node.nodes[i++]; ) {
-                if ( nd.type === 'Attributes' ) {
-                    attrsNode = nd;
-                    break;
+            if ( node.nodes ) {
+                for ( let i=0,nd; nd=node.nodes[i++]; ) {
+                    if ( nd.type === 'Attributes' ) {
+                        attrsNode = nd;
+                        break;
+                    }
                 }
             }
 
-            let nodeSrc, oAttrs = {};
+            let nodeSrc, nodeUseSymbol, oAttrs = {};
             attrsNode && attrsNode.nodes.forEach(nd => {
                 let name = nd.object.name;
                 if ( /^src$/i.test(name) ) {
                     // src属性是svgicon专用属性，用于指定svg文件
-                    nodeSrc = nd;                                   // 属性节点src
+                    nodeSrc = nd;                                                   // 属性节点src
+                }else if ( /^use-symbol$/i.test(name) ) {
+                    // use-symbol属性是svgicon专用属性，用于指定使用symbol内联方式
+                    nodeUseSymbol = nd;                                             // 属性节点use-symbol
                 }else{
                     // 其他属性全部作为svg标签用属性看待，效果上等同内联svg标签中直接写属性，但viewBox属性除外，viewBox不支持修改以免影响svg大小
                     !/^viewBox$/i.test(name) && (oAttrs[nd.object.name] = nd.object);
@@ -38,39 +43,61 @@ bus.on('编译插件', function(){
                 throw new Err('missing src attribute of svgicon', {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});   // 必须指定图标
             }
 
-            let errLocInfo = {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos};    // 定位src处
-            let propSrc = nodeSrc.object.value.trim();
-            if ( !propSrc ) {
-                throw new Err('invalid value of attribute src', errLocInfo);   // 必须指定图标
+            if ( nodeSrc ) {
+                let errLocInfo = {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos};    // 定位src处
+                let propSrc = nodeSrc.object.value.trim();
+                if ( !propSrc ) {
+                    throw new Err('invalid value of attribute src', errLocInfo);    // 必须指定图标
+                }
+                
+                // 后缀可以省略，如果没写则补足
+                propSrc = propSrc.replace(/\\/g, '/');
+                !/\.svg$/i.test(propSrc) && (propSrc += '.svg');
+
+                let svgfile, ary = propSrc.split(':');
+                if ( ary.length > 2 ) {
+                    throw new Err('invalid format of src attribute, etc. name:filefilter', errLocInfo);         // 格式有误，多个冒号
+                }else if ( ary.length > 1 ) {
+                    svgfile = findSvgByPkgFilter(ary, propSrc, errLocInfo);                                     // 从npm包中查找
+                }else{
+                    svgfile = findSvgInProject(propSrc, errLocInfo, context);                                   // 从项目中查找
+
+                    let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
+                    !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                                // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
+                }
+
+
+                if ( nodeUseSymbol ) {
+                    // -----------------------------
+                    // 使用symbol内联的方式
+                    let svgsymbols = context.result.svgsymbols = context.result.svgsymbols || [];               // symbol内联关联的svg文件
+                    !svgsymbols.includes(svgfile) && svgsymbols.push(svgfile);
+
+                    let id = File.name(svgfile);
+                    let props = {};
+                    for ( let k in oAttrs ) {
+                        props[k] = oAttrs[k].value;
+                    }
+                    let strSvgUse = bus.at('生成SVG-USE', id, props);
+                    let nodeSvgUse = bus.at('解析生成AST节点', strSvgUse);
+                    node.replaceWith(nodeSvgUse);
+                }else{
+                    // -----------------------------
+                    // 直接内联的方式
+                    let nodeSvgTag;
+                    try{
+                        nodeSvgTag = bus.at('SVG图标文件解析', svgfile, oAttrs, object.loc);
+                    }catch(e){
+                        throw new Err( e.message, e, {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos});
+                    }
+                   
+                    // 替换为内联svg标签节点
+                    nodeSvgTag && node.replaceWith(nodeSvgTag);
+                }
+
             }
-            
-            // 后缀可以省略，如果没写则补足
-            propSrc = propSrc.replace(/\\/g, '/');
-            !/\.svg$/i.test(propSrc) && (propSrc += '.svg');
-
-            let svgfile, ary = propSrc.split(':');
-            if ( ary.length > 2 ) {
-                throw new Err('invalid format of src attribute, etc. name:filefilter', errLocInfo);         // 格式有误，多个冒号
-            }else if ( ary.length > 1 ) {
-                svgfile = findSvgByPkgFilter(ary, propSrc, errLocInfo);                                     // 从npm包中查找
-            }else{
-                svgfile = findSvgInProject(propSrc, errLocInfo, context);                                   // 从项目中查找
-
-                let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
-                !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                                // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-            }
 
 
-            // 解析
-            let nodeSvgTag;
-            try{
-                nodeSvgTag = bus.at('SVG图标文件解析', svgfile, oAttrs, object.loc);
-            }catch(e){
-                throw new Err( e.message, e, {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos});
-            }
-           
-            // 替换为内联svg标签节点
-            nodeSvgTag && node.replaceWith(nodeSvgTag);
         });
 
     });

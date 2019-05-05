@@ -254,6 +254,7 @@
         on("innerHTML", (el, prop, val) => val === undefined ? el.innerHTML : el.innerHTML = val == null ? "" : val);
         on("innerTEXT", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
         on("textcontent", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
+        on("xlink:href", (el, prop, val) => val === undefined ? el.href.baseVal : el.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", val));
         on("img.src", (el, prop, val) => val === undefined ? el.src : el.src = val);
         on("class", (el, prop, val) => {
             if (val === undefined) {

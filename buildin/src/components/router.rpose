@@ -3,9 +3,9 @@ optionkeys = path, onroute, default, notfound
 statekeys = active
 
 [view]
-<div class="rpose-router" @show={$state.active}>
+<section class="rpose-router" @show={$state.active}>
     <slot/>
-</div>
+</section>
 
 [methods]
 {
