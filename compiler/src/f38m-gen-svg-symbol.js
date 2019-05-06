@@ -33,18 +33,20 @@ bus.on('生成内联SVG-SYMBOL代码', function (){
 
 }());
 
-bus.on('生成项目SVG-SYMBOL文件', function (created, fileSymbol){
+bus.on('生成项目SVG-SYMBOL文件', function (fileSymbol, hashcode){
 
     // 指定目录中的svg全部合并，可在文件范围内动态引用
     return function(nocache){
 
         let env  = bus.at('编译环境');
+        let files = File.files(env.path.svgicons, '*.svg');
+        files.push(...bus.at('外部SVG-SYMBOL使用的第三方包中的图标文件'));
+        files = [...new Set(files)];
+        files.sort();
+        let hashcd = hash(JSON.stringify(files));
 
-        if ( nocache || !fileSymbol ) {
-            let files = File.files(env.path.svgicons, '*.svg');
-            files = [...new Set(files)];
-            files.sort();
-
+        if ( nocache || (hashcd !== hashcode) ) {
+            hashcode = hashcd;
             let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
             files.forEach(file => rs.push(svgToSymbol(file)) );                         // 需要适当的转换处理
             rs.push( '</svg>' );
@@ -115,10 +117,45 @@ function svgToSymbol(file){
     svgstart = svgstart.replace(/\s+id\s?=\s?".+?"/, '');                           // 删除 id 属性
     svgstart = svgstart.replace(/\s+fill\s?=\s?".+?"/, '');                         // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
     svgstart = svgstart.replace(/\s+xmlns\s?=\s?".+?"/, '');                        // 删除 xmlns 属性
-//    svgstart = svgstart.replace(/\s+xmlns:xlink\s?=\s?".+?"/, '');                  // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
 
     !viewBox && width && height && (viewBox = `0 0 ${width} ${height}`);            // 无 viewBox 且有 width、height 时，生成 viewBox
 
     // 设定 id、viewBox 属性，svg 替换为 symbol
     return `<symbol id="${id}" viewBox="${viewBox}" ${svgstart.substring(4)} ${svg.substring(0, svg.length-6)}</symbol>`;
 }
+
+bus.on('外部SVG-SYMBOL使用的第三方包中的图标文件', function (){
+
+    // 本项目页面关联的第三方组件如果使用了外部SVG-SYMBOL
+    // 则打包该组件所在项目的SVG图标目录中的全部图标文件
+    return function(){
+
+        let oSetPackageFile = new Set();                                            // 使用了外部SVG-SYMBOL的第三方包的项目配置文件
+        let oFiles = bus.at('源文件对象清单');
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file );
+            if ( context && context.result && context.result.isPage) {
+                let allreferences = context.result.allreferences || [];
+                for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
+                    if ( tagpkg.indexOf(':') > 0 ) {
+                        srcFile = bus.at('标签源文件', tagpkg);
+                        ctx = bus.at('组件编译缓存', srcFile );
+                        if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
+                            oSetPackageFile.add( bus.at('文件所在项目配置文件', srcFile) );
+                        }
+                    }
+                }
+            }
+        }
+
+        let files = [];
+        oSetPackageFile.forEach(file => {
+            let oPjt = bus.at('项目配置处理', file);
+            files.push(...File.files(oPjt.path.svgicons, '**.svg'));
+        });
+
+        return files;
+    }
+
+}());
+

@@ -2,6 +2,7 @@ const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
+const resolvepkg = require('resolve-pkg');
 
 bus.on('编译插件', function(){
     
@@ -114,7 +115,7 @@ bus.on('编译插件', function(){
                 // web-font(引用字体)
                 // 【特点】兼容低版本浏览器
                 // -------------------------------
-                throw new Err('TODO icon type: ' + iconType);   // 尚未对应
+                throw new Err('unsupport icon type: ' + iconType);   // 尚未对应
 
             }else if ( /^inline$/i.test(iconType) ) {
                 // -------------------------------
@@ -144,6 +145,10 @@ bus.on('编译插件', function(){
                 }else{
                     svgfile = findSvgInProject(propSrc, errLocInfo, context);                                   // 从项目中查找
 
+                    if ( !svgfile ) {
+                        svgfile = findSvgInBuildInPackage(propSrc, errLocInfo, context);                        // 从内置npm包中查找
+                    }
+
                     let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
                     !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                                // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
                 }
@@ -162,7 +167,7 @@ bus.on('编译插件', function(){
                 // -------------------------------
                 // 错误的type
                 // -------------------------------
-                throw new Err('invalid type attribute of svgicon (etc. inline/inline-symbol/symbol)',
+                throw new Err('invalid type of svgicon (etc. inline/inline-symbol/symbol)',
                     {file: context.input.file, text: context.input.text, start: nodeType.object.loc.start.pos, end: nodeType.object.loc.end.pos});
             }
 
@@ -244,10 +249,10 @@ function findSvgInProject(propSrc, errLocInfo, context){
         if ( !/^[./\\]+/.test(filter) ) {
             svgfile = oPjt.path.svgicons + '/' + filter.replace(/\\/g, '/');
             if ( !File.existsFile(svgfile) ) {
-                throw new Err('svf icon file not found', errLocInfo);                           // 项目范围内找不到指定的图标文件
+                return false;
             }
         }else{
-            throw new Err('svf icon file not found', errLocInfo);                               // 项目范围内找不到指定的图标文件
+            return false;
         }
     }
 
@@ -258,3 +263,15 @@ function findSvgInProject(propSrc, errLocInfo, context){
     return svgfile;
 }
 
+function findSvgInBuildInPackage(propSrc, errLocInfo){
+    let dir = resolvepkg('@rpose/buildin') + '/svgicons';
+    let files = File.files(dir, propSrc.trim());
+    if ( !files.length ) {
+        throw new Err('svf icon file not found', errLocInfo);                                   // 内置包中找不到指定的图标文件
+    }
+    if ( files.length > 1 ) {
+        throw new Err('multi svf icon file found in package [@rpose/buildin]\n' + files.join('\n'), errLocInfo);     // 内置包中找到多个图标文件
+    }
+
+    return files[0];
+}

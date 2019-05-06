@@ -4363,6 +4363,7 @@ console.time("load");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
     const File = require("@gotoeasy/file");
+    const resolvepkg = require("resolve-pkg");
 
     bus.on(
         "编译插件",
@@ -4491,7 +4492,7 @@ console.time("load");
                         // web-font(引用字体)
                         // 【特点】兼容低版本浏览器
                         // -------------------------------
-                        throw new Err("TODO icon type: " + iconType); // 尚未对应
+                        throw new Err("unsupport icon type: " + iconType); // 尚未对应
                     } else if (/^inline$/i.test(iconType)) {
                         // -------------------------------
                         // inline-svg(内联svg)
@@ -4530,6 +4531,10 @@ console.time("load");
                         } else {
                             svgfile = findSvgInProject(propSrc, errLocInfo, context); // 从项目中查找
 
+                            if (!svgfile) {
+                                svgfile = findSvgInBuildInPackage(propSrc, errLocInfo, context); // 从内置npm包中查找
+                            }
+
                             let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
                             !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
                         }
@@ -4552,7 +4557,7 @@ console.time("load");
                         // -------------------------------
                         // 错误的type
                         // -------------------------------
-                        throw new Err("invalid type attribute of svgicon (etc. inline/inline-symbol/symbol)", {
+                        throw new Err("invalid type of svgicon (etc. inline/inline-symbol/symbol)", {
                             file: context.input.file,
                             text: context.input.text,
                             start: nodeType.object.loc.start.pos,
@@ -4633,10 +4638,10 @@ console.time("load");
             if (!/^[./\\]+/.test(filter)) {
                 svgfile = oPjt.path.svgicons + "/" + filter.replace(/\\/g, "/");
                 if (!File.existsFile(svgfile)) {
-                    throw new Err("svf icon file not found", errLocInfo); // 项目范围内找不到指定的图标文件
+                    return false;
                 }
             } else {
-                throw new Err("svf icon file not found", errLocInfo); // 项目范围内找不到指定的图标文件
+                return false;
             }
         }
 
@@ -4645,6 +4650,19 @@ console.time("load");
         }
 
         return svgfile;
+    }
+
+    function findSvgInBuildInPackage(propSrc, errLocInfo) {
+        let dir = resolvepkg("@rpose/buildin") + "/svgicons";
+        let files = File.files(dir, propSrc.trim());
+        if (!files.length) {
+            throw new Err("svf icon file not found", errLocInfo); // 内置包中找不到指定的图标文件
+        }
+        if (files.length > 1) {
+            throw new Err("multi svf icon file found in package [@rpose/buildin]\n" + files.join("\n"), errLocInfo); // 内置包中找到多个图标文件
+        }
+
+        return files[0];
     }
 
     // ------- f37p-astedit-transform-tag-svgicon-to-svg end
@@ -4690,16 +4708,18 @@ console.time("load");
 
     bus.on(
         "生成项目SVG-SYMBOL文件",
-        (function(created, fileSymbol) {
+        (function(fileSymbol, hashcode) {
             // 指定目录中的svg全部合并，可在文件范围内动态引用
             return function(nocache) {
                 let env = bus.at("编译环境");
+                let files = File.files(env.path.svgicons, "*.svg");
+                files.push(...bus.at("外部SVG-SYMBOL使用的第三方包中的图标文件"));
+                files = [...new Set(files)];
+                files.sort();
+                let hashcd = hash(JSON.stringify(files));
 
-                if (nocache || !fileSymbol) {
-                    let files = File.files(env.path.svgicons, "*.svg");
-                    files = [...new Set(files)];
-                    files.sort();
-
+                if (nocache || hashcd !== hashcode) {
+                    hashcode = hashcd;
                     let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
                     files.forEach(file => rs.push(svgToSymbol(file))); // 需要适当的转换处理
                     rs.push("</svg>");
@@ -4778,13 +4798,48 @@ console.time("load");
         svgstart = svgstart.replace(/\s+id\s?=\s?".+?"/, ""); // 删除 id 属性
         svgstart = svgstart.replace(/\s+fill\s?=\s?".+?"/, ""); // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
         svgstart = svgstart.replace(/\s+xmlns\s?=\s?".+?"/, ""); // 删除 xmlns 属性
-        //    svgstart = svgstart.replace(/\s+xmlns:xlink\s?=\s?".+?"/, '');                  // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
 
         !viewBox && width && height && (viewBox = `0 0 ${width} ${height}`); // 无 viewBox 且有 width、height 时，生成 viewBox
 
         // 设定 id、viewBox 属性，svg 替换为 symbol
         return `<symbol id="${id}" viewBox="${viewBox}" ${svgstart.substring(4)} ${svg.substring(0, svg.length - 6)}</symbol>`;
     }
+
+    bus.on(
+        "外部SVG-SYMBOL使用的第三方包中的图标文件",
+        (function() {
+            // 本项目页面关联的第三方组件如果使用了外部SVG-SYMBOL
+            // 则打包该组件所在项目的SVG图标目录中的全部图标文件
+            return function() {
+                let oSetPackageFile = new Set(); // 使用了外部SVG-SYMBOL的第三方包的项目配置文件
+                let oFiles = bus.at("源文件对象清单");
+                for (let file in oFiles) {
+                    let context = bus.at("组件编译缓存", file);
+                    if (context && context.result && context.result.isPage) {
+                        let allreferences = context.result.allreferences || [];
+                        for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
+                            if (tagpkg.indexOf(":") > 0) {
+                                srcFile = bus.at("标签源文件", tagpkg);
+                                ctx = bus.at("组件编译缓存", srcFile);
+                                if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
+                                    oSetPackageFile.add(bus.at("文件所在项目配置文件", srcFile));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let files = [];
+                oSetPackageFile.forEach(file => {
+                    let oPjt = bus.at("项目配置处理", file);
+                    files.push(...File.files(oPjt.path.svgicons, "**.svg"));
+                });
+
+                return files;
+            };
+        })()
+    );
+
     // ------- f38m-gen-svg-symbol end
 })();
 
