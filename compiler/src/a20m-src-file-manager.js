@@ -98,9 +98,16 @@ const File = require('@gotoeasy/file');
 
     bus.on('SVG文件添加', function(svgfile){
 
+        let refFiles = [];
+        let env = bus.at('编译环境');
+        if ( svgfile.startsWith(env.path.svgicons + '/') ) {
+            bus.at('生成项目SVG-SYMBOL文件', true);
+            refFiles.push( ...bus.at('使用外部SVG-SYMBOL的页面文件') );
+        }
+
         // SVG图标文件添加时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
         let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
-        let needBuild, refFiles = [];
+        let needBuild;
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
             if ( context ) {
@@ -168,9 +175,15 @@ const File = require('@gotoeasy/file');
 
     bus.on('SVG文件修改', function(svgfile){
 
+        let refFiles = [];
+        let env = bus.at('编译环境');
+        if ( svgfile.startsWith(env.path.svgicons + '/') ) {
+            bus.at('生成项目SVG-SYMBOL文件', true);
+            refFiles.push( ...bus.at('使用外部SVG-SYMBOL的页面文件') );
+        }
+
         // SVG图标文件修改时，找出使用该svg文件的组件，以及使用该组件的页面，都清除缓存后重新编译
         let oFiles = bus.at('源文件对象清单');
-        let refFiles = [];
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
             if ( context ) {
@@ -271,9 +284,16 @@ const File = require('@gotoeasy/file');
 
     bus.on('SVG文件删除', function(svgfile){
 
+        let refFiles = [];
+        let env = bus.at('编译环境');
+        if ( svgfile.startsWith(env.path.svgicons + '/') ) {
+            bus.at('生成项目SVG-SYMBOL文件', true);
+            refFiles.push( ...bus.at('使用外部SVG-SYMBOL的页面文件') );
+        }
+
         // SVG图标文件删除时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
         let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
-        let needBuild, refFiles = [];
+        let needBuild;
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
             if ( context ) {
@@ -333,4 +353,34 @@ function removeHtmlCssJsFile(file){
     File.remove(fileJs);
 
 }
+
+bus.on('使用外部SVG-SYMBOL的页面文件', function (){
+
+    return function(){
+
+        let oFiles = bus.at('源文件对象清单');
+        let files = [];
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file );
+            if ( context && context.result && context.result.isPage) {
+                if ( context.result.hasRefSvgSymbol ) {
+                    files.push(file);                                                   // 页面使用了外部SVG-SYMBOL图标
+                }else{
+                    let allreferences = context.result.allreferences;
+                    for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
+                        srcFile = bus.at('标签源文件', tagpkg);
+                        ctx = bus.at('组件编译缓存', srcFile );
+                        if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
+                            files.push(file);                                           // 页面关联的组件使用了外部SVG-SYMBOL图标
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return files;
+    }
+
+}());
 

@@ -1,24 +1,26 @@
 const bus = require('@gotoeasy/bus');
 const File = require('@gotoeasy/file');
+const hash = require('@gotoeasy/hash');
 
-bus.on('生成SVG-SYMBOL', function (){
+bus.on('生成内联SVG-SYMBOL代码', function (){
 
-    // 方案1，按需打包，属于硬编码
     // 前提: 页面编译成功，使用到的关联组件全部编译成功
     // 最后生成页面时调用此模块，生成内联svg-symbol
-    // 
-    // TODO： 方案2，指定目录中的svg全部合并，可在文件范围内动态引用
     return function(pageSrcFile){
 
         let context = bus.at('组件编译缓存', pageSrcFile);
         let allreferences = context.result.allreferences;
 
         // 取出页面使用到的内联svg，去除重复，排序后生成svg-symbol方式的字符串
-        let files = [ ...(context.result.svgsymbols||[]) ];                         // 本页面，加了再说，避免遗漏
+        let files = [ ...(context.result.inlinesymbols||[]) ];                      // 本页面，加了再说，避免遗漏
         allreferences.forEach(tagpkg => {
             let ctx = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg));
-            ctx.result.svgsymbols && files.push(...ctx.result.svgsymbols);
+            ctx.result.inlinesymbols && files.push(...ctx.result.inlinesymbols);
         });
+        if ( !files.length ) {
+            return '';
+        }
+
         files = [...new Set(files)];
         files.sort();
 
@@ -31,7 +33,45 @@ bus.on('生成SVG-SYMBOL', function (){
 
 }());
 
-bus.on('生成SVG-USE', function (){
+bus.on('生成项目SVG-SYMBOL文件', function (created, fileSymbol){
+
+    // 指定目录中的svg全部合并，可在文件范围内动态引用
+    return function(nocache){
+
+        let env  = bus.at('编译环境');
+
+        if ( nocache || !fileSymbol ) {
+            let files = File.files(env.path.svgicons, '*.svg');
+            files = [...new Set(files)];
+            files.sort();
+
+            let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
+            files.forEach(file => rs.push(svgToSymbol(file)) );                         // 需要适当的转换处理
+            rs.push( '</svg>' );
+
+            let svg = rs.join('');
+            let dir = env.path.build_dist + '/' + (env.path.build_dist_images ? (env.path.build_dist_images + '/') : '');
+            fileSymbol = 'symbol-' + hash(svg) + '.svg';
+            File.write(dir + fileSymbol, svg);
+        }
+        return fileSymbol;
+    }
+
+}());
+
+bus.on('生成外部引用SVG-USE', function (){
+
+    return function(id, props={}){
+        let attrs = [];
+        for ( let key in props ) {
+            attrs.push(`${key}="${props[key]}"`);
+        }
+        return `<svg ${attrs.join(' ')}><use xlink:href="%svgsymbolfile%#${id}"></use></svg>`;
+    }
+
+}());
+
+bus.on('生成内部引用SVG-USE', function (){
 
     return function(id, props={}){
         let attrs = [];
@@ -72,8 +112,10 @@ function svgToSymbol(file){
         viewBox = val;
         return '';
     });
-    svgstart = svgstart.replace(/\s+id\s?=\s?"(.+?)"/, '');                         // 删除 id 属性
-    svgstart = svgstart.replace(/\s+fill\s?=\s?"(.+?)"/, '');                       // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
+    svgstart = svgstart.replace(/\s+id\s?=\s?".+?"/, '');                           // 删除 id 属性
+    svgstart = svgstart.replace(/\s+fill\s?=\s?".+?"/, '');                         // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
+    svgstart = svgstart.replace(/\s+xmlns\s?=\s?".+?"/, '');                        // 删除 xmlns 属性
+//    svgstart = svgstart.replace(/\s+xmlns:xlink\s?=\s?".+?"/, '');                  // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
 
     !viewBox && width && height && (viewBox = `0 0 ${width} ${height}`);            // 无 viewBox 且有 width、height 时，生成 viewBox
 

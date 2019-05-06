@@ -31,6 +31,13 @@ bus.on('编译插件', function(){
             });
         }
 
+        if ( srcComponents.indexOf('%svgsymbolfile%') > 0 ) {
+            // 替换图标相对路径，图标不存在则复制
+            let imgPath = bus.at('页面图片相对路径', context.input.file);
+            let fileSymbol = bus.at('生成项目SVG-SYMBOL文件');
+            srcComponents = srcComponents.replace(/%svgsymbolfile%/g, imgPath + fileSymbol);
+        }
+
         let tagpkg = context.result.tagpkg;
 
         let src = `
