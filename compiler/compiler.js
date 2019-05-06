@@ -306,17 +306,17 @@ console.time("load");
         });
 
         bus.on("SVG文件添加", function(svgfile) {
-            let refFiles = [];
             let env = bus.at("编译环境");
             if (svgfile.startsWith(env.path.svgicons + "/")) {
                 bus.at("生成项目SVG-SYMBOL文件", true);
-                refFiles.push(...bus.at("使用外部SVG-SYMBOL的页面文件"));
+                bus.at("重新计算页面哈希码");
             }
 
             // SVG图标文件添加时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
             let oFiles = bus.at("源文件对象清单"),
                 name = File.name(svgfile);
-            let needBuild;
+            let needBuild,
+                refFiles = [];
             for (let file in oFiles) {
                 let context = bus.at("组件编译缓存", file);
                 if (context) {
@@ -382,15 +382,15 @@ console.time("load");
         });
 
         bus.on("SVG文件修改", function(svgfile) {
-            let refFiles = [];
             let env = bus.at("编译环境");
             if (svgfile.startsWith(env.path.svgicons + "/")) {
                 bus.at("生成项目SVG-SYMBOL文件", true);
-                refFiles.push(...bus.at("使用外部SVG-SYMBOL的页面文件"));
+                bus.at("重新计算页面哈希码");
             }
 
             // SVG图标文件修改时，找出使用该svg文件的组件，以及使用该组件的页面，都清除缓存后重新编译
             let oFiles = bus.at("源文件对象清单");
+            let refFiles = [];
             for (let file in oFiles) {
                 let context = bus.at("组件编译缓存", file);
                 if (context) {
@@ -489,16 +489,16 @@ console.time("load");
         });
 
         bus.on("SVG文件删除", function(svgfile) {
-            let refFiles = [];
             let env = bus.at("编译环境");
             if (svgfile.startsWith(env.path.svgicons + "/")) {
                 bus.at("生成项目SVG-SYMBOL文件", true);
-                refFiles.push(...bus.at("使用外部SVG-SYMBOL的页面文件"));
+                bus.at("重新计算页面哈希码");
             }
 
             // SVG图标文件删除时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
             let oFiles = bus.at("源文件对象清单"),
                 name = File.name(svgfile);
+            let refFiles = [];
             let needBuild;
             for (let file in oFiles) {
                 let context = bus.at("组件编译缓存", file);
@@ -4410,6 +4410,7 @@ console.time("load");
                         });
 
                     // inline(内联svg)/inline-symbol(内联svg symbol)/symbol(外部引用svg symbol)/web-font(引用字体)
+                    iconName && !nodeType && (iconType = "symbol"); // 写了name时type缺省为symbol
                     if (/^inline-symbol$/i.test(iconType)) {
                         // -------------------------------
                         // inline-symbol(内联svg symbol)
@@ -4486,7 +4487,6 @@ console.time("load");
                         node.replaceWith(nodeSvgUse);
 
                         context.result.hasRefSvgSymbol = true;
-                        bus.at("生成项目SVG-SYMBOL文件");
                     } else if (/^web[-]?font[s]?$/i.test(iconType)) {
                         // -------------------------------
                         // web-font(引用字体)
@@ -4708,7 +4708,7 @@ console.time("load");
 
     bus.on(
         "生成项目SVG-SYMBOL文件",
-        (function(fileSymbol, hashcode) {
+        (function(filename, fileshashcode, hashcode) {
             // 指定目录中的svg全部合并，可在文件范围内动态引用
             return function(nocache) {
                 let env = bus.at("编译环境");
@@ -4718,18 +4718,20 @@ console.time("load");
                 files.sort();
                 let hashcd = hash(JSON.stringify(files));
 
-                if (nocache || hashcd !== hashcode) {
-                    hashcode = hashcd;
+                if (nocache || hashcd !== fileshashcode) {
+                    fileshashcode = hashcd;
                     let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
                     files.forEach(file => rs.push(svgToSymbol(file))); // 需要适当的转换处理
                     rs.push("</svg>");
 
                     let svg = rs.join("");
                     let dir = env.path.build_dist + "/" + (env.path.build_dist_images ? env.path.build_dist_images + "/" : "");
-                    fileSymbol = "symbol-" + hash(svg) + ".svg";
-                    File.write(dir + fileSymbol, svg);
+                    hashcode = hash(svg); // 热刷新计算用
+                    filename = "svg-symbols.svg";
+                    File.write(dir + filename, svg);
+                    console.info("[write] -", dir + filename);
                 }
-                return fileSymbol;
+                return { filename, hashcode };
             };
         })()
     );
@@ -4836,6 +4838,33 @@ console.time("load");
                 });
 
                 return files;
+            };
+        })()
+    );
+
+    bus.on(
+        "页面是否引用外部SVG-SYMBOL文件",
+        (function() {
+            return function(srcFile) {
+                let context = bus.at("组件编译缓存", srcFile);
+                if (!context || !context.result || !context.result.isPage) {
+                    return false; // 不是页面
+                }
+
+                if (context.result.hasRefSvgSymbol) {
+                    return true; // 页面有使用
+                }
+
+                let allreferences = context.result.allreferences || [];
+                for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
+                    srcFile = bus.at("标签源文件", tagpkg);
+                    ctx = bus.at("组件编译缓存", srcFile);
+                    if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
+                        return true; // 页面关联组件有使用
+                    }
+                }
+
+                return false; // 没使用或没编译通过
             };
         })()
     );
@@ -8926,8 +8955,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 if (srcComponents.indexOf("%svgsymbolfile%") > 0) {
                     // 替换图标相对路径，图标不存在则复制
                     let imgPath = bus.at("页面图片相对路径", context.input.file);
-                    let fileSymbol = bus.at("生成项目SVG-SYMBOL文件");
-                    srcComponents = srcComponents.replace(/%svgsymbolfile%/g, imgPath + fileSymbol);
+                    let oSvgSymbol = bus.at("生成项目SVG-SYMBOL文件");
+                    srcComponents = srcComponents.replace(/%svgsymbolfile%/g, imgPath + oSvgSymbol.filename);
                 }
 
                 let tagpkg = context.result.tagpkg;
@@ -9090,6 +9119,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         let fileHtml = bus.at("页面目标HTML文件名", context.input.file);
                         let fileCss = bus.at("页面目标CSS文件名", context.input.file);
                         let fileJs = bus.at("页面目标JS文件名", context.input.file);
+                        let svgSymbolHashcode = "";
+                        if (bus.at("页面是否引用外部SVG-SYMBOL文件", context.input.file)) {
+                            let oSvgSymbol = bus.at("生成项目SVG-SYMBOL文件");
+                            svgSymbolHashcode = oSvgSymbol.hashcode;
+                        }
 
                         let html = context.result.html;
                         let css = context.result.pageCss;
@@ -9100,7 +9134,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         File.write(fileJs, js);
                         File.write(fileHtml, html);
 
-                        env.watch && (context.result.hashcode = hash(html + css + js)); // 计算页面编译结果的哈希码，供浏览器同步判断使用
+                        env.watch && (context.result.hashcode = hash(html + css + js) + "-" + svgSymbolHashcode); // 计算页面编译结果的哈希码，供浏览器同步判断使用
 
                         time = new Date().getTime() - stime;
                         console.info("[pack]", time + "ms -", fileHtml.substring(env.path.build_dist.length + 1));
@@ -9109,6 +9143,29 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         console.error("[pack]", e);
                     });
             });
+        })()
+    );
+
+    // 外部SVG-SYMBOL文件内容变化时，重新计算页面哈希码，以便热刷新
+    bus.on(
+        "重新计算页面哈希码",
+        (function() {
+            return () => {
+                let env = bus.at("编译环境");
+                if (!env.watch) return;
+
+                let oFiles = bus.at("源文件对象清单");
+                for (let file in oFiles) {
+                    let context = bus.at("组件编译缓存", file);
+                    if (bus.at("页面是否引用外部SVG-SYMBOL文件", file)) {
+                        let oSvgSymbol = bus.at("生成项目SVG-SYMBOL文件");
+                        let ary = (context.result.hashcode || "").split("-");
+                        ary.length > 1 && ary.pop();
+                        ary.push(oSvgSymbol.hashcode); // 替换减号后面的哈希码
+                        context.result.hashcode = ary.join("-");
+                    }
+                }
+            };
         })()
     );
 

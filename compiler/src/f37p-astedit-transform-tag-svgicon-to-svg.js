@@ -44,7 +44,9 @@ bus.on('编译插件', function(){
             });
             
 
+
             // inline(内联svg)/inline-symbol(内联svg symbol)/symbol(外部引用svg symbol)/web-font(引用字体)
+            iconName && !nodeType && (iconType = 'symbol');     // 写了name时type缺省为symbol
             if ( /^inline-symbol$/i.test(iconType) ) {
                 // -------------------------------
                 // inline-symbol(内联svg symbol)
@@ -108,7 +110,6 @@ bus.on('编译插件', function(){
                 node.replaceWith(nodeSvgUse);
 
                 context.result.hasRefSvgSymbol = true;
-                bus.at('生成项目SVG-SYMBOL文件');
 
             }else if ( /^web[-]?font[s]?$/i.test(iconType) ) {
                 // -------------------------------

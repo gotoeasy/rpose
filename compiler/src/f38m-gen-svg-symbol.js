@@ -33,7 +33,7 @@ bus.on('生成内联SVG-SYMBOL代码', function (){
 
 }());
 
-bus.on('生成项目SVG-SYMBOL文件', function (fileSymbol, hashcode){
+bus.on('生成项目SVG-SYMBOL文件', function (filename, fileshashcode, hashcode){
 
     // 指定目录中的svg全部合并，可在文件范围内动态引用
     return function(nocache){
@@ -45,18 +45,20 @@ bus.on('生成项目SVG-SYMBOL文件', function (fileSymbol, hashcode){
         files.sort();
         let hashcd = hash(JSON.stringify(files));
 
-        if ( nocache || (hashcd !== hashcode) ) {
-            hashcode = hashcd;
+        if ( nocache || (hashcd !== fileshashcode) ) {
+            fileshashcode = hashcd;
             let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
             files.forEach(file => rs.push(svgToSymbol(file)) );                         // 需要适当的转换处理
             rs.push( '</svg>' );
 
             let svg = rs.join('');
             let dir = env.path.build_dist + '/' + (env.path.build_dist_images ? (env.path.build_dist_images + '/') : '');
-            fileSymbol = 'symbol-' + hash(svg) + '.svg';
-            File.write(dir + fileSymbol, svg);
+            hashcode = hash(svg);                // 热刷新计算用
+            filename = 'svg-symbols.svg';
+            File.write(dir + filename, svg);
+            console.info('[write] -',  dir + filename);
         }
-        return fileSymbol;
+        return {filename, hashcode};
     }
 
 }());
@@ -155,6 +157,33 @@ bus.on('外部SVG-SYMBOL使用的第三方包中的图标文件', function (){
         });
 
         return files;
+    }
+
+}());
+
+bus.on('页面是否引用外部SVG-SYMBOL文件', function (){
+
+    return function(srcFile){
+
+        let context = bus.at('组件编译缓存', srcFile);
+        if ( !context || !context.result || !context.result.isPage ) {
+            return false;                                                           // 不是页面
+        }
+
+        if ( context.result.hasRefSvgSymbol ) {
+            return true;                                                            // 页面有使用
+        }
+
+        let allreferences = context.result.allreferences || [];
+        for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
+            srcFile = bus.at('标签源文件', tagpkg);
+            ctx = bus.at('组件编译缓存', srcFile );
+            if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
+                return true;                                                        // 页面关联组件有使用
+            }
+        }
+
+        return false; // 没使用或没编译通过
     }
 
 }());

@@ -98,16 +98,15 @@ const File = require('@gotoeasy/file');
 
     bus.on('SVG文件添加', function(svgfile){
 
-        let refFiles = [];
         let env = bus.at('编译环境');
         if ( svgfile.startsWith(env.path.svgicons + '/') ) {
             bus.at('生成项目SVG-SYMBOL文件', true);
-            refFiles.push( ...bus.at('使用外部SVG-SYMBOL的页面文件') );
+            bus.at('重新计算页面哈希码');
         }
 
         // SVG图标文件添加时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
         let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
-        let needBuild;
+        let needBuild, refFiles = [];
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
             if ( context ) {
@@ -175,15 +174,15 @@ const File = require('@gotoeasy/file');
 
     bus.on('SVG文件修改', function(svgfile){
 
-        let refFiles = [];
         let env = bus.at('编译环境');
         if ( svgfile.startsWith(env.path.svgicons + '/') ) {
             bus.at('生成项目SVG-SYMBOL文件', true);
-            refFiles.push( ...bus.at('使用外部SVG-SYMBOL的页面文件') );
+            bus.at('重新计算页面哈希码');
         }
 
         // SVG图标文件修改时，找出使用该svg文件的组件，以及使用该组件的页面，都清除缓存后重新编译
         let oFiles = bus.at('源文件对象清单');
+        let refFiles = [];
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
             if ( context ) {
@@ -284,15 +283,15 @@ const File = require('@gotoeasy/file');
 
     bus.on('SVG文件删除', function(svgfile){
 
-        let refFiles = [];
         let env = bus.at('编译环境');
         if ( svgfile.startsWith(env.path.svgicons + '/') ) {
             bus.at('生成项目SVG-SYMBOL文件', true);
-            refFiles.push( ...bus.at('使用外部SVG-SYMBOL的页面文件') );
+            bus.at('重新计算页面哈希码');
         }
 
         // SVG图标文件删除时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
         let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
+        let refFiles = [];
         let needBuild;
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
