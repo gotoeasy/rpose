@@ -24,7 +24,7 @@ bus.on('编译插件', function(){
                 }
             }
 
-            let nodeSrc, nodeType, iconName, iconType = 'inline', oAttrs = {};
+            let nodeSrc, nodeType, iconName, iconType, oAttrs = {};
             attrsNode && attrsNode.nodes.forEach(nd => {
                 let name = nd.object.name;
                 if ( /^src$/i.test(name) ) {
@@ -32,7 +32,7 @@ bus.on('编译插件', function(){
                     nodeSrc = nd;                                                   // 属性节点src
                 }else if ( /^type$/i.test(name) ) {
                     // type属性是svgicon专用属性，用于指定使用图标展示方式
-                    iconType = nd.object.value.trim();                              // 属性节点type
+                    iconType = (nd.object.value+'').trim();                         // 属性节点type
                     nodeType = nd;
                 }else if ( /^name$/i.test(name) ) {
                     // name属性是svgicon专用属性，用于symbol(外部引用svg symbol)方式时指定图标名
@@ -44,24 +44,47 @@ bus.on('编译插件', function(){
             });
             
 
+            if ( nodeSrc && iconName ) {
+                // 不能同时有src、name属性
+                throw new Err('unsupport both src and name attribute on svgicon (src only or name only)',
+                    {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+            }
+            if ( !nodeSrc && !iconName ) {
+                // 不能都没有src、name属性
+                throw new Err('missing src or name attribute of svgicon',
+                    {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+            }
+
+            if ( nodeSrc ) {
+                // 使用src属性时，支持inline、inline-symbol类型，缺省为inline
+                if ( nodeType && !/^inline$/i.test(iconType) && !/^inline-symbol$/i.test(iconType) ) {
+                    throw new Err('support type "inline" or "inline-symbol" only when use src attribute',
+                        {file: context.input.file, text: context.input.text, start: nodeType.object.loc.start.pos, end: nodeType.object.loc.end.pos});
+                }
+
+                !iconType && (iconType = 'inline');             // 写了src 时type缺省为 inline
+            }else{
+                // 使用name属性时，支持symbol、web-font类型，缺省为symbol
+                if ( nodeType && !/^symbol$/i.test(iconType) && !/^web[-]?font[s]?$/i.test(iconType) ) {
+                    throw new Err('support type "symbol" or "web-font" only when use name attribute',
+                        {file: context.input.file, text: context.input.text, start: nodeType.object.loc.start.pos, end: nodeType.object.loc.end.pos});
+                }
+                !nodeType && (iconType = 'symbol');             // 写了name 时type缺省为 symbol
+            }
 
             // inline(内联svg)/inline-symbol(内联svg symbol)/symbol(外部引用svg symbol)/web-font(引用字体)
-            iconName && !nodeType && (iconType = 'symbol');     // 写了name时type缺省为symbol
             if ( /^inline-symbol$/i.test(iconType) ) {
                 // -------------------------------
                 // inline-symbol(内联svg symbol)
                 // 【特点】以页面为单位，按需内联引用
                 // -------------------------------
-                if ( !nodeSrc ) {
-                    throw new Err('missing src attribute of svgicon(type="inline-symbol")',
-                        {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
-                }
-
-                // 文件检查
                 let errLocInfo = {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos};    // 定位src处
-                let propSrc = nodeSrc.object.value.trim();
+                let propSrc = (nodeSrc.object.value+'').trim();
                 if ( !propSrc ) {
                     throw new Err('invalid value of attribute src', errLocInfo);                                // 必须指定图标
+                }
+                if ( bus.at('是否表达式', propSrc) ) {
+                    throw new Err('unsupport expression on src attribute of svgicon', errLocInfo);              // src属性不支持表达式
                 }
                 
                 propSrc = propSrc.replace(/\\/g, '/');
@@ -96,11 +119,6 @@ bus.on('编译插件', function(){
                 // symbol(外部引用svg symbol)
                 // 【特点】工程单位范围内可动态生成
                 // -------------------------------
-                if ( !iconName ) {
-                    throw new Err('missing name attribute of svgicon(type="symbol")',
-                        {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
-                }
-
                 let props = {};
                 for ( let k in oAttrs ) {
                     props[k] = oAttrs[k].value;
@@ -116,23 +134,20 @@ bus.on('编译插件', function(){
                 // web-font(引用字体)
                 // 【特点】兼容低版本浏览器
                 // -------------------------------
-                throw new Err('unsupport icon type: ' + iconType);   // 尚未对应
+                throw new Err('TODO icon type: ' + iconType);   // 尚未对应
 
             }else if ( /^inline$/i.test(iconType) ) {
                 // -------------------------------
                 // inline-svg(内联svg)
                 // 【特点】可灵活引用svg图标
                 // -------------------------------
-                if ( !nodeSrc ) {
-                    throw new Err('missing src attribute of svgicon(type="inline-symbol")',
-                        {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
-                }
-
-                // 文件检查
                 let errLocInfo = {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos};    // 定位src处
-                let propSrc = nodeSrc.object.value.trim();
+                let propSrc = (nodeSrc.object.value+'').trim();
                 if ( !propSrc ) {
                     throw new Err('invalid value of attribute src', errLocInfo);                                // 必须指定图标
+                }
+                if ( bus.at('是否表达式', propSrc) ) {
+                    throw new Err('unsupport expression on src attribute of svgicon', errLocInfo);              // src属性不支持表达式
                 }
                 
                 propSrc = propSrc.replace(/\\/g, '/');
@@ -164,12 +179,6 @@ bus.on('编译插件', function(){
                 // 替换为内联svg标签节点
                 nodeSvgTag && node.replaceWith(nodeSvgTag);
 
-            }else{
-                // -------------------------------
-                // 错误的type
-                // -------------------------------
-                throw new Err('invalid type of svgicon (etc. inline/inline-symbol/symbol)',
-                    {file: context.input.file, text: context.input.text, start: nodeType.object.loc.start.pos, end: nodeType.object.loc.end.pos});
             }
 
         });
@@ -236,7 +245,7 @@ function findSvgByPkgFilter(ary, propSrc, errLocInfo){
 function findSvgInProject(propSrc, errLocInfo, context){
 
     // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
-    let filter = propSrc.trim();
+    let filter = propSrc;
 
     let oPjt = bus.at('项目配置处理', context.input.file);
     let svgfile = File.resolve(context.input.file, filter);                                     // 相对于源文件所在目录，按相对路径查找svg文件
@@ -266,7 +275,7 @@ function findSvgInProject(propSrc, errLocInfo, context){
 
 function findSvgInBuildInPackage(propSrc, errLocInfo){
     let dir = resolvepkg('@rpose/buildin') + '/svgicons';
-    let files = File.files(dir, propSrc.trim());
+    let files = File.files(dir, propSrc);
     if ( !files.length ) {
         throw new Err('svf icon file not found', errLocInfo);                                   // 内置包中找不到指定的图标文件
     }

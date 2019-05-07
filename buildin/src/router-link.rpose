@@ -10,7 +10,8 @@ optionkeys = path, params, title
     click: e => {
 
         if ( !/^(http[s]?:|\.+)/i.test(this.$options.path) ) {
-            e.preventDefault();                     // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制
+            e.preventDefault();                                                 // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制
+            this.$options.title && (document.title = this.$options.title);      // 如果指定了title，顺便修改标题
             let path = this.$options.path || '';
             let state = this.$options.params;
             rpose.router.page({path, state});

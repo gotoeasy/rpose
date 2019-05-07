@@ -70,7 +70,12 @@ bus.on('生成外部引用SVG-USE', function (){
         for ( let key in props ) {
             attrs.push(`${key}="${props[key]}"`);
         }
-        return `<svg ${attrs.join(' ')}><use xlink:href="%svgsymbolfile%#${id}"></use></svg>`;
+        let href = `%svgsymbolfile%#${id}`;
+        if ( bus.at('是否表达式', id) ) {
+            let expr = id.substring(1, id.length-1);
+            href = `{'%svgsymbolfile%#' + (${expr}) }`
+        }
+        return `<svg ${attrs.join(' ')}><use xlink:href="${href}"></use></svg>`;
     }
 
 }());
