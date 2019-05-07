@@ -179,7 +179,7 @@ body
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
-- [x] 内置标签组件 `<svgicon>`，支持src属性指定本地项目或npm包中svg图标文件
+- [x] 内置标签组件 `<svgicon>`，内置部分常用图标
 
 * `runtime`
 
@@ -240,7 +240,8 @@ body
 <summary><strong>Ver 0.5.x</strong></summary>
 
 - [x] 新增指令`@class`，支持以灵活的原子方式书写样式
-- [x] 内置标签组件 `<svgicon>`，支持src属性指定本地项目或npm包中的svg图标文件
+- [x] 内置标签组件 `<svgicon>`，内置部分常用图标
+- [x] 指令`@show`添加修饰符支持，如`@show.flex`
 </details>
 
 <details>
