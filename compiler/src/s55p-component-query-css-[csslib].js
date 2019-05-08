@@ -10,6 +10,8 @@ bus.on('编译插件', function(){
         let style = context.style;
         let oCssSet = style.csslibset = style.csslibset || new Set();                                       // 组件单位样式库引用的样式
         let oCsslib = context.result.oCsslib;                                                               // 项目[csslib]+组件[csslib]
+        let oAtCsslib = context.result.oAtCsslib;                                                           // 组件@csslib样式库集合 (asname：lib)
+        let oAllCsslib = Object.assign({}, context.result.oCsslib, context.result.oAtCsslib);               // 项目[csslib]+组件[csslib]+组件@csslib样式库集合 (asname：lib)
         let scriptclassnames = context.script.classnames;
         let hashClassName = bus.on('哈希样式类名')[0];
         let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? (cls+ '@' + pkg) : cls );        // 自定义改名函数
@@ -18,36 +20,33 @@ bus.on('编译插件', function(){
         let opts = {rename, strict, universal};
 
         let ary, oQuerys = {};
+        // view中@csslib部分已生成样式存放于atcsslibtagcss，剩余[csslib]部分需要生成
         root.walk( 'Class', (node, object) => {
             // 按样式库单位汇总组件内全部样式类
             for ( let i=0,clspkg,clsname,asname; clspkg=object.classes[i++]; ) {
                 ary = clspkg.split('@');
                 clsname = '.' + ary[0];                                                                     // 类名
                 asname = ary.length > 1 ? ary[1] : '*';                                                     // 库别名
-                (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                    // 按库名单位汇总样式类，后续组件单位将一次性取出
-
-                // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]）中是否存在
-                if ( asname !== '*' && !oCsslib[asname] ) {
-                    throw new Err('csslib not found: '+ asname, {file:context.input.file, text:context.input.text, start:object.loc.start.pos, end:object.loc.end.pos});
-                }
+                (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                    // 按库名单位汇总样式类，后续组件单位将一次性取出(多汇总*或@csslib没关系，不会多查)
             }
         });
 
+        // 检查js脚本中的样式库是否正确
         for ( let i=0,clspkg,clsname,asname; clspkg=scriptclassnames[i++]; ) {
             ary = clspkg.split('@');
             clsname = '.' + ary[0];                                                                         // 类名
             asname = ary.length > 1 ? ary[1] : '*';                                                         // 库别名
-            (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                        // 按库名单位汇总样式类，后续组件单位将一次性取出
+            (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                        // 按库名单位汇总样式类，后续组件单位将一次性取出(多汇总*或@csslib没关系，不会多查)
 
-            // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]）中是否存在
-            if ( asname !== '*' && !oCsslib[asname] ) {
+            // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]+@csslib）中是否存在
+            if ( asname !== '*' && !oCsslib[asname] && !oAtCsslib[asname] ) {
                 throw new Err('csslib not found (check classname in script): '+ asname + '\nfile:' + context.input.file);
             }
         }
 
         let csslib, tags = context.result.standardtags;                                                     // 用本组件的全部标准标签，解析完后才能用本插件
         for ( let asname in oQuerys ) {
-            csslib = oCsslib[asname];
+            csslib = oAllCsslib[asname];
             csslib && oCssSet.add( csslib.get(...tags, ...new Set(oQuerys[asname]), opts) );                // 用本组件的全部标准标签+同一样式库的类名，查取样式库
         }
 

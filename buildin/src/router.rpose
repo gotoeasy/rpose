@@ -11,6 +11,10 @@ statekeys = active
 {
     init: () => {
         rpose.router.register({path: this.$options.path, component: this, default: !!this.$options.default, notfound: !!this.$options.notfound});
-        this.route = ctx => this.setState({active: 1});
+        this.route = ctx => {
+            this.setState({active: 1})
+            let el = this.getRootElement();
+            el && el.parentNode && el.parentNode.scrollTo(0, 0);       // 默认父节点滚动回顶部
+        };
     }
 }
