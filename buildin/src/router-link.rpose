@@ -2,7 +2,7 @@
 optionkeys = path, params, title
 
 [view]
-<a title={title} href={ /^(http[s]?:|\.+)/i.test(path) ? path : ('#' + (path || '')) } onclick="click"><slot/></a>
+<a title={title} href={ /^(http[s]?:|\.+)/i.test(path) ? path : ('#' + (path || '')) } onclick="click" @class="display--inline-flex align-items-center text-decoration-none"><slot/></a>
 
 
 [actions]

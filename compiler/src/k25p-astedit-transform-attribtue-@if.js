@@ -14,7 +14,7 @@ bus.on('编译插件', function(){
             /^if$/i.test(tagNode.object.value) && (tagNode.ok = true);
 
             let type = OPTS.TypeCodeBlock;
-            let value = 'if (' + object.value.replace(/^\s*\{=?/, '').replace(/\}\s*$/, '') + ') {';
+            let value = 'if (' + (object.value+'').replace(/^\s*\{=?/, '').replace(/\}\s*$/, '') + ') {';
             let jsNode = this.createNode({type, value});
             tagNode.before(jsNode);
 

@@ -92,9 +92,9 @@ function TokenParser(fileText, viewText, file, PosOffset){
             return 0; // 当前不是节点开始(起始【<】，但后面没有【>】)
         }
 
-        if ( !/[a-z]/i.test(reader.getNextChar()) ) {
-            // 标签名需要支持特殊字符时需相应修改
-            return 0;                                   // 当前不是节点开始(紧接【<】的不是字母)
+        if ( /[\s<>/\\]/i.test(reader.getNextChar()) ) {
+            // 标签名需要特殊限制时需相应修改
+            return 0;                                   // 当前不是节点开始(紧接【<】的不能是空白、小于号、大于号、斜杠、反斜杠)
         }
 
         // 节点名

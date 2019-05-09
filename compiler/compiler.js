@@ -3295,9 +3295,9 @@ console.time("load");
                 return 0; // 当前不是节点开始(起始【<】，但后面没有【>】)
             }
 
-            if (!/[a-z]/i.test(reader.getNextChar())) {
-                // 标签名需要支持特殊字符时需相应修改
-                return 0; // 当前不是节点开始(紧接【<】的不是字母)
+            if (/[\s<>/\\]/i.test(reader.getNextChar())) {
+                // 标签名需要特殊限制时需相应修改
+                return 0; // 当前不是节点开始(紧接【<】的不能是空白、小于号、大于号、斜杠、反斜杠)
             }
 
             // 节点名
@@ -6002,7 +6002,7 @@ console.time("load");
                             end: ary[1].object.loc.end.pos
                         });
                     }
-                    if (/^(if|for)$/.test(object.value)) {
+                    if (/^(if|for|svgicon)$/.test(object.value)) {
                         throw new Err(`unsupport @taglib on tag <${object.value}>`, {
                             file: context.input.file,
                             text: context.input.text,
@@ -6018,6 +6018,11 @@ console.time("load");
 
                     node.addChild(oNode);
                     ary[0].remove(); // 删除节点
+
+                    // @taglib上的标签名，推荐使用‘@组件标签名’的写法，如果是这种写法，这里默认的把其中的‘@’去掉，便于后续匹配组件标签名
+                    if (/^@+/.test(object.value)) {
+                        object.value = object.value.substring(1);
+                    }
                 });
             });
         })()
@@ -6232,7 +6237,7 @@ console.time("load");
                     /^if$/i.test(tagNode.object.value) && (tagNode.ok = true);
 
                     let type = OPTS.TypeCodeBlock;
-                    let value = "if (" + object.value.replace(/^\s*\{=?/, "").replace(/\}\s*$/, "") + ") {";
+                    let value = "if (" + (object.value + "").replace(/^\s*\{=?/, "").replace(/\}\s*$/, "") + ") {";
                     let jsNode = this.createNode({ type, value });
                     tagNode.before(jsNode);
 

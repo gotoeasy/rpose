@@ -70,7 +70,7 @@ pre.highlight {
 
 :not(pre) > code.highlight,
 pre.highlight {
-	background: #272822;
+	background: darkslategrey; /* #272822; */
 }
 
 /* Inline code */
