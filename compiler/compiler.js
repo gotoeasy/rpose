@@ -1514,7 +1514,7 @@ console.time("load");
 
                 let cssfiles = File.files(dir, ...filters); // 待导入的css文件数组
 
-                (!name || name === "*") && (pkg = ""); // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
+                (!name || name === "*") && (pkg = "*"); // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
                 let libid = hash(JSON.stringify([pkg, cssfiles])); // 样式库缓存用ID【包名：文件列表】
 
                 let csslib = csslibify(pkg, name, libid);
@@ -6996,7 +6996,7 @@ console.time("load");
             return postobject.plugin("m17p-csslibify-gen-css-@csslib", function(root, context) {
                 let oCsslibPkgs = context.result.oCsslibPkgs; // 样式库匿名集合
                 let hashClassName = bus.on("哈希样式类名")[0];
-                let rename = (pkg, cls) => hashClassName(context.input.file, pkg ? cls + "@" + pkg : cls); // 自定义改名函数
+                let rename = (pkg, cls) => hashClassName(context.input.file, cls + "@" + pkg); // 自定义改名函数(总是加@)
                 let strict = true; // 样式库严格匹配模式
                 let oCsslib = context.result.oCsslib; // 项目[csslib]+组件[csslib]
                 let oAtCsslib = (context.result.oAtCsslib = context.result.oAtCsslib || {}); // 组件@csslib样式库集合 (asname：lib)
@@ -7017,42 +7017,52 @@ console.time("load");
                         atcsslib = bus.at("样式库", csslibNode.object.value);
                         oAtCsslib[atcsslib.name] = atcsslib; // 存起来备查
                         oCsslibPkgs[atcsslib.name] = atcsslib.pkg; // 保存样式库匿名关系，用于脚本类名转换
+
                         node.parent.object.standard && querys.push(node.parent.object.value); // 标准标签名
                         for (let i = 0, ary, clspkg, clsname, asname; (clspkg = object.classes[i++]); ) {
                             ary = clspkg.split("@");
                             clsname = "." + ary[0]; // 类名
                             asname = ary.length > 1 ? ary[1] : "*"; // 库别名
-                            if (asname !== "*") {
-                                if (atcsslib.pkg === asname) {
-                                    querys.push(clsname); // 匹配当前@csslib样式库
-                                    if (!atcsslib.has(clsname)) {
-                                        // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                        throw new Err(`css class "${clsname}" not found in csslib "${atcsslib.pkg}"`, {
-                                            file: context.input.file,
-                                            text: context.input.text,
-                                            start: object.loc.start.pos,
-                                            end: object.loc.end.pos
-                                        });
-                                    }
-                                } else {
-                                    let csslib = oCsslib[asname]; // 检查是否存在相应的[csslib]
-                                    if (!csslib) {
-                                        throw new Err("csslib not found: " + asname, {
-                                            file: context.input.file,
-                                            text: context.input.text,
-                                            start: object.loc.start.pos,
-                                            end: object.loc.end.pos
-                                        });
-                                    }
-                                    if (!csslib.has(clsname)) {
-                                        // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                        throw new Err(`css class "${clsname}" not found in csslib "${csslib.pkg}"`, {
-                                            file: context.input.file,
-                                            text: context.input.text,
-                                            start: object.loc.start.pos,
-                                            end: object.loc.end.pos
-                                        });
-                                    }
+
+                            if (atcsslib.name === asname) {
+                                querys.push(clsname); // 匹配当前@csslib样式库
+
+                                if (asname === "*" && atcsslib.has(clsname)) {
+                                    // 重要，存起来，后面哈希类名使用
+                                    (object.atcsslibx = object.atcsslibx || []).push(ary[0]); // 当前节点使用了@csslib=*的样式名
+                                }
+
+                                if (asname !== "*" && !atcsslib.has(clsname)) {
+                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
+                                    throw new Err(`css class "${clsname}" not found in csslib "${atcsslib.pkg}"`, {
+                                        file: context.input.file,
+                                        text: context.input.text,
+                                        start: object.loc.start.pos,
+                                        end: object.loc.end.pos
+                                    });
+                                }
+                            }
+
+                            // 非@csslib样式，需检查是否存在相应的[csslib]，以及样式名
+                            if (asname !== "*" && atcsslib.name !== asname) {
+                                let csslib = oCsslib[asname];
+                                if (!csslib) {
+                                    // 找不到[csslib]
+                                    throw new Err("csslib not found: " + asname, {
+                                        file: context.input.file,
+                                        text: context.input.text,
+                                        start: object.loc.start.pos,
+                                        end: object.loc.end.pos
+                                    });
+                                }
+                                if (!csslib.has(clsname)) {
+                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
+                                    throw new Err(`css class "${clsname}" not found in csslib "${csslib.pkg}"`, {
+                                        file: context.input.file,
+                                        text: context.input.text,
+                                        start: object.loc.start.pos,
+                                        end: object.loc.end.pos
+                                    });
                                 }
                             }
                         }
@@ -7814,15 +7824,18 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 if (!classNode || !classNode.object.value) return ""; // 没有类属性节点或没有类属性值，返回空白
 
                 // 生成
-                return classStrToObjectString(classNode.object.value, context);
+                return classStrToObjectString(classNode, context);
             };
         })()
     );
 
-    function classStrToObjectString(clas, context) {
+    function classStrToObjectString(classNode, context) {
         // TODO 含大括号冒号的复杂表达式
         let oCsslibPkgs = context.result.oCsslibPkgs;
         let oRs = {};
+        let clas = classNode.object.value;
+        let atcsslibx = classNode.object.atcsslibx || []; // 当前节点使用了@csslib=*的样式名
+
         clas = clas.replace(/\{.*?\}/g, function(match) {
             let str = match.substring(1, match.length - 1); // {'xxx': ... , yyy: ...} => 'xxx': ... , yyy: ...
 
@@ -7842,7 +7855,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 }
 
                 expr = expr.replace(/\\/g, "皛"); // 补丁案 ...... 把class里表达式的斜杠临时替换掉，避免JSON处理时不认正则表达式的转义字符，在输出代码时替换回来
-                oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(cls, oCsslibPkgs))] = "@(" + expr + ")@";
+                oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(cls, oCsslibPkgs, atcsslibx))] = "@(" + expr + ")@";
             }
 
             return "";
@@ -7850,7 +7863,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
         let ary = clas.split(/\s/);
         for (let i = 0; i < ary.length; i++) {
-            ary[i].trim() && (oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(ary[i], oCsslibPkgs))] = 1);
+            ary[i].trim() && (oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(ary[i], oCsslibPkgs, atcsslibx))] = 1);
         }
 
         let rs = JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, "");
@@ -7858,10 +7871,12 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         return rs;
     }
 
-    function getClassPkg(cls, oCsslibPkgs) {
+    function getClassPkg(cls, oCsslibPkgs, atcsslibx) {
         let ary = cls.trim().split("@");
         if (ary.length > 1) {
             return ary[0] + "@" + oCsslibPkgs[ary[1]];
+        } else if (atcsslibx.includes(ary[0])) {
+            return ary[0] + "@*"; // <div class="foo" @csslib="*=xxx">, foo => foo@*
         }
 
         return ary[0];
@@ -8558,6 +8573,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                 let ary,
                     oQuerys = {};
+                let hasNonameCsslib = !!oCsslib["*"];
                 // view中@csslib部分已生成样式存放于atcsslibtagcss，剩余[csslib]部分需要生成
                 root.walk("Class", (node, object) => {
                     // 按样式库单位汇总组件内全部样式类
@@ -8565,7 +8581,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         ary = clspkg.split("@");
                         clsname = "." + ary[0]; // 类名
                         asname = ary.length > 1 ? ary[1] : "*"; // 库别名
-                        (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出(多汇总*或@csslib没关系，不会多查)
+                        if (asname === "*") {
+                            hasNonameCsslib && (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出([csslib]有*时才汇总)
+                        } else {
+                            (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出
+                        }
                     }
                 });
 
@@ -8574,7 +8594,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     ary = clspkg.split("@");
                     clsname = "." + ary[0]; // 类名
                     asname = ary.length > 1 ? ary[1] : "*"; // 库别名
-                    (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出(多汇总*或@csslib没关系，不会多查)
+
+                    // 【注意】 @csslib有*，脚本中所有无名样式类，只要存在@csslib中的都会被相应改名，可能会出现冲突误改
+                    (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出
 
                     // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]+@csslib）中是否存在
                     if (asname !== "*" && !oCsslib[asname] && !oAtCsslib[asname]) {
@@ -9275,6 +9297,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 const env = bus.at("编译环境");
                 if (clsName.indexOf("@") > 0) {
                     let ary = clsName.split("@");
+                    if (!ary[1] || ary[1] === "*") {
+                        // @csslib无名库特殊处理
+                        ary[0] += "___" + hash(bus.at("标签全名", srcFile));
+                        ary[1] = "atcsslib-x";
+                    }
                     name = `${ary[1]}---${ary[0]}`; // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
                 } else {
                     if (name.indexOf("---") > 0 || name.indexOf("___") > 0) {
@@ -9285,7 +9312,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     }
                 }
 
-                name = name.replace(/[^a-zA-z0-9\-_]/g, "-"); // 包名中【字母数字横杠下划线】以外的字符都替换为横杠，便于在非release模式下查看
+                name = name.replace(/[^a-zA-z0-9\-_]/g, "-"); // 包名中【字母数字横杠下划线】以外的字符都替换为下划线，便于在非release模式下查看
                 if (!env.release) return name; // 非release模式时不哈希
                 return "_" + hash(name); // 名称已有命名空间前缀，转换为小写后哈希便于复用
             };

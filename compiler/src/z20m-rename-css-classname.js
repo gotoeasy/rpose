@@ -27,6 +27,11 @@ bus.on('哈希样式类名', function(){
         const env = bus.at('编译环境');
         if ( clsName.indexOf('@') > 0 ) {
             let ary = clsName.split('@');
+            if ( !ary[1] || ary[1] === '*' ) {
+                // @csslib无名库特殊处理
+                ary[0] += '___' + hash(bus.at('标签全名', srcFile));
+                ary[1] = 'atcsslib-x';
+            }
             name = `${ary[1]}---${ary[0]}`;                                 // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
         }else{
             if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 ) {
@@ -37,7 +42,7 @@ bus.on('哈希样式类名', function(){
             }
         }
 
-        name = name.replace(/[^a-zA-z0-9\-_]/g, '-');                       // 包名中【字母数字横杠下划线】以外的字符都替换为横杠，便于在非release模式下查看
+        name = name.replace(/[^a-zA-z0-9\-_]/g, '-');                       // 包名中【字母数字横杠下划线】以外的字符都替换为下划线，便于在非release模式下查看
         if ( !env.release ) return name;                                    // 非release模式时不哈希
         return '_' + hash(name);                                            // 名称已有命名空间前缀，转换为小写后哈希便于复用
     }

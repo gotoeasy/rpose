@@ -20,6 +20,7 @@ bus.on('编译插件', function(){
         let opts = {rename, strict, universal};
 
         let ary, oQuerys = {};
+        let hasNonameCsslib = !!oCsslib['*'];
         // view中@csslib部分已生成样式存放于atcsslibtagcss，剩余[csslib]部分需要生成
         root.walk( 'Class', (node, object) => {
             // 按样式库单位汇总组件内全部样式类
@@ -27,7 +28,11 @@ bus.on('编译插件', function(){
                 ary = clspkg.split('@');
                 clsname = '.' + ary[0];                                                                     // 类名
                 asname = ary.length > 1 ? ary[1] : '*';                                                     // 库别名
-                (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                    // 按库名单位汇总样式类，后续组件单位将一次性取出(多汇总*或@csslib没关系，不会多查)
+                if ( asname === '*' ) {
+                     hasNonameCsslib && (oQuerys[asname] = oQuerys[asname] || []).push(clsname);            // 按库名单位汇总样式类，后续组件单位将一次性取出([csslib]有*时才汇总)
+                }else{
+                    (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                // 按库名单位汇总样式类，后续组件单位将一次性取出
+                }
             }
         });
 
@@ -36,7 +41,9 @@ bus.on('编译插件', function(){
             ary = clspkg.split('@');
             clsname = '.' + ary[0];                                                                         // 类名
             asname = ary.length > 1 ? ary[1] : '*';                                                         // 库别名
-            (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                        // 按库名单位汇总样式类，后续组件单位将一次性取出(多汇总*或@csslib没关系，不会多查)
+
+            // 【注意】 @csslib有*，脚本中所有无名样式类，只要存在@csslib中的都会被相应改名，可能会出现冲突误改
+            (oQuerys[asname] = oQuerys[asname] || []).push(clsname);                                        // 按库名单位汇总样式类，后续组件单位将一次性取出
 
             // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]+@csslib）中是否存在
             if ( asname !== '*' && !oCsslib[asname] && !oAtCsslib[asname] ) {

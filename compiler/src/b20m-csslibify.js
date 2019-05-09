@@ -68,7 +68,7 @@ bus.on('样式库', function(){
         
         let cssfiles = File.files(dir, ...filters);                                         // 待导入的css文件数组
 
-        (!name || name === '*') && (pkg = '');                                              // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
+        (!name || name === '*') && (pkg = '*');                                             // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
         let libid = hash( JSON.stringify([pkg, cssfiles]) );                                // 样式库缓存用ID【包名：文件列表】
 
         let csslib = csslibify(pkg, name, libid);
