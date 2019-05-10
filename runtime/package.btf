@@ -2,7 +2,7 @@
 @rpose/runtime
 
 [version] // 版本号 （必填）
-0.0.8
+0.0.10
 
 [devDependencies] // 开发依赖库
 @gotoeasy/file = *

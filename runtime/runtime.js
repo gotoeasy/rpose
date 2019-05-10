@@ -668,12 +668,12 @@
         });
     }
     function enhanceState(component) {
-        Object.defineProperty(component, "getState", {
+        !component.getState && Object.defineProperty(component, "getState", {
             get: () => (function() {
                 return extend({}, this.$state);
             })
         });
-        Object.defineProperty(component, "setState", {
+        !component.setState && Object.defineProperty(component, "setState", {
             get: () => (function(state) {
                 state && this.render(state);
             })

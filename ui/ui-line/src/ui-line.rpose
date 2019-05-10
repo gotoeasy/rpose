@@ -2,7 +2,7 @@
 optionkeys = height, width, color, margin
 
 [view]
-<div style="background-color:{color};height:{height};width:{width};margin:{margin}"></div>
+<div style="background-color:{color};height:{height};min-height:{height};width:{width};margin:{margin}"></div>
 
 [options]
 {

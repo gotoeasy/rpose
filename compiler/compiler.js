@@ -1613,6 +1613,7 @@ console.time("load");
     const File = require("@gotoeasy/file");
     const Btf = require("@gotoeasy/btf");
 
+    // TODO 配置文件修改时，rs可能有错误的缓存数据
     bus.on(
         "标签库定义",
         (function(rs = {}, rsPkg = {}) {
@@ -1641,8 +1642,11 @@ console.time("load");
                 return rs[key]; // 返回相应的源文件
             });
 
-            // ----------------------------------------------------
-            // 在已安装好依赖包的前提下调用，例子（file用于确定模块）
+            // ----------------------------------------------------------
+            //
+            // 【注意是在已安装好依赖包的前提下调用】，例子（file用于确定模块）
+            // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            //
             // bus.at('标签库定义', 'c-btn=pkg:ui-button', file)
             // bus.at('标签库定义', 'ui-button=pkg', file)
             // bus.at('标签库定义', 'pkg:ui-button', file)
@@ -1654,23 +1658,36 @@ console.time("load");
             // [file]
             //   用于定位该标签库根目录的文件
             return function(defTaglib, file) {
-                // 默认关联全部源文件，存放内存
+                // 默认关联defTaglib指定包的全部源文件，存放内存
                 let oTaglib = bus.at("normalize-taglib", defTaglib);
-                initPkgDefaultTag(oTaglib.pkg);
+                initPkgDefaultTag(oTaglib.pkg); // 源文件组件标签，有无@前缀都支持直接用
 
-                // 查找已有关联
-                let askey,
+                // 在file所在模块中查找已有关联
+                let ataskey,
+                    askey,
                     tagkey,
                     searchPkg = bus.at("文件所在模块", file);
-                askey = searchPkg + ":" + oTaglib.astag;
-                tagkey = oTaglib.pkg + ":" + oTaglib.tag;
-                if (rs[tagkey]) {
-                    rs[askey] = rs[tagkey];
-                    stack = [];
-                    return rs;
-                }
+                stack.push(`[${searchPkg}] ${oTaglib.taglib}`); // 错误提示用，oTaglib.taglib等同原定义串
 
-                stack.push(`[${searchPkg}] ${oTaglib.taglib}`); // 错误提示用
+                ataskey = searchPkg + ":" + oTaglib.atastag; // pkg:@astag
+                askey = searchPkg + ":" + oTaglib.astag; // pkg:astag or pkg:@astag
+                tagkey = oTaglib.pkg + ":" + oTaglib.tag; // pkg:tag
+                if (rs[tagkey]) {
+                    // 在file所在包中，按defTaglib定义能找到源文件，这时把定义的别名也一起关联上
+                    rs[ataskey] = rs[tagkey]; // 关联@前缀别名
+                    if (!oTaglib.astag.startsWith("@")) {
+                        if (oTaglib.astag !== oTaglib.tag && rs[askey] && oTaglib.astag === File.name(rs[askey])) {
+                            let msg = stack.join("\n => ");
+                            msg += "\ntaglib aliases conflict with really component: " + defTaglib + "\n(" + oTaglib.astag + " / " + rs[askey] + ")";
+                            stack = [];
+                            throw new Error(msg); // 无@前缀的别名和指定包的源文件名冲突，不允许这样任性混淆，跑错
+                        } else {
+                            rs[askey] = rs[tagkey]; // 没有冲突则一起关联
+                        }
+                    }
+                    stack = [];
+                    return rs; // 按组件标签能找到源文件，返回
+                }
 
                 // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
                 let pkgfile;
@@ -1680,7 +1697,7 @@ console.time("load");
                     stack.unshift(e.message);
                     let msg = stack.join("\n => ");
                     stack = [];
-                    // 通常是依赖的package未安装或安装失败导致
+                    // 不应该找不到package.json，通常是依赖的package未安装或安装失败导致
                     throw new Err(msg, e);
                 }
                 let configfile = File.path(pkgfile) + "/rpose.config.btf";
@@ -1688,14 +1705,15 @@ console.time("load");
                     stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
                     let msg = stack.join("\n => ");
                     stack = [];
-                    throw new Error(msg); // 文件找不到，又没有配置，错误
+                    throw new Error(msg); // 源文件找不到，又没有配置，错误
                 }
 
+                // 解析配置文件中[taglib]的全部别名存到 oTaglibKv
                 let btf = new Btf(configfile);
                 let oTaglibKv,
                     taglibBlockText = btf.getText("taglib"); // 已发布的包，通常不会有错，不必细致检查
                 try {
-                    oTaglibKv = bus.at("解析[taglib]", taglibBlockText, { input: { file: configfile } });
+                    oTaglibKv = bus.at("解析[taglib]", taglibBlockText, { input: { file: configfile } }); // 单纯解析，不做安装
                 } catch (e) {
                     stack.push(`[${oTaglib.pkg}] ${oTaglib.pkg}:${oTaglib.tag}`); // 错误提示用
                     stack.push(configfile);
@@ -1705,25 +1723,28 @@ console.time("load");
                     // 通常是[taglib]解析失败导致
                     throw new Error(msg, e);
                 }
-                let oConfTaglib = oTaglibKv[oTaglib.tag];
+
+                let oConfTaglib = oTaglibKv[oTaglib.atastag]; // 在项目配置中用@前缀别名查找
                 if (!oConfTaglib) {
                     stack.push(configfile);
-                    stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
+                    stack.unshift(`tag [${oTaglib.astag}] not found in package [${oTaglib.pkg}]`);
                     let msg = stack.join("\n => ");
                     stack = [];
-                    throw new Error(msg); // 文件找不到，配置文件中也找不到，错误
+                    throw new Error(msg); // 文件找不到，配置文件中也找不到别名配置，错误
                 }
 
                 // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
-                bus.at("自动安装", oConfTaglib.pkg);
-                return bus.at("标签库定义", oConfTaglib.taglib, configfile); // 要么成功，要么异常
+                bus.at("自动安装", oConfTaglib.pkg); // 项目配置中找到的别名定义，自动安装起来
+                return bus.at("标签库定义", oConfTaglib.taglib, configfile); // 继续递归定义，要么直到查得源文件而成功，要么异常
             };
 
             function initPkgDefaultTag(pkg) {
                 if (!rsPkg[pkg]) {
                     let oPkg = bus.at("模块组件信息", pkg); // @scope/pkg
-                    for (let i = 0, file; (file = oPkg.files[i++]); ) {
-                        rs[oPkg.name + ":" + File.name(file)] = file; // 包名：标签 = 文件
+                    for (let i = 0, file, tag; (file = oPkg.files[i++]); ) {
+                        tag = File.name(file).toLowerCase();
+                        rs[oPkg.name + ":" + tag] = file; // 包名：标签 = 文件
+                        rs[oPkg.name + ":@" + tag] = file; // 包名：@标签 = 文件
                     }
                     rsPkg[pkg] = true;
                 }
@@ -1744,7 +1765,7 @@ console.time("load");
         "normalize-taglib",
         (function() {
             return function normalizeTaglib(taglib, offset = 0) {
-                let astag, pkg, tag, match;
+                let atastag, astag, pkg, tag, match;
                 if ((match = taglib.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/))) {
                     // c-btn=@scope/pkg:ui-button
                     astag = match[1]; // c-btn=@scope/pkg:ui-button => c-btn
@@ -1765,7 +1786,9 @@ console.time("load");
                     return null;
                 }
 
-                return { line: offset, astag, pkg, tag, taglib: astag + "=" + pkg + ":" + tag };
+                atastag = astag.startsWith("@") ? astag : "@" + astag; // astag可能没有@前缀，atastag固定含@前缀
+
+                return { line: offset, atastag, astag, pkg, tag, taglib: astag + "=" + pkg + ":" + tag };
             };
         })()
     );
@@ -1803,7 +1826,7 @@ console.time("load");
                     }
 
                     // 无效的taglib别名
-                    if (/^(if|for)$/i.test(oTaglib.astag)) {
+                    if (/^@?(if|for|svgicon)$/i.test(oTaglib.astag)) {
                         if (loc) {
                             throw new Err("can not use buildin tag name: " + oTaglib.astag, {
                                 file: context.input.file,
@@ -1814,18 +1837,19 @@ console.time("load");
                         throw new Err("can not use buildin tag name: " + oTaglib.astag);
                     }
 
-                    // 重复的taglib别名
-                    if (rs[oTaglib.astag]) {
+                    // 重复的taglib别名 (仅@前缀差异也视为冲突)
+                    if (rs[oTaglib.atastag] || rs[oTaglib.astag]) {
                         if (loc) {
-                            throw new Err("duplicate tag name: " + oTaglib.astag, {
+                            throw new Err("duplicate tag name: " + oTaglib.atastag + "/" + oTaglib.astag, {
                                 file: context.input.file,
                                 text: context.input.text,
                                 line: offsetLine + i
                             });
                         }
-                        throw new Err("duplicate tag name: " + oTaglib.astag);
+                        throw new Err("duplicate tag name: " + oTaglib.atastag + "/" + oTaglib.astag);
                     }
 
+                    rs[oTaglib.atastag] = oTaglib;
                     rs[oTaglib.astag] = oTaglib;
                 }
 
@@ -2025,6 +2049,7 @@ console.time("load");
                 if (!oKv) return;
 
                 // 检查安装依赖包
+                // TODO 不允许安装工程本身包
                 let mapPkg = new Map();
                 for (let key in oKv) {
                     mapPkg.set(oKv[key].pkg, oKv[key]);
@@ -2996,6 +3021,7 @@ console.time("load");
                     }
 
                     // 检查安装依赖包
+                    // TODO 不允许安装工程本身包
                     let mapPkg = new Map();
                     for (let key in oKv) {
                         mapPkg.set(oKv[key].pkg, oKv[key]);
@@ -6020,9 +6046,9 @@ console.time("load");
                     ary[0].remove(); // 删除节点
 
                     // @taglib上的标签名，推荐使用‘@组件标签名’的写法，如果是这种写法，这里默认的把其中的‘@’去掉，便于后续匹配组件标签名
-                    if (/^@+/.test(object.value)) {
-                        object.value = object.value.substring(1);
-                    }
+                    //            if ( /^@+/.test(object.value) ) {
+                    //                object.value = object.value.substring(1);
+                    //            }
                 });
             });
         })()
@@ -6524,14 +6550,18 @@ console.time("load");
                         });
                     }
 
-                    let cpFile = bus.at("标签项目源文件", tagNode.object.value); // 当前项目范围内查找标签对应的源文件
-                    if (cpFile) {
-                        throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                    let tagName = tagNode.object.value; // 标签名
+                    if (!tagName.startsWith("@")) {
+                        // 标签名如果没有使用@前缀，要检查是否已存在有组件文件，有则报错
+                        let cpFile = bus.at("标签项目源文件", tagNode.object.value); // 当前项目范围内查找标签对应的源文件
+                        if (cpFile) {
+                            throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, {
+                                file: context.input.file,
+                                text: context.input.text,
+                                start: object.loc.start.pos,
+                                end: object.loc.end.pos
+                            });
+                        }
                     }
 
                     let pkg,
@@ -6546,7 +6576,7 @@ console.time("load");
                     } else if ((match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/))) {
                         // @taglib = "name=@scope/pkg"
                         pkg = match[1];
-                        comp = tagNode.object.value;
+                        comp = tagName;
                     } else if (taglib.indexOf("=") >= 0) {
                         // @taglib = "=@scope/pkg"
                         throw new Err("invalid attribute value of @taglib", {
@@ -6562,7 +6592,7 @@ console.time("load");
                     } else if ((match = taglib.match(/^\s*(.+?)\s*$/))) {
                         // @taglib = "@scope/pkg"
                         pkg = match[1];
-                        comp = tagNode.object.value;
+                        comp = tagName;
                     } else {
                         throw new Err("invalid attribute value of @taglib", {
                             file: context.input.file,
@@ -6571,6 +6601,8 @@ console.time("load");
                             end: object.loc.end.pos
                         });
                     }
+
+                    comp.startsWith("@") && (comp = comp.substring(1)); // 去除组件名的@前缀
 
                     let install = bus.at("自动安装", pkg);
                     if (!install) {
@@ -6583,7 +6615,18 @@ console.time("load");
                     }
 
                     let oPkg = bus.at("模块组件信息", pkg);
-                    bus.at("标签库定义", `${pkg}:${comp}`, oPkg.config);
+
+                    try {
+                        bus.at("标签库定义", `${pkg}:${comp}`, oPkg.config);
+                    } catch (e) {
+                        throw new Err("taglib setup failed\n" + e.message, e, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: object.loc.start.pos,
+                            end: object.loc.end.pos
+                        });
+                    }
+
                     let srcFile = bus.at("标签库引用", `${pkg}:${comp}`, oPkg.config); // 从指定模块查找
                     if (!srcFile) {
                         throw new Err("component not found: " + object.value, {
@@ -6628,16 +6671,8 @@ console.time("load");
                         let taglib = oTaglib[object.value];
                         if (!taglib) return;
 
-                        let pkg,
-                            comp,
-                            ary = taglib.split(":");
-                        if (ary.length > 1) {
-                            pkg = ary[0].trim();
-                            comp = ary[1].trim();
-                        } else {
-                            pkg = taglib.trim();
-                            comp = object.value;
-                        }
+                        let pkg = taglib.pkg;
+                        let comp = taglib.tag;
 
                         let install = bus.at("自动安装", pkg);
                         if (!install) {
@@ -8417,7 +8452,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     const Err = require("@gotoeasy/err");
     const acornGlobals = require("acorn-globals");
 
-    const JS_VARS = "$$,require,window,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(
+    const JS_VARS = "$$,require,window,sessionStorage,localStorage,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(
         ","
     );
 

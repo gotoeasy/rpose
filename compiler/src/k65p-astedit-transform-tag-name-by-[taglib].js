@@ -15,14 +15,8 @@ bus.on('编译插件', function(){
             let taglib = oTaglib[object.value]
             if ( !taglib ) return;
 
-            let pkg, comp, ary = taglib.split(':');
-            if ( ary.length > 1 ) {
-                pkg = ary[0].trim();
-                comp = ary[1].trim();
-            }else{
-                pkg = taglib.trim();
-                comp = object.value;
-            }
+            let pkg = taglib.pkg;
+            let comp = taglib.tag;
 
             let install = bus.at('自动安装', pkg);
             if ( !install ) {

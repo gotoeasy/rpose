@@ -24,21 +24,22 @@ bus.on('解析[taglib]', function(){
             }
 
             // 无效的taglib别名
-            if ( /^(if|for)$/i.test(oTaglib.astag) ) {
+            if ( /^@?(if|for|svgicon)$/i.test(oTaglib.astag) ) {
                 if ( loc ) {
                     throw new Err('can not use buildin tag name: ' + oTaglib.astag, { file: context.input.file, text: context.input.text, line: offsetLine + i });
                 }
                 throw new Err('can not use buildin tag name: ' + oTaglib.astag);
             }
 
-            // 重复的taglib别名
-            if ( rs[oTaglib.astag] ) {
+            // 重复的taglib别名 (仅@前缀差异也视为冲突)
+            if ( rs[oTaglib.atastag] || rs[oTaglib.astag] ) {
                 if ( loc ) {
-                    throw new Err('duplicate tag name: ' + oTaglib.astag, { file: context.input.file, text: context.input.text, line: offsetLine+ i });
+                    throw new Err('duplicate tag name: ' + oTaglib.atastag + '/' + oTaglib.astag, { file: context.input.file, text: context.input.text, line: offsetLine+ i });
                 }
-                throw new Err('duplicate tag name: ' + oTaglib.astag);
+                throw new Err('duplicate tag name: ' + oTaglib.atastag + '/' + oTaglib.astag);
             }
 
+            rs[oTaglib.atastag] = oTaglib;
             rs[oTaglib.astag] = oTaglib;
         }
 

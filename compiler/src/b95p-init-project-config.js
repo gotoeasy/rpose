@@ -178,6 +178,7 @@ bus.on('项目配置处理插件', function(addBuildinTaglib){
         if ( !oKv ) return;
 
         // 检查安装依赖包
+        // TODO 不允许安装工程本身包
         let mapPkg = new Map();
         for ( let key in oKv ) {
             mapPkg.set(oKv[key].pkg, oKv[key]);

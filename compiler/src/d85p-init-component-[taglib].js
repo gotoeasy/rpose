@@ -29,6 +29,7 @@ bus.on('编译插件', function(){
 
 
             // 检查安装依赖包
+            // TODO 不允许安装工程本身包
             let mapPkg = new Map();
             for ( let key in oKv ) {
                 mapPkg.set(oKv[key].pkg, oKv[key]);
