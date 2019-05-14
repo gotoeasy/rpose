@@ -367,7 +367,7 @@ bus.on('使用外部SVG-SYMBOL的页面文件', function (){
                 }else{
                     let allreferences = context.result.allreferences;
                     for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
-                        srcFile = bus.at('标签源文件', tagpkg);
+                        srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
                         ctx = bus.at('组件编译缓存', srcFile );
                         if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
                             files.push(file);                                           // 页面关联的组件使用了外部SVG-SYMBOL图标

@@ -8,35 +8,39 @@ bus.on('标签源文件', function(){
     //   -- @aaa/bbb:ui-xxx
     //   -- bbb:ui-xxx
     //   -- ui-xxx
-    return (tag) => {
+    //   -- @ui-xxx
+    // 【oTaglibs】
+    //   -- 标签所在组件的[taglib]配置
+    return (tag, oTaglibs={}) => {
         if ( tag.endsWith('.rpose') ) {
             return tag; // 已经是文件
         }
         
         if ( tag.indexOf(':') > 0 ) {
             // @taglib指定的标签
-            let ary = tag.split(':');
-            ary[0].indexOf('=') > 0 && (ary = ary[0].split('='))
-            let oPkg = bus.at('模块组件信息', ary[0].trim());     // nnn=@aaa/bbb:ui-xxx => @aaa/bbb
-            let files = oPkg.files;
-            let name = '/' + ary[1] + '.rpose';
-            for ( let i=0,srcfile; srcfile=files[i++]; ) {
-                if ( srcfile.endsWith(name) ) {
-                    return srcfile;
-                }
-            }
-
-            return bus.at('标签库引用', tag, oPkg.config);
-
+            let taglib = bus.at('解析taglib', tag);
+            return bus.at('标签库源文件', taglib);
         }else{
-            let file = bus.at('标签项目源文件', tag);             // 优先找文件名一致的源文件
+            // 优先查找项目源文件
+            let file = bus.at('标签项目源文件', tag);
             if ( file ) return file;
 
-            let env = bus.at('编译环境');
-            return bus.at('标签库引用', tag, env.path.root);      // 其次按标签库规则查找
-        }
+            // 其次查找组件标签库
+            let alias = tag.startsWith('@') ? tag : ('@' + tag);
+            if ( oTaglibs[alias] ) {
+                return bus.at('标签库源文件', oTaglibs[alias]);
+            }
 
-        // 找不到则undefined
+            // 最后查找项目标签库
+            let env = bus.at('编译环境');
+            let oPjtContext = bus.at('项目配置处理', env.path.root + '/rpose.config.btf');
+            if ( oPjtContext.result.oTaglibs[alias] ) {
+                return bus.at('标签库源文件', oPjtContext.result.oTaglibs[alias]);
+            }
+
+            // 找不到
+            return null;
+        }
     };
 
 }());

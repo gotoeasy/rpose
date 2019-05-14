@@ -15,8 +15,8 @@ bus.on('编译插件', function(){
 
 
         let srcRuntime = bus.at('RPOSE运行时代码');
-        let srcStmt = getSrcRegisterComponents(allreferences);
-        let srcComponents = getSrcComponents(allreferences);
+        let srcStmt = getSrcRegisterComponents(allreferences, context.result.oTaglibs);
+        let srcComponents = getSrcComponents(allreferences, context.result.oTaglibs);
 
         if ( context.result.allstandardtags.includes('img') ) {
             let oCache = bus.at('缓存');
@@ -63,13 +63,13 @@ bus.on('编译插件', function(){
 
 
 // 组件注册语句
-function getSrcRegisterComponents(allreferences){
+function getSrcRegisterComponents(allreferences, oTaglibs){
     try{
         let obj = {};
         for ( let i=0,tagpkg,key,file; tagpkg=allreferences[i++]; ) {
             key = "'" + tagpkg + "'";
 
-            file = bus.at('标签源文件', tagpkg);
+            file = bus.at('标签源文件', tagpkg, oTaglibs);
             if ( !File.exists(file) ) {
                 throw new Err('component not found (tag = ' + tagpkg + ')');
             }
@@ -84,13 +84,14 @@ function getSrcRegisterComponents(allreferences){
 }
 
 // 本页面关联的全部组件源码
-function getSrcComponents(allreferences){
+function getSrcComponents(allreferences, oTaglibs){
     try{
         let ary = [];
         for ( let i=0,tagpkg,context; tagpkg=allreferences[i++]; ) {
-            context = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg));
+            let tagSrcFile = bus.at('标签源文件', tagpkg, oTaglibs);
+            context = bus.at('组件编译缓存', tagSrcFile);
             if ( !context ) {
-                context = bus.at('编译组件', tagpkg);
+                context = bus.at('编译组件', tagSrcFile);
             }
             ary.push( context.result.componentJs );
         }

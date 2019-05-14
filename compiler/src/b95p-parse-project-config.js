@@ -6,47 +6,90 @@ const Err = require('@gotoeasy/err');
 bus.on('编译插件', function(){
     
     return postobject.plugin(/**/__filename/**/, function(root, context){
+        
+        // 解析项目配置文件
         context.project = bus.at('项目配置处理', context.input.file);
+
     });
 
 }());
 
 
-bus.on('项目配置处理', function(result={}, oDefaultResult){
+bus.on('项目配置处理', function(result={}){
 
     return function(srcFile, nocahce=false){
-        nocahce && (result = {});
+
         let time, stime = new Date().getTime();
         let btfFile = srcFile.endsWith('/rpose.config.btf') ? srcFile : bus.at('文件所在项目配置文件', srcFile);
 
+        nocahce && (delete result[btfFile]);
 
+        // 使用缓存
         if ( result[btfFile] ) return result[btfFile];
+
+        // 没有配置文件时，返回默认配置信息
         if ( !File.existsFile(btfFile) ){
-            // 没有配置文件，仅返回默认路径信息
-            if ( !oDefaultResult ) {
-                let oPath = {};
-                let root = File.path(btfFile);
-                oPath.src = root + '/src';
-                oPath.build = root + '/' + oPath.build;
-                oPath.build_temp = oPath.build + '/temp';
-                oPath.build_dist = oPath.build + '/dist';
-                oPath.build_dist_images = 'images';
-                oPath.svgicons = root + '/resources/svgicons';
-                oDefaultResult = {path: oPath};
-            }
-            return oDefaultResult;
+            let path = {};
+            let root = File.path(btfFile);
+            path.src = root + '/src';
+            path.build = root + '/' + path.build;
+            path.build_temp = path.build + '/temp';
+            path.build_dist = path.build + '/dist';
+            path.build_dist_images = 'images';
+            path.svgicons = root + '/resources/svgicons';
+
+            let result = {};
+            let oDefContext = {path, result};
+
+            processConfigTaglibs(oDefContext);                                              // 项目[taglib]配置中自动补足内置组件配置
+            return oDefContext;
         }
 
+        // 开始解析配置文件
         let plugins = bus.on('项目配置处理插件');
-        let rs = postobject(plugins).process({file: btfFile});
+        let context = postobject(plugins).process({file: btfFile});
 
-        result[btfFile] = rs.result;
+        processConfigTaglibs(context);                                                      // 项目[taglib]配置中自动补足内置组件配置
+
+        // 安装、检查[taglib]配置
+        let oTaglibs = context.result.oTaglibs;
+        for ( let alias in oTaglibs ) {
+            let taglib = oTaglibs[alias];
+            if ( !bus.at('自动安装', taglib.pkg) ) {
+                throw new Err('package install failed: ' + taglib.pkg, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+            }
+            if ( !bus.at('标签库源文件', taglib) ) {
+                throw new Err('taglib component not found: ' + taglib.tag, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+            }
+        }
+
+        result[btfFile] = context;
 
         time = new Date().getTime() - stime;
         time > 100 && console.debug('init-project-config:', time + 'ms');
+
         return result[btfFile];
     };
 
+
+    // 项目[taglib]配置中自动补足内置组件配置
+    function processConfigTaglibs(context){
+
+        // 项目[taglib]配置
+        let oTaglibs = context.result.oTaglibs = context.result.oTaglibs || {};
+
+        // 默认添加内置组件的[taglib]配置
+        bus.at('自动安装', '@rpose/buildin');                                         // 默认安装内置包
+        let taglib;
+        if ( !oTaglibs['router'] ) {
+            taglib = bus.at('解析taglib', 'router=@rpose/buildin:router');            // 默认添加内置标签配置
+            oTaglibs['router'] = oTaglibs['@router'] = taglib;
+        }
+        if ( !oTaglibs['router-link'] ) {
+            taglib = bus.at('解析taglib', 'router-link=@rpose/buildin:router-link');  // 默认添加内置标签配置
+            oTaglibs['router-link'] = oTaglibs['@router-link'] = taglib;
+        }
+    }
 
 
 }());
@@ -113,7 +156,7 @@ bus.on('项目配置处理插件', function(){
 //        oPath.cache = oPath.cache;
         oPath.svgicons = oPath.root + '/' + (oPath.svgicons || 'resources/svgicons');      // SVG图标文件目录
 
-        context.result.path = oPath;
+        context.path = oPath;
     });
 
 }());
@@ -143,74 +186,18 @@ bus.on('项目配置处理插件', function(){
 }());
 
 
-// 添加内置标签库
-bus.on('项目配置处理插件', function(addBuildinTaglib){
-    return postobject.plugin('process-project-config-120', function(){
-
-        if ( !addBuildinTaglib ) {
-            let pkg = '@rpose/buildin';
-            if ( !bus.at('自动安装', pkg) ) {
-                throw new Error('package install failed: ' + pkg);
-            }
-            bus.at('标签库定义', '@rpose/buildin:```', '');  // 项目范围添加内置标签库
-            bus.at('标签库定义', '@rpose/buildin:router', '');  // 项目范围添加内置标签库
-            bus.at('标签库定义', '@rpose/buildin:router-link', '');  // 项目范围添加内置标签库
-            addBuildinTaglib = true;
-        }
-
-    });
-
-}());
-
-
 // 建立项目标签库
-bus.on('项目配置处理插件', function(addBuildinTaglib){
-    return postobject.plugin('process-project-config-130', function(root, context){
+bus.on('项目配置处理插件', function(){
 
-        let oKv, startLine;
+    return postobject.plugin('process-project-config-120', function(root, context){
+
+        let oTaglibs;
         root.walk( 'taglib', (node, object) => {
-            oKv = bus.at('解析[taglib]', object.value, context, object.loc);
-            startLine = object.loc.start.line + 1;
+            oTaglibs = bus.at('解析[taglib]', object, context.input.file);      // 含格式检查、别名重复检查
             node.remove();
         });
-        
-        context.result.oTaglib = oKv || {}; // 存键值，用于检查重复
-        if ( !oKv ) return;
 
-        // 检查安装依赖包
-        // TODO 不允许安装工程本身包
-        let mapPkg = new Map();
-        for ( let key in oKv ) {
-            mapPkg.set(oKv[key].pkg, oKv[key]);
-        }
-        mapPkg.forEach((oTag, pkg) => {
-            if ( !bus.at('自动安装', pkg) ) {
-                throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, line: startLine + oTag.line });
-            }
-        });
-
-        // 逐个定义标签库关联实际文件
-        for ( let key in oKv ) {
-            try{
-                bus.at('标签库定义', oKv[key].taglib, context.input.file);  // 无法关联时抛出异常
-            }catch(e){
-                throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: startLine + oKv[key].line });
-            }
-        }
-
-        // 添加内置标签库
-        if ( !addBuildinTaglib ) {
-            let pkg = '@rpose/buildin';
-            if ( !bus.at('自动安装', pkg) ) {
-                throw new Error('package install failed: ' + pkg);
-            }
-            bus.at('标签库定义', '@rpose/buildin:```', '');  // 项目范围添加内置标签库
-            bus.at('标签库定义', '@rpose/buildin:router', '');  // 项目范围添加内置标签库
-            bus.at('标签库定义', '@rpose/buildin:router-link', '');  // 项目范围添加内置标签库
-            addBuildinTaglib = true;
-        }
-
-
+        context.result.oTaglibs = oTaglibs;                                     // 保存[taglib]解析结果
     });
 
 }());

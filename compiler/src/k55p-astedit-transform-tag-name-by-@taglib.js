@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
                 throw new Err('unsupport @taglib on standard tag', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            let tagName = tagNode.object.value;                                 // 标签名
+            let tagName = tagNode.object.value.toLowerCase();                  // 标签名
             if ( !tagName.startsWith('@') ) {
                 // 标签名如果没有使用@前缀，要检查是否已存在有组件文件，有则报错
                 let cpFile = bus.at('标签项目源文件', tagNode.object.value);    // 当前项目范围内查找标签对应的源文件
@@ -27,47 +27,40 @@ bus.on('编译插件', function(){
             }
             
 
-            let pkg, comp, match, taglib = object.value;
+            let pkg, tag, match, attaglib = object.value;
 
-            if ( (match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/)) ) {
+            if ( (match = attaglib.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/)) ) {
                 // @taglib = "name=@scope/pkg:component"
                 pkg = match[1];
-                comp = match[2];
-            }else if ( (match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/)) ) {
+                tag = match[2];
+            }else if ( (match = attaglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/)) ) {
                 // @taglib = "name=@scope/pkg"
                 pkg = match[1];
-                comp = tagName;
-            }else if ( taglib.indexOf('=') >= 0 ) {
+                tag = tagName;
+            }else if ( attaglib.indexOf('=') >= 0 ) {
                 // @taglib = "=@scope/pkg"
                 throw new Err('invalid attribute value of @taglib', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
-            }else if ( (match = taglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/)) ) {
+            }else if ( (match = attaglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/)) ) {
                 // @taglib = "@scope/pkg:component"
                 pkg = match[1];
-                comp = match[2];
-            }else if ( (match = taglib.match(/^\s*(.+?)\s*$/)) ) {
+                tag = match[2];
+            }else if ( (match = attaglib.match(/^\s*(.+?)\s*$/)) ) {
                 // @taglib = "@scope/pkg"
                 pkg = match[1];
-                comp = tagName;
+                tag = tagName;
             }else {
                 throw new Err('invalid attribute value of @taglib', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            comp.startsWith('@') && (comp = comp.substring(1));                 // 去除组件名的@前缀
+            tag.startsWith('@') && (tag = tag.substring(1));                   // 去除组件名的@前缀
 
             let install = bus.at('自动安装', pkg);
             if ( !install ) {
                 throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            let oPkg = bus.at('模块组件信息', pkg);
-
-            try{
-                bus.at('标签库定义', `${pkg}:${comp}`, oPkg.config);
-            }catch(e){
-                throw new Err('taglib setup failed\n' + e.message, e, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
-            }
-
-            let srcFile = bus.at('标签库引用', `${pkg}:${comp}`, oPkg.config);  // 从指定模块查找
+            let taglib = bus.at('解析taglib', `${pkg}:${tag}`);
+            let srcFile = bus.at('标签库源文件', taglib);                      // 从指定模块查找
             if ( !srcFile ) {
                 throw new Err('component not found: ' + object.value, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }

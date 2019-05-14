@@ -5,13 +5,12 @@ bus.on('标签全名', function(){
 
     return file => {
         
-        let idx = file.indexOf(':');
-        if ( idx > 0 && file.substring(idx).indexOf('.') < 0 ) {
+        if ( !/\.rpose$/i.test(file) && file.indexOf(':') > 0 ) {
             return file; // 已经是全名标签
         }
 
         let tagpkg = '';
-        idx = file.lastIndexOf('/node_modules/');
+        let idx = file.lastIndexOf('/node_modules/');
         if ( idx > 0 ) {
             let ary = file.substring(idx + 14).split('/');                          // xxx/node_modules/@aaa/bbb/xxxxxx => [@aaa, bbb, xxxxxx]
             if ( ary[0].startsWith('@') ) {
@@ -21,6 +20,10 @@ bus.on('标签全名', function(){
             }
         }else{
             tagpkg = File.name(file);                                               // aaa/bbb/xxxxxx/abc.rpose => abc      ui-btn => ui-btn
+
+            // 内置标签
+            tagpkg === 'router' && (tagpkg = '@rpose/buildin:router');
+            tagpkg === 'router-link' && (tagpkg = '@rpose/buildin:router-link');
         }
 
         return tagpkg;

@@ -568,7 +568,7 @@ console.time("load");
                         } else {
                             let allreferences = context.result.allreferences;
                             for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
-                                srcFile = bus.at("标签源文件", tagpkg);
+                                srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
                                 ctx = bus.at("组件编译缓存", srcFile);
                                 if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
                                     files.push(file); // 页面关联的组件使用了外部SVG-SYMBOL图标
@@ -1311,7 +1311,7 @@ console.time("load");
                         let value = block.buf.join(""); // 无损拼接
 
                         // 开始位置
-                        let start = Object.assign({}, block.name.loc.start); // 块开始位置信息 = 块名开始位置信息
+                        let start = { pos: sumLineCount(lineCounts, block.name.loc.start.line + 1) }; // 块内容开始位置（即块名行为止合计长度）
 
                         // 结束位置
                         let line = block.name.loc.start.line + block.buf.length; // 结束行
@@ -1609,162 +1609,156 @@ console.time("load");
 (() => {
     // ------- b30m-taglibify start
     const bus = require("@gotoeasy/bus");
-    const Err = require("@gotoeasy/err");
     const File = require("@gotoeasy/file");
-    const Btf = require("@gotoeasy/btf");
 
-    // TODO 配置文件修改时，rs可能有错误的缓存数据
-    bus.on(
-        "标签库定义",
-        (function(rs = {}, rsPkg = {}) {
-            let stack = [];
+    (function(rs = {}) {
+        // 按taglib找源文件
+        bus.on("标签库源文件", (taglib, stack = []) => {
+            // TODO 循环引用时的友好提示
+            stack.push(taglib);
 
-            // [tag]
-            //   c-btn=pkg:ui-button
-            //   ui-button=pkg
-            //   pkg:ui-button
-            //   ui-button
-            bus.on("标签库引用", function(tag, fileOrRoot) {
-                let searchPkg = bus.at("文件所在模块", fileOrRoot);
-                let name,
-                    idx1 = tag.indexOf("="),
-                    idx2 = tag.indexOf(":");
-
-                if (idx1 < 0 && idx2 < 0) {
-                    name = tag.trim(); // ui-button => ui-button
-                } else if (idx2 > 0) {
-                    name = tag.substring(idx2 + 1).trim(); // c-btn=pkg:ui-button => ui-button,  pkg:ui-button => ui-button
-                } else {
-                    name = tag.substring(0, idx1).trim(); // ui-button=pkg => ui-button
-                }
-
-                let key = searchPkg + ":" + name;
-                return rs[key]; // 返回相应的源文件
-            });
-
-            // ----------------------------------------------------------
-            //
-            // 【注意是在已安装好依赖包的前提下调用】，例子（file用于确定模块）
-            // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            //
-            // bus.at('标签库定义', 'c-btn=pkg:ui-button', file)
-            // bus.at('标签库定义', 'ui-button=pkg', file)
-            // bus.at('标签库定义', 'pkg:ui-button', file)
-            //
-            // [defTaglib]
-            //   c-btn=pkg:ui-button
-            //   ui-button=pkg
-            //   pkg:ui-button
-            // [file]
-            //   用于定位该标签库根目录的文件
-            return function(defTaglib, file) {
-                // 默认关联defTaglib指定包的全部源文件，存放内存
-                let oTaglib = bus.at("normalize-taglib", defTaglib);
-                initPkgDefaultTag(oTaglib.pkg); // 源文件组件标签，有无@前缀都支持直接用
-
-                // 在file所在模块中查找已有关联
-                let ataskey,
-                    askey,
-                    tagkey,
-                    searchPkg = bus.at("文件所在模块", file);
-                stack.push(`[${searchPkg}] ${oTaglib.taglib}`); // 错误提示用，oTaglib.taglib等同原定义串
-
-                ataskey = searchPkg + ":" + oTaglib.atastag; // pkg:@astag
-                askey = searchPkg + ":" + oTaglib.astag; // pkg:astag or pkg:@astag
-                tagkey = oTaglib.pkg + ":" + oTaglib.tag; // pkg:tag
-                if (rs[tagkey]) {
-                    // 在file所在包中，按defTaglib定义能找到源文件，这时把定义的别名也一起关联上
-                    rs[ataskey] = rs[tagkey]; // 关联@前缀别名
-                    if (!oTaglib.astag.startsWith("@")) {
-                        if (oTaglib.astag !== oTaglib.tag && rs[askey] && oTaglib.astag === File.name(rs[askey])) {
-                            let msg = stack.join("\n => ");
-                            msg += "\ntaglib aliases conflict with really component: " + defTaglib + "\n(" + oTaglib.astag + " / " + rs[askey] + ")";
-                            stack = [];
-                            throw new Error(msg); // 无@前缀的别名和指定包的源文件名冲突，不允许这样任性混淆，跑错
-                        } else {
-                            rs[askey] = rs[tagkey]; // 没有冲突则一起关联
-                        }
-                    }
-                    stack = [];
-                    return rs; // 按组件标签能找到源文件，返回
-                }
-
-                // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
-                let pkgfile;
-                try {
-                    pkgfile = require.resolve(oTaglib.pkg + "/package.json", { paths: [bus.at("编译环境").path.root, __dirname] });
-                } catch (e) {
-                    stack.unshift(e.message);
-                    let msg = stack.join("\n => ");
-                    stack = [];
-                    // 不应该找不到package.json，通常是依赖的package未安装或安装失败导致
-                    throw new Err(msg, e);
-                }
-                let configfile = File.path(pkgfile) + "/rpose.config.btf";
-                if (!File.existsFile(configfile)) {
-                    stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
-                    let msg = stack.join("\n => ");
-                    stack = [];
-                    throw new Error(msg); // 源文件找不到，又没有配置，错误
-                }
-
-                // 解析配置文件中[taglib]的全部别名存到 oTaglibKv
-                let btf = new Btf(configfile);
-                let oTaglibKv,
-                    taglibBlockText = btf.getText("taglib"); // 已发布的包，通常不会有错，不必细致检查
-                try {
-                    oTaglibKv = bus.at("解析[taglib]", taglibBlockText, { input: { file: configfile } }); // 单纯解析，不做安装
-                } catch (e) {
-                    stack.push(`[${oTaglib.pkg}] ${oTaglib.pkg}:${oTaglib.tag}`); // 错误提示用
-                    stack.push(configfile);
-                    stack.unshift(e.message);
-                    let msg = stack.join("\n => ");
-                    stack = [];
-                    // 通常是[taglib]解析失败导致
-                    throw new Error(msg, e);
-                }
-
-                let oConfTaglib = oTaglibKv[oTaglib.atastag]; // 在项目配置中用@前缀别名查找
-                if (!oConfTaglib) {
-                    stack.push(configfile);
-                    stack.unshift(`tag [${oTaglib.astag}] not found in package [${oTaglib.pkg}]`);
-                    let msg = stack.join("\n => ");
-                    stack = [];
-                    throw new Error(msg); // 文件找不到，配置文件中也找不到别名配置，错误
-                }
-
-                // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
-                bus.at("自动安装", oConfTaglib.pkg); // 项目配置中找到的别名定义，自动安装起来
-                return bus.at("标签库定义", oConfTaglib.taglib, configfile); // 继续递归定义，要么直到查得源文件而成功，要么异常
-            };
-
-            function initPkgDefaultTag(pkg) {
-                if (!rsPkg[pkg]) {
-                    let oPkg = bus.at("模块组件信息", pkg); // @scope/pkg
-                    for (let i = 0, file, tag; (file = oPkg.files[i++]); ) {
-                        tag = File.name(file).toLowerCase();
-                        rs[oPkg.name + ":" + tag] = file; // 包名：标签 = 文件
-                        rs[oPkg.name + ":@" + tag] = file; // 包名：@标签 = 文件
-                    }
-                    rsPkg[pkg] = true;
-                }
+            // 先按标签名查找源文件
+            let oTagFile = getTagFileOfPkg(taglib.pkg);
+            if (oTagFile[taglib.tag]) {
+                return oTagFile[taglib.tag];
             }
-        })()
-    );
+
+            // 再按标签别名查找所在包[taglib]配置的标签库，由该标签库递归找源文件
+            let oPkg = bus.at("模块组件信息", taglib.pkg);
+            let oPjtContext = bus.at("项目配置处理", oPkg.config); // 解析项目配置文件
+            let atastag = "@" + taglib.tag;
+            let oTaglib = oPjtContext.result.oTaglibs[atastag];
+
+            if (oTaglib) {
+                if (oTaglib.rposefile !== undefined) return oTaglib.rposefile;
+
+                let taglib;
+                while ((taglib = bus.at("标签库源文件", oTaglib, stack)) && !taglib.length && !taglib.rposefile) {
+                    // 递归查找到底
+                }
+                if (!taglib) {
+                    oTaglib.rposefile = "";
+                } else if (taglib.length) {
+                    oTaglib.rposefile = taglib;
+                } else {
+                    oTaglib.rposefile = taglib.rposefile;
+                }
+            } else {
+                oTaglib.rposefile = "";
+            }
+
+            // TODO
+            !oTaglib.rposefile && console.info(stack.join("\n => "));
+
+            return oTaglib.rposefile;
+        });
+
+        // 查找指定包中的全部源文件，建立标签关系
+        function getTagFileOfPkg(pkg) {
+            let oTagFile;
+            if (!(oTagFile = rs[pkg])) {
+                bus.at("自动安装", pkg);
+                let oPkg = bus.at("模块组件信息", pkg);
+                oTagFile = {};
+                for (let i = 0, file, tag; (file = oPkg.files[i++]); ) {
+                    tag = File.name(file).toLowerCase();
+                    oTagFile[tag] = file; // 标签 = 文件
+                    oTagFile["@" + tag] = file; // @标签 = 文件
+                }
+                rs[pkg] = oTagFile;
+            }
+
+            return oTagFile;
+        }
+    })();
 
     // ------- b30m-taglibify end
 })();
 
-/* ------- b32m-normalize-taglib ------- */
+/* ------- b32m-taglibify-parser-[taglib] ------- */
 (() => {
-    // ------- b32m-normalize-taglib start
+    // ------- b32m-taglibify-parser-[taglib] start
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+
+    bus.on(
+        "解析[taglib]",
+        (function() {
+            // 仅解析和简单验证，不做安装和定义等事情
+            return function parseTaglib(obj, file) {
+                let rs = {};
+                let taglibBlockText = obj.value || "";
+                if (!taglibBlockText.trim()) {
+                    return rs;
+                }
+
+                let lines = taglibBlockText.split("\n");
+                for (let i = 0, taglib, oTaglib; i < lines.length; i++) {
+                    taglib = lines[i].split("//")[0].trim(); // 去除注释内容
+                    if (!taglib) continue; // 跳过空白行
+
+                    oTaglib = bus.at("解析taglib", taglib);
+                    let pos = getStartPos(lines, i, obj.loc.start.pos); // taglib位置
+
+                    // 无效的taglib格式
+                    if (!oTaglib) {
+                        throw new Err("invalid taglib: " + taglib, { file, start: pos.start, end: pos.end });
+                    }
+
+                    oTaglib.pos = pos; // 顺便保存位置，备用  TODO 位置
+
+                    // 无效的taglib别名
+                    if (/^@?(if|for|svgicon)$/i.test(oTaglib.astag)) {
+                        throw new Err("can not use buildin tag name: " + oTaglib.astag, { file, start: pos.start, end: pos.endAlias });
+                    }
+
+                    // 重复的taglib别名 (仅@前缀差异也视为冲突)
+                    if (rs[oTaglib.atastag] || rs[oTaglib.astag]) {
+                        throw new Err("duplicate tag name: " + oTaglib.astag, { file, start: pos.start, end: pos.endAlias });
+                    }
+
+                    rs[oTaglib.atastag] = oTaglib;
+                    rs[oTaglib.astag] = oTaglib;
+                }
+
+                return rs;
+            };
+        })()
+    );
+
+    function getStartPos(lines, lineNo, offset) {
+        let start = offset;
+        for (let i = 0; i < lineNo; i++) {
+            start += lines[i].length + 1; // 行长度=行内容长+换行符
+        }
+
+        let line = lines[lineNo].split("//")[0]; // 不含注释
+        let match = line.match(/\s+/);
+        match && (start += match[0].length); // 加上别名前的空白长度
+
+        let end = start + line.trim().length; // 结束位置不含注释
+
+        let endAlias = end,
+            idx = line.indexOf("=");
+        if (idx > 0) {
+            endAlias = start + line.substring(0, idx).trim().length; // 有等号时的别名长度
+        }
+
+        return { start, end, endAlias };
+    }
+    // ------- b32m-taglibify-parser-[taglib] end
+})();
+
+/* ------- b34m-taglibify-parser-taglib ------- */
+(() => {
+    // ------- b34m-taglibify-parser-taglib start
     const bus = require("@gotoeasy/bus");
 
     // 解析单个taglib定义，转换为对象形式方便读取
     bus.on(
-        "normalize-taglib",
+        "解析taglib",
         (function() {
-            return function normalizeTaglib(taglib, offset = 0) {
+            return function normalizeTaglib(taglib) {
                 let atastag, astag, pkg, tag, match;
                 if ((match = taglib.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/))) {
                     // c-btn=@scope/pkg:ui-button
@@ -1788,82 +1782,17 @@ console.time("load");
 
                 atastag = astag.startsWith("@") ? astag : "@" + astag; // astag可能没有@前缀，atastag固定含@前缀
 
-                return { line: offset, atastag, astag, pkg, tag, taglib: astag + "=" + pkg + ":" + tag };
+                return { atastag, astag, pkg, tag, taglib: astag + "=" + pkg + ":" + tag };
             };
         })()
     );
 
-    // ------- b32m-normalize-taglib end
+    // ------- b34m-taglibify-parser-taglib end
 })();
 
-/* ------- b34m-parser-[taglib] ------- */
+/* ------- b95p-parse-project-config ------- */
 (() => {
-    // ------- b34m-parser-[taglib] start
-    const bus = require("@gotoeasy/bus");
-    const Err = require("@gotoeasy/err");
-
-    bus.on(
-        "解析[taglib]",
-        (function() {
-            // 仅解析和简单验证，不做安装和定义等事情
-            return function parseTaglib(taglibBlockText, context, loc) {
-                let rs = {};
-                let lines = (taglibBlockText == null ? "" : taglibBlockText.trim()).split("\n");
-                let offsetLine = (loc ? loc.start.line : 0) + 1; // [taglib]占了一行所以+1
-
-                for (let i = 0, taglib, oTaglib; i < lines.length; i++) {
-                    taglib = lines[i].split("//")[0].trim(); // 去除注释内容
-                    if (!taglib) continue; // 跳过空白行
-
-                    oTaglib = bus.at("normalize-taglib", taglib, i);
-
-                    // 无效的taglib格式
-                    if (!oTaglib) {
-                        if (loc) {
-                            throw new Err("invalid taglib: " + taglib, { file: context.input.file, text: context.input.text, line: offsetLine + i });
-                        }
-                        throw new Err(`invalid taglib: ${taglib}`);
-                    }
-
-                    // 无效的taglib别名
-                    if (/^@?(if|for|svgicon)$/i.test(oTaglib.astag)) {
-                        if (loc) {
-                            throw new Err("can not use buildin tag name: " + oTaglib.astag, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                line: offsetLine + i
-                            });
-                        }
-                        throw new Err("can not use buildin tag name: " + oTaglib.astag);
-                    }
-
-                    // 重复的taglib别名 (仅@前缀差异也视为冲突)
-                    if (rs[oTaglib.atastag] || rs[oTaglib.astag]) {
-                        if (loc) {
-                            throw new Err("duplicate tag name: " + oTaglib.atastag + "/" + oTaglib.astag, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                line: offsetLine + i
-                            });
-                        }
-                        throw new Err("duplicate tag name: " + oTaglib.atastag + "/" + oTaglib.astag);
-                    }
-
-                    rs[oTaglib.atastag] = oTaglib;
-                    rs[oTaglib.astag] = oTaglib;
-                }
-
-                return rs;
-            };
-        })()
-    );
-
-    // ------- b34m-parser-[taglib] end
-})();
-
-/* ------- b95p-init-project-config ------- */
-(() => {
-    // ------- b95p-init-project-config start
+    // ------- b95p-parse-project-config start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const File = require("@gotoeasy/file");
@@ -1872,7 +1801,8 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("b95p-init-project-config", function(root, context) {
+            return postobject.plugin("b95p-parse-project-config", function(root, context) {
+                // 解析项目配置文件
                 context.project = bus.at("项目配置处理", context.input.file);
             });
         })()
@@ -1880,39 +1810,88 @@ console.time("load");
 
     bus.on(
         "项目配置处理",
-        (function(result = {}, oDefaultResult) {
+        (function(result = {}) {
             return function(srcFile, nocahce = false) {
-                nocahce && (result = {});
                 let time,
                     stime = new Date().getTime();
                 let btfFile = srcFile.endsWith("/rpose.config.btf") ? srcFile : bus.at("文件所在项目配置文件", srcFile);
 
+                nocahce && delete result[btfFile];
+
+                // 使用缓存
                 if (result[btfFile]) return result[btfFile];
+
+                // 没有配置文件时，返回默认配置信息
                 if (!File.existsFile(btfFile)) {
-                    // 没有配置文件，仅返回默认路径信息
-                    if (!oDefaultResult) {
-                        let oPath = {};
-                        let root = File.path(btfFile);
-                        oPath.src = root + "/src";
-                        oPath.build = root + "/" + oPath.build;
-                        oPath.build_temp = oPath.build + "/temp";
-                        oPath.build_dist = oPath.build + "/dist";
-                        oPath.build_dist_images = "images";
-                        oPath.svgicons = root + "/resources/svgicons";
-                        oDefaultResult = { path: oPath };
-                    }
-                    return oDefaultResult;
+                    let path = {};
+                    let root = File.path(btfFile);
+                    path.src = root + "/src";
+                    path.build = root + "/" + path.build;
+                    path.build_temp = path.build + "/temp";
+                    path.build_dist = path.build + "/dist";
+                    path.build_dist_images = "images";
+                    path.svgicons = root + "/resources/svgicons";
+
+                    let result = {};
+                    let oDefContext = { path, result };
+
+                    processConfigTaglibs(oDefContext); // 项目[taglib]配置中自动补足内置组件配置
+                    return oDefContext;
                 }
 
+                // 开始解析配置文件
                 let plugins = bus.on("项目配置处理插件");
-                let rs = postobject(plugins).process({ file: btfFile });
+                let context = postobject(plugins).process({ file: btfFile });
 
-                result[btfFile] = rs.result;
+                processConfigTaglibs(context); // 项目[taglib]配置中自动补足内置组件配置
+
+                // 安装、检查[taglib]配置
+                let oTaglibs = context.result.oTaglibs;
+                for (let alias in oTaglibs) {
+                    let taglib = oTaglibs[alias];
+                    if (!bus.at("自动安装", taglib.pkg)) {
+                        throw new Err("package install failed: " + taglib.pkg, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: taglib.pos.start,
+                            end: taglib.pos.end
+                        });
+                    }
+                    if (!bus.at("标签库源文件", taglib)) {
+                        throw new Err("taglib component not found: " + taglib.tag, {
+                            file: context.input.file,
+                            text: context.input.text,
+                            start: taglib.pos.start,
+                            end: taglib.pos.end
+                        });
+                    }
+                }
+
+                result[btfFile] = context;
 
                 time = new Date().getTime() - stime;
                 time > 100 && console.debug("init-project-config:", time + "ms");
+
                 return result[btfFile];
             };
+
+            // 项目[taglib]配置中自动补足内置组件配置
+            function processConfigTaglibs(context) {
+                // 项目[taglib]配置
+                let oTaglibs = (context.result.oTaglibs = context.result.oTaglibs || {});
+
+                // 默认添加内置组件的[taglib]配置
+                bus.at("自动安装", "@rpose/buildin"); // 默认安装内置包
+                let taglib;
+                if (!oTaglibs["router"]) {
+                    taglib = bus.at("解析taglib", "router=@rpose/buildin:router"); // 默认添加内置标签配置
+                    oTaglibs["router"] = oTaglibs["@router"] = taglib;
+                }
+                if (!oTaglibs["router-link"]) {
+                    taglib = bus.at("解析taglib", "router-link=@rpose/buildin:router-link"); // 默认添加内置标签配置
+                    oTaglibs["router-link"] = oTaglibs["@router-link"] = taglib;
+                }
+            }
         })()
     );
 
@@ -1986,7 +1965,7 @@ console.time("load");
                 //        oPath.cache = oPath.cache;
                 oPath.svgicons = oPath.root + "/" + (oPath.svgicons || "resources/svgicons"); // SVG图标文件目录
 
-                context.result.path = oPath;
+                context.path = oPath;
             });
         })()
     );
@@ -2014,81 +1993,23 @@ console.time("load");
         })()
     );
 
-    // 添加内置标签库
-    bus.on(
-        "项目配置处理插件",
-        (function(addBuildinTaglib) {
-            return postobject.plugin("process-project-config-120", function() {
-                if (!addBuildinTaglib) {
-                    let pkg = "@rpose/buildin";
-                    if (!bus.at("自动安装", pkg)) {
-                        throw new Error("package install failed: " + pkg);
-                    }
-                    bus.at("标签库定义", "@rpose/buildin:```", ""); // 项目范围添加内置标签库
-                    bus.at("标签库定义", "@rpose/buildin:router", ""); // 项目范围添加内置标签库
-                    bus.at("标签库定义", "@rpose/buildin:router-link", ""); // 项目范围添加内置标签库
-                    addBuildinTaglib = true;
-                }
-            });
-        })()
-    );
-
     // 建立项目标签库
     bus.on(
         "项目配置处理插件",
-        (function(addBuildinTaglib) {
-            return postobject.plugin("process-project-config-130", function(root, context) {
-                let oKv, startLine;
+        (function() {
+            return postobject.plugin("process-project-config-120", function(root, context) {
+                let oTaglibs;
                 root.walk("taglib", (node, object) => {
-                    oKv = bus.at("解析[taglib]", object.value, context, object.loc);
-                    startLine = object.loc.start.line + 1;
+                    oTaglibs = bus.at("解析[taglib]", object, context.input.file); // 含格式检查、别名重复检查
                     node.remove();
                 });
 
-                context.result.oTaglib = oKv || {}; // 存键值，用于检查重复
-                if (!oKv) return;
-
-                // 检查安装依赖包
-                // TODO 不允许安装工程本身包
-                let mapPkg = new Map();
-                for (let key in oKv) {
-                    mapPkg.set(oKv[key].pkg, oKv[key]);
-                }
-                mapPkg.forEach((oTag, pkg) => {
-                    if (!bus.at("自动安装", pkg)) {
-                        throw new Err("package install failed: " + pkg, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            line: startLine + oTag.line
-                        });
-                    }
-                });
-
-                // 逐个定义标签库关联实际文件
-                for (let key in oKv) {
-                    try {
-                        bus.at("标签库定义", oKv[key].taglib, context.input.file); // 无法关联时抛出异常
-                    } catch (e) {
-                        throw new Err.cat(e, { file: context.input.file, text: context.input.text, line: startLine + oKv[key].line });
-                    }
-                }
-
-                // 添加内置标签库
-                if (!addBuildinTaglib) {
-                    let pkg = "@rpose/buildin";
-                    if (!bus.at("自动安装", pkg)) {
-                        throw new Error("package install failed: " + pkg);
-                    }
-                    bus.at("标签库定义", "@rpose/buildin:```", ""); // 项目范围添加内置标签库
-                    bus.at("标签库定义", "@rpose/buildin:router", ""); // 项目范围添加内置标签库
-                    bus.at("标签库定义", "@rpose/buildin:router-link", ""); // 项目范围添加内置标签库
-                    addBuildinTaglib = true;
-                }
+                context.result.oTaglibs = oTaglibs; // 保存[taglib]解析结果
             });
         })()
     );
 
-    // ------- b95p-init-project-config end
+    // ------- b95p-parse-project-config end
 })();
 
 /* ------- c00m-file-parser-rpose ------- */
@@ -2939,9 +2860,9 @@ console.time("load");
     // ------- d55p-normalize-component-methods end
 })();
 
-/* ------- d75p-init-component-[csslib] ------- */
+/* ------- d75p-parse-component-[csslib] ------- */
 (() => {
-    // ------- d75p-init-component-[csslib] start
+    // ------- d75p-parse-component-[csslib] start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -2951,10 +2872,10 @@ console.time("load");
         (function() {
             // 处理 组件配置[csslib]
             // 检查安装建立组件样式库
-            return postobject.plugin("d75p-init-component-[csslib]", function(root, context) {
-                let prj = bus.at("项目配置处理", context.input.file);
-                let oCsslib = (context.result.oCsslib = Object.assign({}, prj.oCsslib || {})); // 项目配置的 oCsslib 合并存放到组件范围缓存起来
-                let oCsslibPkgs = (context.result.oCsslibPkgs = Object.assign({}, prj.oCsslibPkgs || {})); // 项目配置的 oCsslibPkgs 合并存放到组件范围缓存起来
+            return postobject.plugin("d75p-parse-component-[csslib]", function(root, context) {
+                let oPrjContext = context.project;
+                let oCsslib = (context.result.oCsslib = Object.assign({}, oPrjContext.result.oCsslib || {})); // 项目配置的 oCsslib 合并存放到组件范围缓存起来
+                let oCsslibPkgs = (context.result.oCsslibPkgs = Object.assign({}, oPrjContext.result.oCsslibPkgs || {})); // 项目配置的 oCsslibPkgs 合并存放到组件范围缓存起来
 
                 // 遍历树中的csslib节点，建库，处理完后删除该节点
                 root.walk("RposeBlock", (node, object) => {
@@ -2982,12 +2903,12 @@ console.time("load");
         })()
     );
 
-    // ------- d75p-init-component-[csslib] end
+    // ------- d75p-parse-component-[csslib] end
 })();
 
-/* ------- d85p-init-component-[taglib] ------- */
+/* ------- d85p-parse-component-[taglib] ------- */
 (() => {
-    // ------- d85p-init-component-[taglib] start
+    // ------- d85p-parse-component-[taglib] start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -2996,69 +2917,56 @@ console.time("load");
         "编译插件",
         (function() {
             // 处理 [taglib]
-            // 和并组件[taglib]以及项目[taglib]成一个新副本存放于context.result.oTaglib
             // 名称重复时报错
-            return postobject.plugin("d85p-init-component-[taglib]", function(root, context) {
-                let prj = bus.at("项目配置处理", context.input.file);
-                let oTaglib = (context.result.oTaglib = Object.assign({}, prj.oTaglib || {})); // 项目配置的[taglib]合并存放到组件范围缓存起来
+            return postobject.plugin("d85p-parse-component-[taglib]", function(root, context) {
+                let oPrjContext = context.project; // 项目配置解析结果
+                let oPrjTaglibs = oPrjContext.result.oTaglibs; // 项目[taglib]
 
                 // 遍历树中的taglib节点，建库，处理完后删除该节点
                 root.walk("RposeBlock", (node, object) => {
                     if (object.name.value !== "taglib") return;
-                    if (!object.text || !object.text.value || !object.text.value.trim()) return;
 
-                    let oKv = bus.at("解析[taglib]", object.text.value, context, object.text.loc);
+                    let oTaglibs = bus.at("解析[taglib]", object.text, context.input.file);
 
-                    // 与项目配置的重复性冲突检查
-                    for (let k in oKv) {
-                        if (oTaglib[k]) {
-                            throw new Err("duplicate taglib name: " + k, {
+                    // 安装、检查标签库定义
+                    let taglib;
+                    for (let alias in oTaglibs) {
+                        taglib = oTaglibs[alias];
+                        // 与项目配置的重复性冲突检查
+                        if (oPrjTaglibs[alias]) {
+                            throw new Err("duplicate taglib alias: " + alias, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: object.text.loc.start.line + oTaglib[k].line - 1
+                                start: taglib.pos.start,
+                                end: taglib.pos.end
                             });
                         }
-                    }
 
-                    // 检查安装依赖包
-                    // TODO 不允许安装工程本身包
-                    let mapPkg = new Map();
-                    for (let key in oKv) {
-                        mapPkg.set(oKv[key].pkg, oKv[key]);
-                    }
-                    mapPkg.forEach((oTag, pkg) => {
-                        if (!bus.at("自动安装", pkg)) {
-                            throw new Err("package install failed: " + pkg, {
+                        if (!bus.at("自动安装", taglib.pkg)) {
+                            throw new Err("package install failed: " + taglib.pkg, {
                                 file: context.input.file,
                                 text: context.input.text,
-                                line: object.text.loc.start.line + oTag.line - 1
+                                start: taglib.pos.start,
+                                end: taglib.pos.end
                             });
                         }
-                    });
-
-                    // 逐个定义标签库关联实际文件
-                    for (let key in oKv) {
-                        try {
-                            bus.at("标签库定义", oKv[key].taglib, context.input.file); // 无法关联时抛出异常
-                        } catch (e) {
-                            throw new Err.cat(e, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                line: object.text.loc.start.line + oKv[key].line - 1
-                            });
-                        }
+                        /*            
+                if ( !bus.at('标签库源文件', taglib) ) {
+                    throw new Err('taglib component not found: ' + taglib.tag, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+                }
+*/
                     }
+
+                    context.result.oTaglibs = oTaglibs;
 
                     node.remove();
                     return false;
                 });
-
-                //console.info('-------rs----------', context.input.file, bus.at('标签库定义', '', context.input.file))
             });
         })()
     );
 
-    // ------- d85p-init-component-[taglib] end
+    // ------- d85p-parse-component-[taglib] end
 })();
 
 /* ------- e00m-view-options ------- */
@@ -4641,17 +4549,17 @@ console.time("load");
         // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
         let filter = propSrc;
 
-        let oPjt = bus.at("项目配置处理", context.input.file);
+        let oPjtContext = context.project;
         let svgfile = File.resolve(context.input.file, filter); // 相对于源文件所在目录，按相对路径查找svg文件
         if (File.existsFile(svgfile)) {
             // 优先按源文件相对目录查找，如果找到的svg不在该文件所在项目范围，报错
-            if (!svgfile.startsWith(oPjt.path.root + "/")) {
+            if (!svgfile.startsWith(oPjtContext.path.root + "/")) {
                 throw new Err("file should not out of project\nsrc: " + context.input.file + "\nsvg: " + svgfile, errLocInfo); // 不支持引用项目外文件，避免版本混乱
             }
         } else {
             // 其次在文件所在的项目配置指定目录中查找
             if (!/^[./\\]+/.test(filter)) {
-                svgfile = oPjt.path.svgicons + "/" + filter.replace(/\\/g, "/");
+                svgfile = oPjtContext.path.svgicons + "/" + filter.replace(/\\/g, "/");
                 if (!File.existsFile(svgfile)) {
                     return false;
                 }
@@ -4702,7 +4610,7 @@ console.time("load");
                 // 取出页面使用到的内联svg，去除重复，排序后生成svg-symbol方式的字符串
                 let files = [...(context.result.inlinesymbols || [])]; // 本页面，加了再说，避免遗漏
                 allreferences.forEach(tagpkg => {
-                    let ctx = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg));
+                    let ctx = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg, context.result.oTaglibs));
                     ctx.result.inlinesymbols && files.push(...ctx.result.inlinesymbols);
                 });
                 if (!files.length) {
@@ -4841,7 +4749,7 @@ console.time("load");
                         let allreferences = context.result.allreferences || [];
                         for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
                             if (tagpkg.indexOf(":") > 0) {
-                                srcFile = bus.at("标签源文件", tagpkg);
+                                srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
                                 ctx = bus.at("组件编译缓存", srcFile);
                                 if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
                                     oSetPackageFile.add(bus.at("文件所在项目配置文件", srcFile));
@@ -4853,8 +4761,8 @@ console.time("load");
 
                 let files = [];
                 oSetPackageFile.forEach(file => {
-                    let oPjt = bus.at("项目配置处理", file);
-                    files.push(...File.files(oPjt.path.svgicons, "**.svg"));
+                    let oPjtContext = bus.at("项目配置处理", file);
+                    files.push(...File.files(oPjtContext.path.svgicons, "**.svg"));
                 });
 
                 return files;
@@ -4877,7 +4785,7 @@ console.time("load");
 
                 let allreferences = context.result.allreferences || [];
                 for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
-                    srcFile = bus.at("标签源文件", tagpkg);
+                    srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
                     ctx = bus.at("组件编译缓存", srcFile);
                     if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
                         return true; // 页面关联组件有使用
@@ -6550,7 +6458,7 @@ console.time("load");
                         });
                     }
 
-                    let tagName = tagNode.object.value; // 标签名
+                    let tagName = tagNode.object.value.toLowerCase(); // 标签名
                     if (!tagName.startsWith("@")) {
                         // 标签名如果没有使用@前缀，要检查是否已存在有组件文件，有则报错
                         let cpFile = bus.at("标签项目源文件", tagNode.object.value); // 当前项目范围内查找标签对应的源文件
@@ -6565,19 +6473,19 @@ console.time("load");
                     }
 
                     let pkg,
-                        comp,
+                        tag,
                         match,
-                        taglib = object.value;
+                        attaglib = object.value;
 
-                    if ((match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/))) {
+                    if ((match = attaglib.match(/^\s*.+?\s*=\s*(.+?)\s*:\s*(.+?)\s*$/))) {
                         // @taglib = "name=@scope/pkg:component"
                         pkg = match[1];
-                        comp = match[2];
-                    } else if ((match = taglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/))) {
+                        tag = match[2];
+                    } else if ((match = attaglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/))) {
                         // @taglib = "name=@scope/pkg"
                         pkg = match[1];
-                        comp = tagName;
-                    } else if (taglib.indexOf("=") >= 0) {
+                        tag = tagName;
+                    } else if (attaglib.indexOf("=") >= 0) {
                         // @taglib = "=@scope/pkg"
                         throw new Err("invalid attribute value of @taglib", {
                             file: context.input.file,
@@ -6585,14 +6493,14 @@ console.time("load");
                             start: object.loc.start.pos,
                             end: object.loc.end.pos
                         });
-                    } else if ((match = taglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/))) {
+                    } else if ((match = attaglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/))) {
                         // @taglib = "@scope/pkg:component"
                         pkg = match[1];
-                        comp = match[2];
-                    } else if ((match = taglib.match(/^\s*(.+?)\s*$/))) {
+                        tag = match[2];
+                    } else if ((match = attaglib.match(/^\s*(.+?)\s*$/))) {
                         // @taglib = "@scope/pkg"
                         pkg = match[1];
-                        comp = tagName;
+                        tag = tagName;
                     } else {
                         throw new Err("invalid attribute value of @taglib", {
                             file: context.input.file,
@@ -6602,7 +6510,7 @@ console.time("load");
                         });
                     }
 
-                    comp.startsWith("@") && (comp = comp.substring(1)); // 去除组件名的@前缀
+                    tag.startsWith("@") && (tag = tag.substring(1)); // 去除组件名的@前缀
 
                     let install = bus.at("自动安装", pkg);
                     if (!install) {
@@ -6614,20 +6522,8 @@ console.time("load");
                         });
                     }
 
-                    let oPkg = bus.at("模块组件信息", pkg);
-
-                    try {
-                        bus.at("标签库定义", `${pkg}:${comp}`, oPkg.config);
-                    } catch (e) {
-                        throw new Err("taglib setup failed\n" + e.message, e, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
-                    }
-
-                    let srcFile = bus.at("标签库引用", `${pkg}:${comp}`, oPkg.config); // 从指定模块查找
+                    let taglib = bus.at("解析taglib", `${pkg}:${tag}`);
+                    let srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
                     if (!srcFile) {
                         throw new Err("component not found: " + object.value, {
                             file: context.input.file,
@@ -6659,45 +6555,32 @@ console.time("load");
     bus.on(
         "编译插件",
         (function() {
-            // 按需查询引用样式库
+            // 按标签库更换标签全名
             return postobject.plugin(
                 "k65p-astedit-transform-tag-name-by-[taglib]",
                 function(root, context) {
-                    let oTaglib = Object.assign({}, context.result.oTaglib); // 复制(项目[taglib]+组件[taglib])
+                    let oPrjContext = context.project; // 项目配置解析结果
+                    let oPrjTaglibs = oPrjContext.result.oTaglibs; // 项目[taglib]
+                    let oTaglibs = context.result.oTaglibs || {}; // 组件[taglib]
 
                     root.walk("Tag", (node, object) => {
                         if (object.standard) return;
 
-                        let taglib = oTaglib[object.value];
-                        if (!taglib) return;
+                        let taglib = oTaglibs[object.value] || oPrjTaglibs[object.value];
+                        if (taglib) {
+                            // 标签库中能找到的，按标签库更新为标签全名
+                            let srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
+                            if (!srcFile) {
+                                throw new Err("component not found: " + object.value, {
+                                    file: context.input.file,
+                                    text: context.input.text,
+                                    start: object.loc.start.pos,
+                                    end: object.loc.end.pos
+                                });
+                            }
 
-                        let pkg = taglib.pkg;
-                        let comp = taglib.tag;
-
-                        let install = bus.at("自动安装", pkg);
-                        if (!install) {
-                            throw new Err("package install failed: " + pkg, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: object.loc.start.pos,
-                                end: object.loc.end.pos
-                            });
+                            object.value = bus.at("标签全名", srcFile); // 替换为标签全名，如 @scope/pkg:ui-btn
                         }
-
-                        let oPkg = bus.at("模块组件信息", pkg);
-                        let srcFile = bus.at("标签库引用", `${pkg}:${comp}`, oPkg.config); // 从指定模块查找
-                        if (!srcFile) {
-                            throw new Err("component not found: " + object.value, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: object.loc.start.pos,
-                                end: object.loc.end.pos
-                            });
-                        }
-
-                        let tagpkg = bus.at("标签全名", srcFile);
-
-                        object.value = tagpkg; // 替换为标签全名，如 @scope/pkg:ui-btn
                     });
                 },
                 { readonly: true }
@@ -6708,9 +6591,9 @@ console.time("load");
     // ------- k65p-astedit-transform-tag-name-by-[taglib] end
 })();
 
-/* ------- k75p-astedit-transform-tag-if-for ------- */
+/* ------- k875p-astedit-transform-tag-if-for ------- */
 (() => {
-    // ------- k75p-astedit-transform-tag-if-for start
+    // ------- k875p-astedit-transform-tag-if-for start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -6720,7 +6603,7 @@ console.time("load");
         (function() {
             // 内置for标签和if标签的转换
             // 前面已处理@for和@if，这里直接提升子节点就行了（节点无关属性全忽略）
-            return postobject.plugin("k75p-astedit-transform-tag-if-for", function(root, context) {
+            return postobject.plugin("k875p-astedit-transform-tag-if-for", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!/^(if|for)$/i.test(object.value)) return;
 
@@ -6741,12 +6624,12 @@ console.time("load");
         })()
     );
 
-    // ------- k75p-astedit-transform-tag-if-for end
+    // ------- k875p-astedit-transform-tag-if-for end
 })();
 
-/* ------- k85p-astedit-transform-tag-slot ------- */
+/* ------- k95p-astedit-transform-tag-slot ------- */
 (() => {
-    // ------- k85p-astedit-transform-tag-slot start
+    // ------- k95p-astedit-transform-tag-slot start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -6764,7 +6647,7 @@ console.time("load");
             // 没有插槽时，无context.result.slots
             // 多个插槽时，数组context.result.slots中存放名称
             // 有插槽时，api的$state中添加插槽属性接口 $SLOT，以便差异渲染
-            return postobject.plugin("k85p-astedit-transform-tag-slot", function(root, context) {
+            return postobject.plugin("k95p-astedit-transform-tag-slot", function(root, context) {
                 let nonameSlotNodes = [];
                 let options = bus.at("视图编译选项");
 
@@ -6946,7 +6829,7 @@ console.time("load");
     !_hasDefinedSlotTemplate && !slotVnodes_15ed.length && (slotVnodes_15ed = $state.$SLOT || []);
 */
 
-    // ------- k85p-astedit-transform-tag-slot end
+    // ------- k95p-astedit-transform-tag-slot end
 })();
 
 /* ------- m15p-csslibify-check-@csslib ------- */
@@ -7541,9 +7424,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     "Tag",
                     (node, object) => {
                         if (!object.standard) {
-                            oSet.add(object.value);
-
-                            let file = bus.at("标签源文件", object.value);
+                            let file = bus.at("标签源文件", object.value, context.result.oTaglibs);
                             if (!file) {
                                 throw new Err("file not found of tag: " + object.value, {
                                     file: context.input.file,
@@ -7551,12 +7432,14 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                                     start: object.loc.start.pos
                                 });
                             }
+                            let tagpkg = bus.at("标签全名", file);
+                            oSet.add(tagpkg);
                         }
                     },
                     { readonly: true }
                 );
 
-                result.references = [...oSet];
+                result.references = [...oSet]; // 依赖的组件【标签全名】
             });
         })()
     );
@@ -8723,14 +8606,14 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                 let oSetAllRef = new Set();
                 let oStatus = {};
-                let references = context.result.references;
+                let references = context.result.references; // 依赖的组件源文件
                 references.forEach(tagpkg => {
                     addRefComponent(tagpkg, oSetAllRef, oStatus);
                 });
 
                 // 自身循环引用检查
                 if (oSetAllRef.has(context.result.tagpkg)) {
-                    throw new Err("circular reference: " + context.result.tagpkg);
+                    throw new Err("circular reference: " + context.input.file);
                 }
 
                 // 排序便于生成统一代码顺序
@@ -8744,7 +8627,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    // tagpkg: 待添加依赖组件
+    // tagpkg: 待添加依赖组件(全名)
     function addRefComponent(tagpkg, oSetAllRequires, oStatus) {
         if (oStatus[tagpkg]) {
             return;
@@ -8758,9 +8641,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         if (!context) {
             context = bus.at("编译组件", srcFile);
         }
-        let references = context.result.references;
-        references.forEach(subTagpkg => {
-            addRefComponent(subTagpkg, oSetAllRequires, oStatus);
+        let references = context.result.references; // 依赖的组件源文件
+        references.forEach(tagpkgfullname => {
+            addRefComponent(tagpkgfullname, oSetAllRequires, oStatus);
         });
     }
 
@@ -8939,9 +8822,10 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let ary = [];
                 let allreferences = context.result.allreferences; // 已含页面自身组件
                 allreferences.forEach(tagpkg => {
-                    let ctx = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg));
+                    let tagSrcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
+                    let ctx = bus.at("组件编译缓存", tagSrcFile);
                     if (!ctx) {
-                        ctx = bus.at("编译组件", tagpkg);
+                        ctx = bus.at("编译组件", tagSrcFile);
                     }
                     ctx.result.atcsslibtagcss && aryTagCss.push(...ctx.result.atcsslibtagcss); // @csslib的标签样式
                     ctx.result.css && ary.push(ctx.result.css);
@@ -9029,8 +8913,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let allreferences = context.result.allreferences;
 
                 let srcRuntime = bus.at("RPOSE运行时代码");
-                let srcStmt = getSrcRegisterComponents(allreferences);
-                let srcComponents = getSrcComponents(allreferences);
+                let srcStmt = getSrcRegisterComponents(allreferences, context.result.oTaglibs);
+                let srcComponents = getSrcComponents(allreferences, context.result.oTaglibs);
 
                 if (context.result.allstandardtags.includes("img")) {
                     let oCache = bus.at("缓存");
@@ -9074,13 +8958,13 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     // 组件注册语句
-    function getSrcRegisterComponents(allreferences) {
+    function getSrcRegisterComponents(allreferences, oTaglibs) {
         try {
             let obj = {};
             for (let i = 0, tagpkg, key, file; (tagpkg = allreferences[i++]); ) {
                 key = "'" + tagpkg + "'";
 
-                file = bus.at("标签源文件", tagpkg);
+                file = bus.at("标签源文件", tagpkg, oTaglibs);
                 if (!File.exists(file)) {
                     throw new Err("component not found (tag = " + tagpkg + ")");
                 }
@@ -9095,13 +8979,14 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     }
 
     // 本页面关联的全部组件源码
-    function getSrcComponents(allreferences) {
+    function getSrcComponents(allreferences, oTaglibs) {
         try {
             let ary = [];
             for (let i = 0, tagpkg, context; (tagpkg = allreferences[i++]); ) {
-                context = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg));
+                let tagSrcFile = bus.at("标签源文件", tagpkg, oTaglibs);
+                context = bus.at("组件编译缓存", tagSrcFile);
                 if (!context) {
-                    context = bus.at("编译组件", tagpkg);
+                    context = bus.at("编译组件", tagSrcFile);
                 }
                 ary.push(context.result.componentJs);
             }
@@ -9367,13 +9252,12 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         "标签全名",
         (function() {
             return file => {
-                let idx = file.indexOf(":");
-                if (idx > 0 && file.substring(idx).indexOf(".") < 0) {
+                if (!/\.rpose$/i.test(file) && file.indexOf(":") > 0) {
                     return file; // 已经是全名标签
                 }
 
                 let tagpkg = "";
-                idx = file.lastIndexOf("/node_modules/");
+                let idx = file.lastIndexOf("/node_modules/");
                 if (idx > 0) {
                     let ary = file.substring(idx + 14).split("/"); // xxx/node_modules/@aaa/bbb/xxxxxx => [@aaa, bbb, xxxxxx]
                     if (ary[0].startsWith("@")) {
@@ -9383,6 +9267,10 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     }
                 } else {
                     tagpkg = File.name(file); // aaa/bbb/xxxxxx/abc.rpose => abc      ui-btn => ui-btn
+
+                    // 内置标签
+                    tagpkg === "router" && (tagpkg = "@rpose/buildin:router");
+                    tagpkg === "router-link" && (tagpkg = "@rpose/buildin:router-link");
                 }
 
                 return tagpkg;
@@ -9407,34 +9295,39 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             //   -- @aaa/bbb:ui-xxx
             //   -- bbb:ui-xxx
             //   -- ui-xxx
-            return tag => {
+            //   -- @ui-xxx
+            // 【oTaglibs】
+            //   -- 标签所在组件的[taglib]配置
+            return (tag, oTaglibs = {}) => {
                 if (tag.endsWith(".rpose")) {
                     return tag; // 已经是文件
                 }
 
                 if (tag.indexOf(":") > 0) {
                     // @taglib指定的标签
-                    let ary = tag.split(":");
-                    ary[0].indexOf("=") > 0 && (ary = ary[0].split("="));
-                    let oPkg = bus.at("模块组件信息", ary[0].trim()); // nnn=@aaa/bbb:ui-xxx => @aaa/bbb
-                    let files = oPkg.files;
-                    let name = "/" + ary[1] + ".rpose";
-                    for (let i = 0, srcfile; (srcfile = files[i++]); ) {
-                        if (srcfile.endsWith(name)) {
-                            return srcfile;
-                        }
-                    }
-
-                    return bus.at("标签库引用", tag, oPkg.config);
+                    let taglib = bus.at("解析taglib", tag);
+                    return bus.at("标签库源文件", taglib);
                 } else {
-                    let file = bus.at("标签项目源文件", tag); // 优先找文件名一致的源文件
+                    // 优先查找项目源文件
+                    let file = bus.at("标签项目源文件", tag);
                     if (file) return file;
 
-                    let env = bus.at("编译环境");
-                    return bus.at("标签库引用", tag, env.path.root); // 其次按标签库规则查找
-                }
+                    // 其次查找组件标签库
+                    let alias = tag.startsWith("@") ? tag : "@" + tag;
+                    if (oTaglibs[alias]) {
+                        return bus.at("标签库源文件", oTaglibs[alias]);
+                    }
 
-                // 找不到则undefined
+                    // 最后查找项目标签库
+                    let env = bus.at("编译环境");
+                    let oPjtContext = bus.at("项目配置处理", env.path.root + "/rpose.config.btf");
+                    if (oPjtContext.result.oTaglibs[alias]) {
+                        return bus.at("标签库源文件", oPjtContext.result.oTaglibs[alias]);
+                    }
+
+                    // 找不到
+                    return null;
+                }
             };
         })()
     );
@@ -9540,34 +9433,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     // ------- z38m-util-get-project-config-file-by-file end
-})();
-
-/* ------- z40m-util-auto-install-npm-package ------- */
-(() => {
-    // ------- z40m-util-auto-install-npm-package start
-    const bus = require("@gotoeasy/bus");
-    const npm = require("@gotoeasy/npm");
-
-    bus.on(
-        "自动安装",
-        (function(rs = {}) {
-            return function autoinstall(pkg) {
-                pkg.indexOf(":") > 0 && (pkg = pkg.substring(0, pkg.indexOf(":"))); // @scope/pkg:component => @scope/pkg
-                pkg.lastIndexOf("@") > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf("@"))); // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
-
-                if (!rs[pkg]) {
-                    if (!npm.isInstalled(pkg)) {
-                        rs[pkg] = npm.install(pkg, { timeout: 60000 }); // 安装超时1分钟则异常
-                    } else {
-                        rs[pkg] = true;
-                    }
-                }
-                return rs[pkg];
-            };
-        })()
-    );
-
-    // ------- z40m-util-auto-install-npm-package end
 })();
 
 /* ------- z42m-util-get-package-info-by-name ------- */
@@ -9974,6 +9839,34 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     // ------- z80m-is-expression end
+})();
+
+/* ------- z82m-auto-install-npm-package ------- */
+(() => {
+    // ------- z82m-auto-install-npm-package start
+    const bus = require("@gotoeasy/bus");
+    const npm = require("@gotoeasy/npm");
+
+    bus.on(
+        "自动安装",
+        (function(rs = {}) {
+            return function autoinstall(pkg) {
+                pkg.indexOf(":") > 0 && (pkg = pkg.substring(0, pkg.indexOf(":"))); // @scope/pkg:component => @scope/pkg
+                pkg.lastIndexOf("@") > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf("@"))); // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
+
+                if (!rs[pkg]) {
+                    if (!npm.isInstalled(pkg)) {
+                        rs[pkg] = npm.install(pkg, { timeout: 60000 }); // 安装超时1分钟则异常
+                    } else {
+                        rs[pkg] = true;
+                    }
+                }
+                return rs[pkg];
+            };
+        })()
+    );
+
+    // ------- z82m-auto-install-npm-package end
 })();
 
 /* ------- z99p-log ------- */

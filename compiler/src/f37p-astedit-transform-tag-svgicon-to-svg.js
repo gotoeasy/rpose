@@ -247,17 +247,17 @@ function findSvgInProject(propSrc, errLocInfo, context){
     // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
     let filter = propSrc;
 
-    let oPjt = bus.at('项目配置处理', context.input.file);
+    let oPjtContext = context.project;
     let svgfile = File.resolve(context.input.file, filter);                                     // 相对于源文件所在目录，按相对路径查找svg文件
     if ( File.existsFile(svgfile) ) {
         // 优先按源文件相对目录查找，如果找到的svg不在该文件所在项目范围，报错
-        if ( !svgfile.startsWith(oPjt.path.root + '/') ) {
+        if ( !svgfile.startsWith(oPjtContext.path.root + '/') ) {
             throw new Err('file should not out of project\nsrc: ' + context.input.file + '\nsvg: ' + svgfile, errLocInfo);      // 不支持引用项目外文件，避免版本混乱
         }
     }else {
         // 其次在文件所在的项目配置指定目录中查找
         if ( !/^[./\\]+/.test(filter) ) {
-            svgfile = oPjt.path.svgicons + '/' + filter.replace(/\\/g, '/');
+            svgfile = oPjtContext.path.svgicons + '/' + filter.replace(/\\/g, '/');
             if ( !File.existsFile(svgfile) ) {
                 return false;
             }

@@ -1,9 +1,9 @@
 const bus = require('@gotoeasy/bus');
 
 // 解析单个taglib定义，转换为对象形式方便读取
-bus.on('normalize-taglib', function(){
+bus.on('解析taglib', function(){
 
-    return function normalizeTaglib(taglib, offset=0){
+    return function normalizeTaglib(taglib){
 
         let atastag, astag, pkg, tag, match;
         if ( (match = taglib.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/)) ) {
@@ -28,7 +28,7 @@ bus.on('normalize-taglib', function(){
 
         atastag = astag.startsWith('@') ? astag : ('@' + astag);                            // astag可能没有@前缀，atastag固定含@前缀
 
-        return { line: offset, atastag, astag, pkg, tag, taglib: astag+'='+pkg+':'+tag };
+        return { atastag, astag, pkg, tag, taglib: astag+'='+pkg+':'+tag };
     }
 
 

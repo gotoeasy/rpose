@@ -26,7 +26,7 @@ bus.on('项目配置文件解析', function(){
                 let value = block.buf.join('');                                     // 无损拼接
 
                 // 开始位置
-                let start = Object.assign({}, block.name.loc.start);                // 块开始位置信息 = 块名开始位置信息
+                let start = {pos: sumLineCount(lineCounts, block.name.loc.start.line+1)}; // 块内容开始位置（即块名行为止合计长度）
 
                 // 结束位置
                 let line = block.name.loc.start.line + block.buf.length;            // 结束行

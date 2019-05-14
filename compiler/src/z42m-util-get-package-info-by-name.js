@@ -3,7 +3,6 @@ const bus = require('@gotoeasy/bus');
 const findNodeModules = require('find-node-modules');
 
 bus.on('模块组件信息', function(map=new Map){
-
     return function getImportInfo(pkgname){
         pkgname.indexOf(':') > 0 && (pkgname = pkgname.substring(0, pkgname.indexOf(':')));             // @scope/pkg@x.y.z:component => @scope/pkg@x.y.z
         pkgname.lastIndexOf('@') > 0 && (pkgname = pkgname.substring(0, pkgname.lastIndexOf('@')));     // @scope/pkg@x.y.z => @scope/pkg
@@ -28,6 +27,6 @@ bus.on('模块组件信息', function(map=new Map){
         }
 
         return map.get(pkgname) || {files:[],config:''};
-    }
+    };
 
 }());

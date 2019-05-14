@@ -14,7 +14,7 @@ bus.on('生成内联SVG-SYMBOL代码', function (){
         // 取出页面使用到的内联svg，去除重复，排序后生成svg-symbol方式的字符串
         let files = [ ...(context.result.inlinesymbols||[]) ];                      // 本页面，加了再说，避免遗漏
         allreferences.forEach(tagpkg => {
-            let ctx = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg));
+            let ctx = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg, context.result.oTaglibs));
             ctx.result.inlinesymbols && files.push(...ctx.result.inlinesymbols);
         });
         if ( !files.length ) {
@@ -145,7 +145,7 @@ bus.on('外部SVG-SYMBOL使用的第三方包中的图标文件', function (){
                 let allreferences = context.result.allreferences || [];
                 for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
                     if ( tagpkg.indexOf(':') > 0 ) {
-                        srcFile = bus.at('标签源文件', tagpkg);
+                        srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
                         ctx = bus.at('组件编译缓存', srcFile );
                         if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
                             oSetPackageFile.add( bus.at('文件所在项目配置文件', srcFile) );
@@ -157,8 +157,8 @@ bus.on('外部SVG-SYMBOL使用的第三方包中的图标文件', function (){
 
         let files = [];
         oSetPackageFile.forEach(file => {
-            let oPjt = bus.at('项目配置处理', file);
-            files.push(...File.files(oPjt.path.svgicons, '**.svg'));
+            let oPjtContext = bus.at('项目配置处理', file);
+            files.push(...File.files(oPjtContext.path.svgicons, '**.svg'));
         });
 
         return files;
@@ -181,7 +181,7 @@ bus.on('页面是否引用外部SVG-SYMBOL文件', function (){
 
         let allreferences = context.result.allreferences || [];
         for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
-            srcFile = bus.at('标签源文件', tagpkg);
+            srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
             ctx = bus.at('组件编译缓存', srcFile );
             if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
                 return true;                                                        // 页面关联组件有使用

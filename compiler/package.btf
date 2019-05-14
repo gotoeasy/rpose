@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.5.22
+0.5.24
 
 [main]
 compiler.js
@@ -48,9 +48,9 @@ rpose compiler
 gotoeasy, rpose, compiler
 
 [scripts] // 脚本命令
-build = node node_modules/eslint/bin/eslint src & node script/build & node node_modules/eslint/bin/eslint compiler.js
+build =  node node_modules/eslint/bin/eslint src & node script/build & node node_modules/eslint/bin/eslint compiler.js
 eslint = node node_modules/eslint/bin/eslint src & node node_modules/eslint/bin/eslint compiler.js
-test = nyc ava
+test =   node node_modules/eslint/bin/eslint src & node script/build & node node_modules/eslint/bin/eslint compiler.js & nyc ava
 coverage = nyc ava & nyc report --reporter=html & node coverage
 
 [repository] // 仓库

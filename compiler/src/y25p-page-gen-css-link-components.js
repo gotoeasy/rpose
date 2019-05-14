@@ -42,9 +42,10 @@ bus.on('编译插件', function(){
         let ary = [];
         let allreferences = context.result.allreferences;                            // 已含页面自身组件
         allreferences.forEach(tagpkg => {
-            let ctx = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg));
+            let tagSrcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
+            let ctx = bus.at('组件编译缓存', tagSrcFile);
             if ( !ctx ) {
-                ctx = bus.at('编译组件', tagpkg);
+                ctx = bus.at('编译组件', tagSrcFile);
             }
             ctx.result.atcsslibtagcss && aryTagCss.push(...ctx.result.atcsslibtagcss);             // @csslib的标签样式
             ctx.result.css && ary.push(ctx.result.css);
