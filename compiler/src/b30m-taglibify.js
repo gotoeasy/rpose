@@ -36,14 +36,12 @@ const File = require('@gotoeasy/file');
                 oTaglib.rposefile = taglib.rposefile;
             }
 
-        }else{
-            oTaglib.rposefile = '';
-        }
-
     // TODO
     !oTaglib.rposefile &&    console.info(stack.join('\n => '));
-
-        return oTaglib.rposefile;
+            return oTaglib.rposefile;
+        }else{
+            return null;
+        }
     });
 
     // 查找指定包中的全部源文件，建立标签关系

@@ -1643,14 +1643,13 @@ console.time("load");
                 } else {
                     oTaglib.rposefile = taglib.rposefile;
                 }
+
+                // TODO
+                !oTaglib.rposefile && console.info(stack.join("\n => "));
+                return oTaglib.rposefile;
             } else {
-                oTaglib.rposefile = "";
+                return null;
             }
-
-            // TODO
-            !oTaglib.rposefile && console.info(stack.join("\n => "));
-
-            return oTaglib.rposefile;
         });
 
         // 查找指定包中的全部源文件，建立标签关系
