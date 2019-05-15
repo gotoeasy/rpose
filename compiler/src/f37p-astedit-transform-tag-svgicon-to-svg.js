@@ -247,7 +247,7 @@ function findSvgInProject(propSrc, errLocInfo, context){
     // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
     let filter = propSrc;
 
-    let oPjtContext = context.project;
+    let oPjtContext = bus.at("项目配置处理", context.input.file);
     let svgfile = File.resolve(context.input.file, filter);                                     // 相对于源文件所在目录，按相对路径查找svg文件
     if ( File.existsFile(svgfile) ) {
         // 优先按源文件相对目录查找，如果找到的svg不在该文件所在项目范围，报错

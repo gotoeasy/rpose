@@ -8,7 +8,7 @@ bus.on('编译插件', function(){
     // 检查安装建立组件样式库
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
-        let oPrjContext = context.project;
+        let oPrjContext = bus.at("项目配置处理", context.input.file);
         let oCsslib = context.result.oCsslib = Object.assign({}, oPrjContext.result.oCsslib || {});                 // 项目配置的 oCsslib 合并存放到组件范围缓存起来
         let oCsslibPkgs = context.result.oCsslibPkgs = Object.assign({}, oPrjContext.result.oCsslibPkgs || {});     // 项目配置的 oCsslibPkgs 合并存放到组件范围缓存起来
 

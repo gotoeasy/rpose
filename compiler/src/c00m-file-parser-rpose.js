@@ -26,17 +26,10 @@ bus.on('RPOSE源文件解析', function(){
                 let value = block.buf.join('');                                     // 无损拼接
 
                 // 开始位置
-                let start = Object.assign({}, block.name.loc.start);                // 复制块名开始位置信息
-                start.line++;                                                       // 块开始行=块名开始行+1
-                start.column = 0;
-                start.pos += block.name.lineLen;
-                delete block.name.lineLen;
+                let start = {pos: sumLineCount(lineCounts, block.name.loc.start.line+1)}; // 块内容开始位置（即块名行为止合计长度）
 
                 // 结束位置
-                let line = block.name.loc.start.line + block.buf.length;            // 结束行
-                let column = block.buf[block.buf.length-1].length;                  // 结束列
-                let pos = sumLineCount(lineCounts, line) + column;                  // 结束位置
-                let end = {line, column, pos};
+                let end = {pos: start + value.length};
 
                 block.text = { type, value, loc:{start, end} }
             }
@@ -73,7 +66,7 @@ function parse(blocks, lines, lineCounts) {
             pos += column;
             let end = {line, column, pos};                                      // 结束位置信息
 
-            block.name = {type: 'RposeBlockName', value: oName.name, loc:{start, end}, lineLen: sLine.length };            // 位置包含中括号
+            block.name = {type: 'RposeBlockName', value: oName.name, loc:{start, end} };            // 位置包含中括号
             if ( comment ) {
                 start = Object.assign({}, end);                                 // 注释的开始位置=块名的结束位置
                 column = start.column + comment.length;

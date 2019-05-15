@@ -52,22 +52,22 @@ bus.on('编译插件', function(){
                 throw new Err('invalid attribute value of @taglib', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            tag.startsWith('@') && (tag = tag.substring(1));                   // 去除组件名的@前缀
+            tag.startsWith('@') && (tag = tag.substring(1));                            // 去除组件名的@前缀
 
             let install = bus.at('自动安装', pkg);
             if ( !install ) {
                 throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
-            let taglib = bus.at('解析taglib', `${pkg}:${tag}`);
-            let srcFile = bus.at('标签库源文件', taglib);                      // 从指定模块查找
+            let taglib = bus.at('解析taglib', `${pkg}:${tag}`, context.input.file);
+            let srcFile = bus.at('标签库源文件', taglib);                               // 从指定模块查找
             if ( !srcFile ) {
                 throw new Err('component not found: ' + object.value, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
             }
 
             let tagpkg = bus.at('标签全名', srcFile);
 
-            tagNode.object.value = tagpkg;                                      // 替换为标签全名，如 @scope/pkg:ui-btn
+            tagNode.object.value = tagpkg;                                              // 替换为标签全名，如 @scope/pkg:ui-btn
             node.remove();
         });
     

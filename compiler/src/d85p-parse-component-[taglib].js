@@ -8,7 +8,7 @@ bus.on('编译插件', function(){
     // 名称重复时报错
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
-        let oPrjContext = context.project;                                          // 项目配置解析结果
+        let oPrjContext = bus.at("项目配置处理", context.input.file);                // 项目配置解析结果
         let oPrjTaglibs = oPrjContext.result.oTaglibs;                              // 项目[taglib]
 
         // 遍历树中的taglib节点，建库，处理完后删除该节点
@@ -30,11 +30,13 @@ bus.on('编译插件', function(){
                 if ( !bus.at('自动安装', taglib.pkg) ) {
                     throw new Err('package install failed: ' + taglib.pkg, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
                 }
-/*            
-                if ( !bus.at('标签库源文件', taglib) ) {
-                    throw new Err('taglib component not found: ' + taglib.tag, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+
+                try{
+                    bus.at('标签库源文件', taglib);
+                }catch(e){
+                    throw new Err(e.message, e, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
                 }
-*/
+
             }
 
             context.result.oTaglibs = oTaglibs;

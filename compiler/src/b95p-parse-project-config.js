@@ -3,18 +3,6 @@ const postobject = require('@gotoeasy/postobject');
 const File = require('@gotoeasy/file');
 const Err = require('@gotoeasy/err');
 
-bus.on('编译插件', function(){
-    
-    return postobject.plugin(/**/__filename/**/, function(root, context){
-        
-        // 解析项目配置文件
-        context.project = bus.at('项目配置处理', context.input.file);
-
-    });
-
-}());
-
-
 bus.on('项目配置处理', function(result={}){
 
     return function(srcFile, nocahce=false){
@@ -38,59 +26,39 @@ bus.on('项目配置处理', function(result={}){
             path.build_dist_images = 'images';
             path.svgicons = root + '/resources/svgicons';
 
-            let result = {};
-            let oDefContext = {path, result};
-
-            processConfigTaglibs(oDefContext);                                              // 项目[taglib]配置中自动补足内置组件配置
-            return oDefContext;
+            let result = {oTaglibs: {}};
+            return {path, result};
         }
 
         // 开始解析配置文件
         let plugins = bus.on('项目配置处理插件');
         let context = postobject(plugins).process({file: btfFile});
 
-        processConfigTaglibs(context);                                                      // 项目[taglib]配置中自动补足内置组件配置
+        result[btfFile] = context;
 
-        // 安装、检查[taglib]配置
-        let oTaglibs = context.result.oTaglibs;
-        for ( let alias in oTaglibs ) {
-            let taglib = oTaglibs[alias];
-            if ( !bus.at('自动安装', taglib.pkg) ) {
-                throw new Err('package install failed: ' + taglib.pkg, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
-            }
-            if ( !bus.at('标签库源文件', taglib) ) {
-                throw new Err('taglib component not found: ' + taglib.tag, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+        // 当前项目配置文件时，安装、检查[taglib]配置
+        let env = bus.at('编译环境');
+        if ( env.config === btfFile ) {
+            let oTaglibs = context.result.oTaglibs;
+            for ( let alias in oTaglibs ) {
+                let taglib = oTaglibs[alias];
+                if ( !bus.at('自动安装', taglib.pkg) ) {
+                    throw new Err('package install failed: ' + taglib.pkg, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+                }
+
+                try{
+                    bus.at('标签库源文件', taglib);
+                }catch(e){
+                    throw new Err(e.message, e, { file: context.input.file, text: context.input.text, start: taglib.pos.start, end: taglib.pos.end });
+                }
             }
         }
-
-        result[btfFile] = context;
 
         time = new Date().getTime() - stime;
         time > 100 && console.debug('init-project-config:', time + 'ms');
 
         return result[btfFile];
     };
-
-
-    // 项目[taglib]配置中自动补足内置组件配置
-    function processConfigTaglibs(context){
-
-        // 项目[taglib]配置
-        let oTaglibs = context.result.oTaglibs = context.result.oTaglibs || {};
-
-        // 默认添加内置组件的[taglib]配置
-        bus.at('自动安装', '@rpose/buildin');                                         // 默认安装内置包
-        let taglib;
-        if ( !oTaglibs['router'] ) {
-            taglib = bus.at('解析taglib', 'router=@rpose/buildin:router');            // 默认添加内置标签配置
-            oTaglibs['router'] = oTaglibs['@router'] = taglib;
-        }
-        if ( !oTaglibs['router-link'] ) {
-            taglib = bus.at('解析taglib', 'router-link=@rpose/buildin:router-link');  // 默认添加内置标签配置
-            oTaglibs['router-link'] = oTaglibs['@router-link'] = taglib;
-        }
-    }
-
 
 }());
 
@@ -186,10 +154,22 @@ bus.on('项目配置处理插件', function(){
 }());
 
 
+// 默认安装内置包
+bus.on('项目配置处理插件', function(install){
+
+    return postobject.plugin('process-project-config-120', function(){
+        if ( !install ) {
+            bus.at('自动安装', '@rpose/buildin');
+        }
+    });
+
+}());
+
+
 // 建立项目标签库
 bus.on('项目配置处理插件', function(){
 
-    return postobject.plugin('process-project-config-120', function(root, context){
+    return postobject.plugin('process-project-config-130', function(root, context){
 
         let oTaglibs;
         root.walk( 'taglib', (node, object) => {
@@ -197,7 +177,7 @@ bus.on('项目配置处理插件', function(){
             node.remove();
         });
 
-        context.result.oTaglibs = oTaglibs;                                     // 保存[taglib]解析结果
+        context.result.oTaglibs = oTaglibs || {};                               // 保存[taglib]解析结果
     });
 
 }());

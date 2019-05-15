@@ -17,7 +17,7 @@ bus.on('解析[taglib]', function(){
             taglib = lines[i].split('//')[0].trim();                                        // 去除注释内容
             if ( !taglib ) continue;                                                        // 跳过空白行
 
-            oTaglib = bus.at('解析taglib', taglib);
+            oTaglib = bus.at('解析taglib', taglib, file);
             let pos = getStartPos(lines, i, obj.loc.start.pos);                             // taglib位置
 
             // 无效的taglib格式
@@ -28,7 +28,7 @@ bus.on('解析[taglib]', function(){
             oTaglib.pos = pos;                                                              // 顺便保存位置，备用  TODO 位置
 
             // 无效的taglib别名
-            if ( /^@?(if|for|svgicon)$/i.test(oTaglib.astag) ) {
+            if ( /^(if|for|svgicon|router|router-link)$/i.test(oTaglib.astag) ) {
                 throw new Err('can not use buildin tag name: ' + oTaglib.astag, { file, start: pos.start, end: pos.endAlias });
             }
 
@@ -55,7 +55,7 @@ function getStartPos(lines, lineNo, offset){
     }
     
     let line = lines[lineNo].split('//')[0];                            // 不含注释
-    let match = line.match(/\s+/);
+    let match = line.match(/^\s+/);
     match && (start += match[0].length);                                // 加上别名前的空白长度
 
     let end = start + line.trim().length;                               // 结束位置不含注释
@@ -65,5 +65,6 @@ function getStartPos(lines, lineNo, offset){
         endAlias = start + line.substring(0, idx).trim().length;        // 有等号时的别名长度
     }
 
+    // TODO 更详细的位置信息
     return {start, end, endAlias};
 }

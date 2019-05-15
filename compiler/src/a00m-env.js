@@ -75,6 +75,12 @@ function parseRposeConfigBtf(file, defaultFile, opts){
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());
 
+    result.config = root + '/rpose.config.btf';
+    let packagejson = root + '/package.json';
+    if ( File.existsFile(packagejson) ) {
+        result.packageName = JSON.parse(File.read(packagejson)).name;
+    }
+
     // 自动检查安装依赖包
     autoInstallLocalModules(result.theme, result.prerender);
 

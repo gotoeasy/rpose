@@ -7,7 +7,7 @@ bus.on('编译插件', function(){
     // 按标签库更换标签全名
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
-        let oPrjContext = context.project;                                  // 项目配置解析结果
+        let oPrjContext = bus.at("项目配置处理", context.input.file);        // 项目配置解析结果
         let oPrjTaglibs = oPrjContext.result.oTaglibs;                      // 项目[taglib]
         let oTaglibs = context.result.oTaglibs || {};                       // 组件[taglib]
 

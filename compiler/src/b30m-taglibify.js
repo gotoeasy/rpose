@@ -6,7 +6,19 @@ const File = require('@gotoeasy/file');
     // 按taglib找源文件
     bus.on('标签库源文件', (taglib, stack=[]) => {
 
-        // TODO 循环引用时的友好提示
+        // 循环引用时报异常
+        let oSet = stack.oSet = stack.oSet || new Set();
+        let refpkgtag = taglib.pkg + ':' + taglib.tag;
+        if ( oSet.has(refpkgtag) ) {
+            let msgs = [];
+            stack.forEach(v => {
+                msgs.push(v.taglib + ' (' + v.file + ')');
+            });
+            msgs.push(taglib.taglib + ' (' + taglib.file + ')');
+            throw new Error('taglib component circular reference\n => ' + msgs.join('\n => '));
+        }
+        oSet.add(refpkgtag);
+
         stack.push(taglib);
 
         // 先按标签名查找源文件
@@ -21,27 +33,26 @@ const File = require('@gotoeasy/file');
         let atastag = '@' + taglib.tag;
         let oTaglib = oPjtContext.result.oTaglibs[atastag];
 
+        let file = '';
         if ( oTaglib ) {
-            if ( oTaglib.rposefile !== undefined ) return oTaglib.rposefile;
-
-            let taglib;
-            while ( (taglib = bus.at('标签库源文件', oTaglib, stack)) && !taglib.length && !taglib.rposefile ) {
-                // 递归查找到底
+            let rst;
+            while ( (rst = bus.at('标签库源文件', oTaglib, stack)) && (typeof rst !== 'string') ) {
+                // 返回另一个标签库对象时，继续递归查找到底
+                // 最终要么找到文件（返回文件绝对路径），要么找不到（返回‘’），要么异常（比如循环引用）
             }
-            if ( !taglib ) {
-                oTaglib.rposefile = '';
-            }else if ( taglib.length ) {
-                oTaglib.rposefile = taglib;
-            }else{
-                oTaglib.rposefile = taglib.rposefile;
-            }
-
-    // TODO
-    !oTaglib.rposefile &&    console.info(stack.join('\n => '));
-            return oTaglib.rposefile;
-        }else{
-            return null;
+            file = rst;
         }
+
+        if ( !file ) {
+            let msgs = [];
+            stack.forEach(v => {
+                msgs.push(v.taglib + ' (' + v.file + ')');
+            });
+            throw new Error('taglib component not found\n => ' + msgs.join('\n => '));
+        }
+
+        return file;
+
     });
 
     // 查找指定包中的全部源文件，建立标签关系
