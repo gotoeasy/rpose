@@ -33,10 +33,10 @@ bus.on('编译插件', function(){
                 // @taglib = "name=@scope/pkg:component"
                 pkg = match[1];
                 tag = match[2];
-            }else if ( (match = attaglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/)) ) {
+            }else if ( (match = attaglib.match(/^\s*(.+?)\s*=\s*(.+?)\s*$/)) ) {
                 // @taglib = "name=@scope/pkg"
-                pkg = match[1];
-                tag = tagName;
+                pkg = match[2];
+                tag = match[1];
             }else if ( attaglib.indexOf('=') >= 0 ) {
                 // @taglib = "=@scope/pkg"
                 throw new Err('invalid attribute value of @taglib', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });

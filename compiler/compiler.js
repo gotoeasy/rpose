@@ -5937,7 +5937,7 @@ console.time("load");
                             end: ary[1].object.loc.end.pos
                         });
                     }
-                    if (/^(if|for|svgicon)$/.test(object.value)) {
+                    if (/^(if|for|svgicon|router|router-link)$/.test(object.value)) {
                         throw new Err(`unsupport @taglib on tag <${object.value}>`, {
                             file: context.input.file,
                             text: context.input.text,
@@ -5953,11 +5953,6 @@ console.time("load");
 
                     node.addChild(oNode);
                     ary[0].remove(); // 删除节点
-
-                    // @taglib上的标签名，推荐使用‘@组件标签名’的写法，如果是这种写法，这里默认的把其中的‘@’去掉，便于后续匹配组件标签名
-                    //            if ( /^@+/.test(object.value) ) {
-                    //                object.value = object.value.substring(1);
-                    //            }
                 });
             });
         })()
@@ -6482,10 +6477,10 @@ console.time("load");
                         // @taglib = "name=@scope/pkg:component"
                         pkg = match[1];
                         tag = match[2];
-                    } else if ((match = attaglib.match(/^\s*.+?\s*=\s*(.+?)\s*$/))) {
+                    } else if ((match = attaglib.match(/^\s*(.+?)\s*=\s*(.+?)\s*$/))) {
                         // @taglib = "name=@scope/pkg"
-                        pkg = match[1];
-                        tag = tagName;
+                        pkg = match[2];
+                        tag = match[1];
                     } else if (attaglib.indexOf("=") >= 0) {
                         // @taglib = "=@scope/pkg"
                         throw new Err("invalid attribute value of @taglib", {

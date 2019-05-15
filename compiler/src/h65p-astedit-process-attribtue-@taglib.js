@@ -34,7 +34,7 @@ bus.on('编译插件', function(){
                 // 属性 @taglib 不能重复
                 throw new Err('duplicate attribute of @taglib', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
             }
-            if ( /^(if|for|svgicon)$/.test(object.value) ) {
+            if ( /^(if|for|svgicon|router|router-link)$/.test(object.value) ) {
                 throw new Err(`unsupport @taglib on tag <${object.value}>`, {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
             }
 
@@ -45,11 +45,6 @@ bus.on('编译插件', function(){
 
             node.addChild(oNode);
             ary[0].remove();    // 删除节点
-
-            // @taglib上的标签名，推荐使用‘@组件标签名’的写法，如果是这种写法，这里默认的把其中的‘@’去掉，便于后续匹配组件标签名
-//            if ( /^@+/.test(object.value) ) {
-//                object.value = object.value.substring(1);
-//            }
 
         });
 
