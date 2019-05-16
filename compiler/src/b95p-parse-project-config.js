@@ -26,7 +26,7 @@ bus.on('项目配置处理', function(result={}){
             path.build_dist_images = 'images';
             path.svgicons = root + '/resources/svgicons';
 
-            let result = {oTaglibs: {}};
+            let result = {oTaglibs: {}, oCsslibs: {}, oCsslibPkgs: {}};
             return {path, result};
         }
 
@@ -135,19 +135,22 @@ bus.on('项目配置处理插件', function(){
 bus.on('项目配置处理插件', function(){
     return postobject.plugin('process-project-config-110', function(root, context){
 
-        let oKv;
+        let csslibs;                                                                        // 保存[csslib]解析结果
         root.walk( 'csslib', (node, object) => {
-            oKv = bus.at('解析[csslib]', object.value, context, object.loc);
+            csslibs = bus.at('解析[csslib]', object, context.input.file, context.input.text);
             node.remove();
         });
-        if ( !oKv ) return;
 
-        let oCsslib = context.result.oCsslib = {};
-        let oCsslibPkgs = context.result.oCsslibPkgs = context.result.oCsslibPkgs || {};
+        let oCsslibs = context.result.oCsslibs = {};
+        let oCsslibPkgs = context.result.oCsslibPkgs = {};
 
-        for ( let k in oKv ) {
-            oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`, context);
-            oCsslibPkgs[k] = oCsslib[k].pkg;            // 保存样式库{匿名：实际名}的关系，便于通过匿名找到实际包名
+        if ( csslibs ) {
+            let oCsslib;
+            for ( let alias in csslibs ) {
+                oCsslib = bus.at('样式库', csslibs[alias]);                                 // 转换为样式库对象
+                oCsslibs[alias] = oCsslib;                                                  // 存放样式库对象
+                oCsslibPkgs[alias] = oCsslib.pkg;                                           // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
+            }
         }
 
     });

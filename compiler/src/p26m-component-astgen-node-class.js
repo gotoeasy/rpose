@@ -28,7 +28,9 @@ bus.on('astgen-node-class', function(){
 function classStrToObjectString(classNode, context){
 
     // TODO 含大括号冒号的复杂表达式
-    let oCsslibPkgs = context.result.oCsslibPkgs;
+    let oPrjContext = bus.at("项目配置处理", context.input.file);
+    let oAllCsslibPkgs = Object.assign({}, context.result.oAtCsslibPkgs, context.result.oCsslibPkgs, oPrjContext.result.oCsslibPkgs);   // 存放项目和组件及@csslib配置的样式库【别名-库名】映射
+    let oNonameCsslibPC = context.result.oCsslibs['*'] || oPrjContext.result.oCsslibs['*'];                                             // 项目或组件[csslib]配置的无名样式库
     let oRs = {};
     let clas = classNode.object.value;
     let atcsslibx = classNode.object.atcsslibx || [];               // 当前节点使用了@csslib=*的样式名
@@ -52,7 +54,7 @@ function classStrToObjectString(classNode, context){
             }
 
             expr = expr.replace(/\\/g, '皛');                       // 补丁案 ...... 把class里表达式的斜杠临时替换掉，避免JSON处理时不认正则表达式的转义字符，在输出代码时替换回来
-            oRs[bus.at('哈希样式类名', context.input.file, getClassPkg(cls, oCsslibPkgs, atcsslibx))] = '@(' + expr + ')@';
+            oRs[bus.at('哈希样式类名', context.input.file, getClassPkg(cls, oAllCsslibPkgs, oNonameCsslibPC, atcsslibx))] = '@(' + expr + ')@';
         }
 
         return '';
@@ -60,7 +62,7 @@ function classStrToObjectString(classNode, context){
     
     let ary = clas.split(/\s/);
     for ( let i=0; i<ary.length; i++) {
-        ary[i].trim() && (oRs[bus.at('哈希样式类名', context.input.file, getClassPkg(ary[i], oCsslibPkgs, atcsslibx))] = 1);
+        ary[i].trim() && (oRs[bus.at('哈希样式类名', context.input.file, getClassPkg(ary[i], oAllCsslibPkgs, oNonameCsslibPC, atcsslibx))] = 1);
     }
 
     let rs = JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, '');
@@ -68,12 +70,16 @@ function classStrToObjectString(classNode, context){
     return rs;
 }
 
-function getClassPkg(cls, oCsslibPkgs, atcsslibx){
+function getClassPkg(cls, oAllCsslibPkgs, oNonameCsslibPC, atcsslibx){
     let ary = cls.trim().split('@');
     if ( ary.length > 1 ){
-        return ary[0] + '@' + oCsslibPkgs[ary[1]];
-    }else if ( atcsslibx.includes(ary[0]) ) {
-        return ary[0] + '@*';                                       // <div class="foo" @csslib="*=xxx">, foo => foo@*
+        return ary[0] + '@' + oAllCsslibPkgs[ary[1]];
+    }else {
+        if ( atcsslibx.includes(ary[0]) || (oNonameCsslibPC && oNonameCsslibPC.has(ary[0])) ) {
+            // <div class="foo" @csslib="*=xxx">,    foo => foo@*，即，@csslib的无名库，标签中的类名要特定修改
+            // <div class="foo">, [csslib]="*=xxx",  foo => foo@*，即，[csslib]的无名库，标签中的类名已要特定修改
+            return ary[0] + '@*';
+        }
     }
 
     return ary[0];

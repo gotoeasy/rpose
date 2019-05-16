@@ -9,8 +9,9 @@ bus.on('编译插件', function(){
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let oPrjContext = bus.at("项目配置处理", context.input.file);
-        let oCsslib = context.result.oCsslib = Object.assign({}, oPrjContext.result.oCsslib || {});                 // 项目配置的 oCsslib 合并存放到组件范围缓存起来
-        let oCsslibPkgs = context.result.oCsslibPkgs = Object.assign({}, oPrjContext.result.oCsslibPkgs || {});     // 项目配置的 oCsslibPkgs 合并存放到组件范围缓存起来
+        let oPrjCsslibs = oPrjContext.result.oCsslibs;                                      // 存放项目配置的样式库对象
+        let oCsslibs = context.result.oCsslibs = context.result.oCsslibs || {};             // 存放组件配置的样式库对象
+        let oCsslibPkgs = context.result.oCsslibPkgs = context.result.oCsslibPkgs || {};    // 存放组件配置的样式库【别名-包名】映射关系
 
         // 遍历树中的csslib节点，建库，处理完后删除该节点
         root.walk( 'RposeBlock', (node, object) => {
@@ -18,14 +19,20 @@ bus.on('编译插件', function(){
             if ( object.name.value !== 'csslib' ) return;
             if ( !object.text || !object.text.value || !object.text.value.trim() ) return;
 
-            let oKv = bus.at('解析[csslib]', object.text.value, context, object.text.loc);
+            let oLibs = bus.at('解析[csslib]', object.text, context.input.file, context.input.text);
 
-            for ( let k in oKv ) {
-                if ( oCsslib[k] ) {
-                    throw new Err('duplicate csslib name: ' + k, { file: context.input.file, text: context.input.text, line: object.text.loc.start.line - 1 });
+            let csslib, oCsslib;
+            for ( let alias in oLibs ) {
+                csslib = oLibs[alias];
+
+                // 与项目配置的重复性冲突检查
+                if ( oPrjCsslibs[alias] ) {
+                    throw new Err('duplicate csslib name: ' + alias, { file: context.input.file, text: context.input.text, start: csslib.pos.start, end: csslib.pos.end });
                 }
-                oCsslib[k] = bus.at('样式库', `${k}=${oKv[k]}`);
-                oCsslibPkgs[k] = oCsslib[k].pkg;
+
+                oCsslib = bus.at('样式库', csslib);                 // 转换为样式库对象
+                oCsslibs[alias] = oCsslib;                          // 存放样式库对象
+                oCsslibPkgs[alias] = oCsslib.pkg;                   // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
             }
 
             node.remove();
@@ -35,4 +42,3 @@ bus.on('编译插件', function(){
     });
 
 }());
-

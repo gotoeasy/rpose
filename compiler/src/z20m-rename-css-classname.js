@@ -30,7 +30,7 @@ bus.on('哈希样式类名', function(){
             if ( !ary[1] || ary[1] === '*' ) {
                 // @csslib无名库特殊处理
                 ary[0] += '___' + hash(bus.at('标签全名', srcFile));
-                ary[1] = 'atcsslib-x';
+                ary[1] = 'csslib-x';
             }
             name = `${ary[1]}---${ary[0]}`;                                 // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
         }else{

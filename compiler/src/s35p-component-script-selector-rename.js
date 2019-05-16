@@ -22,10 +22,16 @@ bus.on('编译插件', function(){
     // ---------------------------------------------------------------
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
+        let oPrjContext = bus.at("项目配置处理", context.input.file);
+        let oPrjCsslibPkgs = oPrjContext.result.oCsslibPkgs;                                            // 项目[csslib]配置的样式库【别名-包名】映射关系
+        let oPrjCsslibs = oPrjContext.result.oCsslibs;                                                  // 项目[csslib]配置的样式库 (asname：lib)
+        let oCsslibPkgs = context.result.oCsslibPkgs;                                                   // 组件[csslib]配置的样式库【别名-包名】映射关系
+        let oCsslibs = context.result.oCsslibs;                                                         // 组件[csslib]配置的样式库 (asname：lib)
+        let oAtCsslibPkgs = context.result.oAtCsslibPkgs = context.result.oAtCsslibPkgs || {};          // 组件@csslib配置的样式库【别名-包名】映射关系
+        let oAtCsslibs = context.result.oAtCsslibs = context.result.oAtCsslibs || {};                   // 组件@csslib配置的样式库 (asname：lib)
+
         let style = context.style;
         style.csslibset = style.csslibset || new Set();
-        let oCsslib = context.result.oCsslib;
-        let oCsslibPkgs = context.result.oCsslibPkgs;
         let script = context.script;
         let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
@@ -39,15 +45,15 @@ bus.on('编译插件', function(){
 
         // 脚本中用到的类，检查样式库是否存在，检查类名是否存在
         if ( classnames.length ) {
-            // 查库取样式，把样式库匿名改成真实库名
-            for ( let i=0,clspkg,clsname,asname,ary; clspkg=classnames[i++]; ) {
+            // 查库取样式，把样式库别名改成真实库名
+            for ( let i=0,clspkg,clsname,asname,ary,csslib; clspkg=classnames[i++]; ) {
                 ary = clspkg.split('@');
                 clsname = '.' + ary[0];                         // 类名
                 asname = ary.length > 1 ? ary[1] : '*';         // 库别名
 
                 if ( asname !== '*' ) {
                     // 别名样式类，按需引用别名库
-                    let csslib = oCsslib[asname];
+                    csslib = oAtCsslibs[asname] || oCsslibs[asname] || oPrjCsslibs[asname];
                     if ( !csslib ) {
                         // 指定别名的样式库不存在
                         throw new Error('csslib not found: ' + asname + '\nfile: ' + context.input.file);  // TODO 友好定位提示
@@ -58,6 +64,7 @@ bus.on('编译插件', function(){
                         throw new Error('css class not found: '+ clspkg + '\nfile: ' + context.input.file);  // TODO 友好定位提示
                     }
                 }
+
 
             }
         }
@@ -156,16 +163,16 @@ bus.on('编译插件', function(){
             return rs.replace(/鬱/g, '@');
         }
 
-        // 检查样式库是否存在
+        // 替换js代码中的样式库别名为实际库名，检查样式库是否存在
         function getClassPkg(cls){
             let ary = cls.trim().split(/鬱|@/);
             if ( ary.length > 1 ){
                 let asname = ary[1];
-                if ( !oCsslibPkgs[asname] ) {
-                    // js代码中类选择器指定的csslib未定义导致找不到
-                    throw new Error('csslib not found: ' + ary[0] + '@' + ary[1] + '\nfile: ' + context.input.file);  // TODO 友好定位提示
+                let pkg = oAtCsslibPkgs[asname] || oCsslibPkgs[asname] || oPrjCsslibPkgs[asname];                       // 找出别名对应的实际库名
+                if ( !pkg ) {
+                    throw new Error('csslib not found: ' + ary[0] + '@' + ary[1] + '\nfile: ' + context.input.file);    // js代码中类选择器指定的csslib未定义导致找不到 TODO 友好定位提示
                 }
-                return ary[0] + '@' + asname;  // 哈希还是使用'@'
+                return ary[0] + '@' + pkg;                                                                              // 最终按实际别名对应的实际库名进行哈希
             }
 
             return ary[0];
