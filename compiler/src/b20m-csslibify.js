@@ -14,9 +14,7 @@ bus.on('样式库', function(){
         let libid = hash( JSON.stringify(['样式库缓存用ID', oCsslib.pkg, cssfiles]) );       // 样式库缓存用ID【实际包名：文件列表】
 
         let pkg = oCsslib.pkg;                                                              // 样式库包名
-        if ( !oCsslib.alias || oCsslib.alias === '*' ) {
-            pkg = '';                                                                       // 没有指定别名，或指定为*，按无库名处理（用于组件范围样式）
-        }else if ( pkg.startsWith('~') ) {
+        if ( pkg.startsWith('~') ) {
             pkg = 'dir-' + hash(oCsslib.dir);                                               // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
         }
 

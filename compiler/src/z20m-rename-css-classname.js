@@ -19,20 +19,21 @@ bus.on('哈希样式类名', function(){
 
         let name = clsName;
 
-        // 特殊名称不哈希（已哈希的也是下划线开头）
+        // 特殊名称不哈希（已哈希的是下划线开头）
         if ( name.startsWith('_') ) {
             return name;
         }
 
+
         const env = bus.at('编译环境');
         if ( clsName.indexOf('@') > 0 ) {
             let ary = clsName.split('@');
-            if ( !ary[1] || ary[1] === '*' ) {
-                // @csslib无名库特殊处理
-                ary[0] += '___' + hash(bus.at('标签全名', srcFile));
-                ary[1] = 'csslib-x';
-            }
+            !ary[1] && (ary[1] = 'UNKNOW');
+
             name = `${ary[1]}---${ary[0]}`;                                 // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
+
+//            let tag = bus.at('标签全名', srcFile);
+//            name = `${ary[1]}---${ary[0]}___${hash(tag)}`;                  // 引用样式库时，使用命名空间前缀，如 pkgname---the-class___xxxxx (不足：类名过多)
         }else{
             if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 ) {
                 // 已经改过名

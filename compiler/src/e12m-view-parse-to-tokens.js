@@ -216,6 +216,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
                 while ( !reader.eof() && reader.getCurrentChar() !== '"' ) {
                     let ch = reader.readChar();
                     (ch !== '\r' && ch !== '\n') && (val += ch);    // 忽略回车换行，其他只要不是【"】就算属性值
+                  //  val += ch;    // 忽略回车换行，其他只要不是【"】就算属性值
                 }
 
                 if ( reader.eof() || reader.getCurrentChar() !== '"' ) {
@@ -235,6 +236,7 @@ function TokenParser(fileText, viewText, file, PosOffset){
                 while ( !reader.eof() && reader.getCurrentChar() !== "'" ) {
                     let ch = reader.readChar();
                     (ch != '\r' && ch != '\n') && (val += ch);    // 忽略回车换行，其他只要不是【'】就算属性值
+                 //   val += ch;    // 忽略回车换行，其他只要不是【'】就算属性值
                 }
 
                 if ( reader.eof() || reader.getCurrentChar() !== "'" ) {

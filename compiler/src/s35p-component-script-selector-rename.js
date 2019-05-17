@@ -30,8 +30,6 @@ bus.on('编译插件', function(){
         let oAtCsslibPkgs = context.result.oAtCsslibPkgs = context.result.oAtCsslibPkgs || {};          // 组件@csslib配置的样式库【别名-包名】映射关系
         let oAtCsslibs = context.result.oAtCsslibs = context.result.oAtCsslibs || {};                   // 组件@csslib配置的样式库 (asname：lib)
 
-        let style = context.style;
-        style.csslibset = style.csslibset || new Set();
         let script = context.script;
         let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 

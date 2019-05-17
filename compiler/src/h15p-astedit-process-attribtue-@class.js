@@ -40,7 +40,7 @@ bus.on('编译插件', function(){
 
             if ( !ary.length ) return;                                                  // 没有找到相关节点，跳过
 
-            if ( ary.legnth > 1 ) {
+            if ( ary.length > 1 ) {
                 // 属性 @class 不能重复
                 throw new Err('duplicate attribute of @class', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
             }

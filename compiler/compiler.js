@@ -1454,9 +1454,7 @@ console.time("load");
                 let libid = hash(JSON.stringify(["样式库缓存用ID", oCsslib.pkg, cssfiles])); // 样式库缓存用ID【实际包名：文件列表】
 
                 let pkg = oCsslib.pkg; // 样式库包名
-                if (!oCsslib.alias || oCsslib.alias === "*") {
-                    pkg = ""; // 没有指定别名，或指定为*，按无库名处理（用于组件范围样式）
-                } else if (pkg.startsWith("~")) {
+                if (pkg.startsWith("~")) {
                     pkg = "dir-" + hash(oCsslib.dir); // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
                 }
 
@@ -3402,6 +3400,7 @@ console.time("load");
                     while (!reader.eof() && reader.getCurrentChar() !== '"') {
                         let ch = reader.readChar();
                         ch !== "\r" && ch !== "\n" && (val += ch); // 忽略回车换行，其他只要不是【"】就算属性值
+                        //  val += ch;    // 忽略回车换行，其他只要不是【"】就算属性值
                     }
 
                     if (reader.eof() || reader.getCurrentChar() !== '"') {
@@ -3421,6 +3420,7 @@ console.time("load");
                     while (!reader.eof() && reader.getCurrentChar() !== "'") {
                         let ch = reader.readChar();
                         ch != "\r" && ch != "\n" && (val += ch); // 忽略回车换行，其他只要不是【'】就算属性值
+                        //   val += ch;    // 忽略回车换行，其他只要不是【'】就算属性值
                     }
 
                     if (reader.eof() || reader.getCurrentChar() !== "'") {
@@ -3791,9 +3791,9 @@ console.time("load");
     // ------- e15p-parse-view-tokens-to-ast end
 })();
 
-/* ------- f15p-astedit-normalize-group-attribute ------- */
+/* ------- e25p-ast-normalize-group-attribute ------- */
 (() => {
-    // ------- f15p-astedit-normalize-group-attribute start
+    // ------- e25p-ast-normalize-group-attribute start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -3803,7 +3803,7 @@ console.time("load");
         (function() {
             // 合并属性到新的Attributes节点
             // 属性值Attribute节点的数据对象中，添加 isExpresstion 标记
-            return postobject.plugin("f15p-astedit-normalize-group-attribute", function(root, context) {
+            return postobject.plugin("e25p-ast-normalize-group-attribute", function(root, context) {
                 const OPTS = bus.at("视图编译选项");
 
                 // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
@@ -3882,12 +3882,12 @@ console.time("load");
         })()
     );
 
-    // ------- f15p-astedit-normalize-group-attribute end
+    // ------- e25p-ast-normalize-group-attribute end
 })();
 
-/* ------- f25p-astedit-normolize-tag-of-self-close ------- */
+/* ------- e35p-ast-normolize-tag-of-self-close ------- */
 (() => {
-    // ------- f25p-astedit-normolize-tag-of-self-close start
+    // ------- e35p-ast-normolize-tag-of-self-close start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
@@ -3895,7 +3895,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 自关闭标签统一转换为Tag类型节点
-            return postobject.plugin("f25p-astedit-normolize-tag-of-self-close", function(root) {
+            return postobject.plugin("e35p-ast-normolize-tag-of-self-close", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeTagSelfClose, (node, object) => {
@@ -3916,12 +3916,12 @@ console.time("load");
         })()
     );
 
-    // ------- f25p-astedit-normolize-tag-of-self-close end
+    // ------- e35p-ast-normolize-tag-of-self-close end
 })();
 
-/* ------- f35p-astedit-normolize-tag-of-open-close ------- */
+/* ------- e45p-ast-normolize-tag-of-open-close ------- */
 (() => {
-    // ------- f35p-astedit-normolize-tag-of-open-close start
+    // ------- e45p-ast-normolize-tag-of-open-close start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -3930,7 +3930,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 开闭标签统一转换为Tag类型节点
-            return postobject.plugin("f35p-astedit-normolize-tag-of-open-close", function(root, context) {
+            return postobject.plugin("e45p-ast-normolize-tag-of-open-close", function(root, context) {
                 const OPTS = bus.at("视图编译选项");
 
                 let normolizeTagNode = (tagNode, nodeTagOpen) => {
@@ -3991,12 +3991,269 @@ console.time("load");
         })()
     );
 
-    // ------- f35p-astedit-normolize-tag-of-open-close end
+    // ------- e45p-ast-normolize-tag-of-open-close end
 })();
 
-/* ------- f36m-svgicon-parser ------- */
+/* ------- f10m-highlight-file-parser-btf ------- */
 (() => {
-    // ------- f36m-svgicon-parser start
+    // ------- f10m-highlight-file-parser-btf start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "BTF内容解析",
+        (function() {
+            return function(text) {
+                let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
+                let lines = text.split(LF);
+
+                let tokens = [];
+                parse(tokens, lines);
+
+                tokens.forEach(token => {
+                    if (token.type === "BlockText") {
+                        token.value = token.value.join(LF);
+                    }
+                });
+
+                return tokens;
+            };
+        })()
+    );
+
+    function parse(tokens, lines) {
+        let sLine,
+            oName,
+            comment,
+            blockStart = false;
+        for (let i = 0; i < lines.length; i++) {
+            sLine = lines[i];
+
+            if (isBlockStart(sLine)) {
+                oName = getBlockName(sLine);
+                comment = sLine.substring(oName.len + 2);
+                tokens.push({ type: "BlockName", name: oName.name, comment: comment }); // 名称不含中括号
+                blockStart = true;
+            } else if (isBlockEnd(sLine)) {
+                tokens.push({ type: "Comment", value: sLine });
+                blockStart = false;
+            } else if (isDocumentEnd(sLine)) {
+                tokens.push({ type: "Comment", value: sLine });
+                blockStart = false;
+            } else {
+                if (blockStart) {
+                    // text line
+                    if (tokens[tokens.length - 1].type !== "BlockText") {
+                        tokens.push({ type: "BlockText", name: tokens[tokens.length - 1].name, value: [] });
+                    }
+                    let oBlockText = tokens[tokens.length - 1];
+                    oBlockText.value.push(sLine);
+                } else {
+                    // ignore line
+                    tokens.push({ type: "Comment", value: sLine });
+                }
+            }
+        }
+    }
+
+    function isBlockStart(sLine) {
+        return sLine.startsWith("[") && sLine.indexOf("]") > 0;
+    }
+
+    function isBlockEnd(sLine) {
+        return sLine.startsWith("---------");
+    }
+
+    function isDocumentEnd(sLine) {
+        return sLine.startsWith("=========");
+    }
+
+    function getBlockName(sLine) {
+        let name, len;
+        for (let i = 1; i < sLine.length; i++) {
+            if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
+                name = sLine.substring(1, i).toLowerCase();
+                len = name.length;
+                return { name, len };
+            }
+        }
+
+        name = sLine.substring(1, sLine.lastIndexOf("]")).toLowerCase();
+        len = name.length;
+        return { name, len };
+    }
+
+    // ------- f10m-highlight-file-parser-btf end
+})();
+
+/* ------- f12m-highlight-$code-of-``` ------- */
+(() => {
+    // ------- f12m-highlight-$code-of-``` start
+    const bus = require("@gotoeasy/bus");
+    const refractor = require("refractor");
+    const rehype = require("rehype");
+
+    // --------------------------------------------
+    // 自定义 inilike 高亮规则，分隔符为等号、冒号
+    // --------------------------------------------
+    inilike.displayName = "inilike";
+    inilike.aliases = [];
+    function inilike(Prism) {
+        Prism.languages.inilike = {
+            constant: /^[ \t]*[^\s=:]+?(?=[ \t]*[=:])/m,
+            "attr-value": { pattern: /(=|:).*/, inside: { punctuation: /^(=|:)/ } }
+        };
+    }
+    refractor.register(inilike);
+    // --------------------------------------------
+
+    bus.on(
+        "语法高亮转换",
+        (function(tagpkgHighlight = "@rpose/buildin:```", oClass) {
+            return function(code = "", lang = "clike") {
+                // 取语法高亮组件文件的绝对地址，用于哈希语法高亮的样式类
+                if (!oClass) {
+                    oClass = {};
+                    oClass["token"] = bus.at("哈希样式类名", tagpkgHighlight, "token");
+                    oClass["comment"] = bus.at("哈希样式类名", tagpkgHighlight, "comment");
+                    oClass["selector"] = bus.at("哈希样式类名", tagpkgHighlight, "selector");
+                }
+
+                // 特殊处理btf、rpose格式代码
+                if (/^(btf|rpose)$/i.test(lang)) {
+                    let html = highlightBtfLike(code);
+                    return "<ol><li>" + html.split(/\r?\n/).join("</li><li>") + "</li></ol>";
+                }
+
+                // 转换改为 <ol><li> 形式显示
+                !refractor.registered(lang) && (lang = "clike"); // 不支持的语言，默认按 clike 处理
+                let html = highlight(code, lang);
+                return "<ol><li>" + html.split(/\r?\n/).join("</li><li>") + "</li></ol>";
+            };
+
+            function highlightBtfLike(code) {
+                let html = [];
+                let tokens = bus.at("BTF内容解析", code);
+                tokens.forEach(token => {
+                    if (token.type === "BlockName") {
+                        html.push(btfBlockName("[" + token.name + "]") + btfComment(token.comment));
+                    } else if (token.type === "BlockText") {
+                        let lang = token.name;
+                        if (!refractor.registered(lang)) {
+                            if (/^(actions|methods|options|state)$/i.test(lang)) {
+                                lang = "js";
+                            } else if (/^view$/i.test(lang)) {
+                                lang = "markup";
+                            } else {
+                                lang = "inilike";
+                            }
+                        }
+                        html.push(highlight(token.value, lang));
+                    } else if (token.type === "Comment") {
+                        html.push(btfComment(token.value));
+                    } else {
+                        throw new Error("unknow type");
+                    }
+                });
+                return html.join("\n");
+            }
+
+            function btfComment(code) {
+                return code
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/(\S+.*)/g, `<span class="${oClass["token"]} ${oClass["comment"]}">$1</span>`); // 注释
+            }
+            function btfBlockName(code) {
+                return code
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/(.*)/g, `<span class="${oClass["token"]} ${oClass["selector"]}">$1</span>`); // 块名
+            }
+
+            function highlight(code, lang) {
+                let nodes = refractor.highlight(code, lang);
+                renameClassName(nodes); // 修改类名
+                return rehype()
+                    .stringify({ type: "root", children: nodes })
+                    .toString();
+            }
+
+            function renameClassName(nodes) {
+                nodes &&
+                    nodes.forEach(node => {
+                        if (node.properties && node.properties.className) {
+                            let classes = [];
+                            node.properties.className.forEach(cls => {
+                                !oClass[cls] && (oClass[cls] = bus.at("哈希样式类名", tagpkgHighlight, cls)); // 缓存
+                                classes.push(oClass[cls]);
+                            });
+                            node.properties.className = classes;
+                        }
+                        renameClassName(node.children);
+                    });
+            }
+        })()
+    );
+
+    // ------- f12m-highlight-$code-of-``` end
+})();
+
+/* ------- f15p-astedit-transform-tag-``` ------- */
+(() => {
+    // ------- f15p-astedit-transform-tag-``` start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+
+    bus.on(
+        "编译插件",
+        (function() {
+            // 给```节点添加@taglib指令
+            return postobject.plugin("f15p-astedit-transform-tag-```", function(root) {
+                root.walk("Tag", (node, object) => {
+                    if (object.value !== "```") return;
+
+                    // 查找Attributes，没找到则创建
+                    let attrsNode;
+                    for (let i = 0, nd; (nd = node.nodes[i++]); ) {
+                        if (nd.type === "Attributes") {
+                            attrsNode = nd; // 因为固定有代码属性$CODE，一定能找到Attributes
+                            break;
+                        }
+                    }
+
+                    // 查找代码属性$CODE
+                    let codeNode, lang;
+                    for (let i = 0, nd; (nd = attrsNode.nodes[i++]); ) {
+                        if (nd.object.name === "$CODE") {
+                            codeNode = nd;
+                            nd.object.value = nd.object.value.replace(/\\\{/g, "{").replace(/\\\}/g, "}"); // 表达式转义还原
+                        } else if (nd.object.name === "lang") {
+                            lang = nd.object.value;
+                        }
+                    }
+                    codeNode.object.value = bus.at("语法高亮转换", codeNode.object.value, lang); // 代码转换为语法高亮的html
+
+                    // 添加@taglib属性
+                    let taglibNode = this.createNode({ type: "Attribute" });
+                    taglibNode.object.name = "@taglib";
+                    taglibNode.object.value = "@rpose/buildin:```";
+                    let loc = Object.assign({}, object.loc);
+                    loc.end.line = loc.start.line;
+                    loc.end.column = 3;
+                    loc.end.pos = loc.start.pos + 3;
+                    taglibNode.object.loc = loc;
+                    attrsNode.addChild(taglibNode);
+                });
+            });
+        })()
+    );
+
+    // ------- f15p-astedit-transform-tag-``` end
+})();
+
+/* ------- f20m-svgicon-parser ------- */
+(() => {
+    // ------- f20m-svgicon-parser start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -4317,12 +4574,221 @@ console.time("load");
         })()
     );
 
-    // ------- f36m-svgicon-parser end
+    // ------- f20m-svgicon-parser end
 })();
 
-/* ------- f37p-astedit-transform-tag-svgicon-to-svg ------- */
+/* ------- f22m-gen-svg-symbol ------- */
 (() => {
-    // ------- f37p-astedit-transform-tag-svgicon-to-svg start
+    // ------- f22m-gen-svg-symbol start
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+    const hash = require("@gotoeasy/hash");
+
+    bus.on(
+        "生成内联SVG-SYMBOL代码",
+        (function() {
+            // 前提: 页面编译成功，使用到的关联组件全部编译成功
+            // 最后生成页面时调用此模块，生成内联svg-symbol
+            return function(pageSrcFile) {
+                let context = bus.at("组件编译缓存", pageSrcFile);
+                let allreferences = context.result.allreferences;
+
+                // 取出页面使用到的内联svg，去除重复，排序后生成svg-symbol方式的字符串
+                let files = [...(context.result.inlinesymbols || [])]; // 本页面，加了再说，避免遗漏
+                allreferences.forEach(tagpkg => {
+                    let ctx = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg, context.result.oTaglibs));
+                    ctx.result.inlinesymbols && files.push(...ctx.result.inlinesymbols);
+                });
+                if (!files.length) {
+                    return "";
+                }
+
+                files = [...new Set(files)];
+                files.sort();
+
+                let rs = ['<svg style="display:none;">'];
+                files.forEach(file => rs.push(svgToSymbol(file))); // 需要适当的转换处理
+                rs.push("</svg>");
+
+                return rs.join("\n");
+            };
+        })()
+    );
+
+    bus.on(
+        "生成项目SVG-SYMBOL文件",
+        (function(filename, fileshashcode, hashcode) {
+            // 指定目录中的svg全部合并，可在文件范围内动态引用
+            return function(nocache) {
+                let env = bus.at("编译环境");
+                let files = File.files(env.path.svgicons, "*.svg");
+                files.push(...bus.at("外部SVG-SYMBOL使用的第三方包中的图标文件"));
+                files = [...new Set(files)];
+                files.sort();
+                let hashcd = hash(JSON.stringify(files));
+
+                if (nocache || hashcd !== fileshashcode) {
+                    fileshashcode = hashcd;
+                    let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
+                    files.forEach(file => rs.push(svgToSymbol(file))); // 需要适当的转换处理
+                    rs.push("</svg>");
+
+                    let svg = rs.join("");
+                    let dir = env.path.build_dist + "/" + (env.path.build_dist_images ? env.path.build_dist_images + "/" : "");
+                    hashcode = hash(svg); // 热刷新计算用
+                    filename = "svg-symbols.svg";
+                    File.write(dir + filename, svg);
+                    console.info("[write] -", dir + filename);
+                }
+                return { filename, hashcode };
+            };
+        })()
+    );
+
+    bus.on(
+        "生成外部引用SVG-USE",
+        (function() {
+            return function(id, props = {}) {
+                let attrs = [];
+                for (let key in props) {
+                    attrs.push(`${key}="${props[key]}"`);
+                }
+                let href = `%svgsymbolfile%#${id}`;
+                if (bus.at("是否表达式", id)) {
+                    let expr = id.substring(1, id.length - 1);
+                    href = `{'%svgsymbolfile%#' + (${expr}) }`;
+                }
+                return `<svg ${attrs.join(" ")}><use xlink:href="${href}"></use></svg>`;
+            };
+        })()
+    );
+
+    bus.on(
+        "生成内部引用SVG-USE",
+        (function() {
+            return function(id, props = {}) {
+                let attrs = [];
+                for (let key in props) {
+                    attrs.push(`${key}="${props[key]}"`);
+                }
+                return `<svg ${attrs.join(" ")}><use xlink:href="#${id}"></use></svg>`;
+            };
+        })()
+    );
+
+    // <svg viewBox="...">...</svg>    =>   <symbol id="..." viewBox="...">...</symbol>
+    function svgToSymbol(file) {
+        let text = File.read(file),
+            id = File.name(file);
+
+        let svg, match;
+        match = text.match(/<svg\s+[\s\S]*<\/svg>/); // 从文件内容中提取出svg内容 （<svg>...</svg>）
+        if (!match) return "";
+        svg = match[0];
+
+        let svgstart;
+        svg = svg.replace(/<svg\s+[\s\S]*?>/, function(mc) {
+            // 不含开始标签的svg内容
+            svgstart = mc; // svg开始标签
+            return "";
+        });
+
+        let width,
+            height,
+            viewBox = "";
+        svgstart = svgstart.replace(/\s+width\s?=\s?"(.+?)"/, function(mc, val) {
+            // 删除 width 属性
+            width = val;
+            return "";
+        });
+        svgstart = svgstart.replace(/\s+height\s?=\s?"(.+?)"/, function(mc, val) {
+            // 删除 height 属性
+            height = val;
+            return "";
+        });
+        svgstart = svgstart.replace(/\s+viewBox\s?=\s?"(.+?)"/, function(mc, val) {
+            // 删除 viewBox 属性
+            viewBox = val;
+            return "";
+        });
+        svgstart = svgstart.replace(/\s+id\s?=\s?".+?"/, ""); // 删除 id 属性
+        svgstart = svgstart.replace(/\s+fill\s?=\s?".+?"/, ""); // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
+        svgstart = svgstart.replace(/\s+xmlns\s?=\s?".+?"/, ""); // 删除 xmlns 属性
+
+        !viewBox && width && height && (viewBox = `0 0 ${width} ${height}`); // 无 viewBox 且有 width、height 时，生成 viewBox
+
+        // 设定 id、viewBox 属性，svg 替换为 symbol
+        return `<symbol id="${id}" viewBox="${viewBox}" ${svgstart.substring(4)} ${svg.substring(0, svg.length - 6)}</symbol>`;
+    }
+
+    bus.on(
+        "外部SVG-SYMBOL使用的第三方包中的图标文件",
+        (function() {
+            // 本项目页面关联的第三方组件如果使用了外部SVG-SYMBOL
+            // 则打包该组件所在项目的SVG图标目录中的全部图标文件
+            return function() {
+                let oSetPackageFile = new Set(); // 使用了外部SVG-SYMBOL的第三方包的项目配置文件
+                let oFiles = bus.at("源文件对象清单");
+                for (let file in oFiles) {
+                    let context = bus.at("组件编译缓存", file);
+                    if (context && context.result && context.result.isPage) {
+                        let allreferences = context.result.allreferences || [];
+                        for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
+                            if (tagpkg.indexOf(":") > 0) {
+                                srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
+                                ctx = bus.at("组件编译缓存", srcFile);
+                                if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
+                                    oSetPackageFile.add(bus.at("文件所在项目配置文件", srcFile));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let files = [];
+                oSetPackageFile.forEach(file => {
+                    let oPjtContext = bus.at("项目配置处理", file);
+                    files.push(...File.files(oPjtContext.path.svgicons, "**.svg"));
+                });
+
+                return files;
+            };
+        })()
+    );
+
+    bus.on(
+        "页面是否引用外部SVG-SYMBOL文件",
+        (function() {
+            return function(srcFile) {
+                let context = bus.at("组件编译缓存", srcFile);
+                if (!context || !context.result || !context.result.isPage) {
+                    return false; // 不是页面
+                }
+
+                if (context.result.hasRefSvgSymbol) {
+                    return true; // 页面有使用
+                }
+
+                let allreferences = context.result.allreferences || [];
+                for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
+                    srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
+                    ctx = bus.at("组件编译缓存", srcFile);
+                    if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
+                        return true; // 页面关联组件有使用
+                    }
+                }
+
+                return false; // 没使用或没编译通过
+            };
+        })()
+    );
+
+    // ------- f22m-gen-svg-symbol end
+})();
+
+/* ------- f25p-astedit-transform-tag-svgicon-to-svg ------- */
+(() => {
+    // ------- f25p-astedit-transform-tag-svgicon-to-svg start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -4334,7 +4800,7 @@ console.time("load");
         (function() {
             // 内置标签<svgicon>转换处理
             // 解析替换为<svg>标签
-            return postobject.plugin("f37p-astedit-transform-tag-svgicon-to-svg", function(root, context) {
+            return postobject.plugin("f25p-astedit-transform-tag-svgicon-to-svg", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!/^svgicon$/i.test(object.value)) return;
 
@@ -4639,478 +5105,12 @@ console.time("load");
         return files[0];
     }
 
-    // ------- f37p-astedit-transform-tag-svgicon-to-svg end
+    // ------- f25p-astedit-transform-tag-svgicon-to-svg end
 })();
 
-/* ------- f38m-gen-svg-symbol ------- */
+/* ------- g11p-astedit-set-flag-is-svg-tag ------- */
 (() => {
-    // ------- f38m-gen-svg-symbol start
-    const bus = require("@gotoeasy/bus");
-    const File = require("@gotoeasy/file");
-    const hash = require("@gotoeasy/hash");
-
-    bus.on(
-        "生成内联SVG-SYMBOL代码",
-        (function() {
-            // 前提: 页面编译成功，使用到的关联组件全部编译成功
-            // 最后生成页面时调用此模块，生成内联svg-symbol
-            return function(pageSrcFile) {
-                let context = bus.at("组件编译缓存", pageSrcFile);
-                let allreferences = context.result.allreferences;
-
-                // 取出页面使用到的内联svg，去除重复，排序后生成svg-symbol方式的字符串
-                let files = [...(context.result.inlinesymbols || [])]; // 本页面，加了再说，避免遗漏
-                allreferences.forEach(tagpkg => {
-                    let ctx = bus.at("组件编译缓存", bus.at("标签源文件", tagpkg, context.result.oTaglibs));
-                    ctx.result.inlinesymbols && files.push(...ctx.result.inlinesymbols);
-                });
-                if (!files.length) {
-                    return "";
-                }
-
-                files = [...new Set(files)];
-                files.sort();
-
-                let rs = ['<svg style="display:none;">'];
-                files.forEach(file => rs.push(svgToSymbol(file))); // 需要适当的转换处理
-                rs.push("</svg>");
-
-                return rs.join("\n");
-            };
-        })()
-    );
-
-    bus.on(
-        "生成项目SVG-SYMBOL文件",
-        (function(filename, fileshashcode, hashcode) {
-            // 指定目录中的svg全部合并，可在文件范围内动态引用
-            return function(nocache) {
-                let env = bus.at("编译环境");
-                let files = File.files(env.path.svgicons, "*.svg");
-                files.push(...bus.at("外部SVG-SYMBOL使用的第三方包中的图标文件"));
-                files = [...new Set(files)];
-                files.sort();
-                let hashcd = hash(JSON.stringify(files));
-
-                if (nocache || hashcd !== fileshashcode) {
-                    fileshashcode = hashcd;
-                    let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
-                    files.forEach(file => rs.push(svgToSymbol(file))); // 需要适当的转换处理
-                    rs.push("</svg>");
-
-                    let svg = rs.join("");
-                    let dir = env.path.build_dist + "/" + (env.path.build_dist_images ? env.path.build_dist_images + "/" : "");
-                    hashcode = hash(svg); // 热刷新计算用
-                    filename = "svg-symbols.svg";
-                    File.write(dir + filename, svg);
-                    console.info("[write] -", dir + filename);
-                }
-                return { filename, hashcode };
-            };
-        })()
-    );
-
-    bus.on(
-        "生成外部引用SVG-USE",
-        (function() {
-            return function(id, props = {}) {
-                let attrs = [];
-                for (let key in props) {
-                    attrs.push(`${key}="${props[key]}"`);
-                }
-                let href = `%svgsymbolfile%#${id}`;
-                if (bus.at("是否表达式", id)) {
-                    let expr = id.substring(1, id.length - 1);
-                    href = `{'%svgsymbolfile%#' + (${expr}) }`;
-                }
-                return `<svg ${attrs.join(" ")}><use xlink:href="${href}"></use></svg>`;
-            };
-        })()
-    );
-
-    bus.on(
-        "生成内部引用SVG-USE",
-        (function() {
-            return function(id, props = {}) {
-                let attrs = [];
-                for (let key in props) {
-                    attrs.push(`${key}="${props[key]}"`);
-                }
-                return `<svg ${attrs.join(" ")}><use xlink:href="#${id}"></use></svg>`;
-            };
-        })()
-    );
-
-    // <svg viewBox="...">...</svg>    =>   <symbol id="..." viewBox="...">...</symbol>
-    function svgToSymbol(file) {
-        let text = File.read(file),
-            id = File.name(file);
-
-        let svg, match;
-        match = text.match(/<svg\s+[\s\S]*<\/svg>/); // 从文件内容中提取出svg内容 （<svg>...</svg>）
-        if (!match) return "";
-        svg = match[0];
-
-        let svgstart;
-        svg = svg.replace(/<svg\s+[\s\S]*?>/, function(mc) {
-            // 不含开始标签的svg内容
-            svgstart = mc; // svg开始标签
-            return "";
-        });
-
-        let width,
-            height,
-            viewBox = "";
-        svgstart = svgstart.replace(/\s+width\s?=\s?"(.+?)"/, function(mc, val) {
-            // 删除 width 属性
-            width = val;
-            return "";
-        });
-        svgstart = svgstart.replace(/\s+height\s?=\s?"(.+?)"/, function(mc, val) {
-            // 删除 height 属性
-            height = val;
-            return "";
-        });
-        svgstart = svgstart.replace(/\s+viewBox\s?=\s?"(.+?)"/, function(mc, val) {
-            // 删除 viewBox 属性
-            viewBox = val;
-            return "";
-        });
-        svgstart = svgstart.replace(/\s+id\s?=\s?".+?"/, ""); // 删除 id 属性
-        svgstart = svgstart.replace(/\s+fill\s?=\s?".+?"/, ""); // 删除 fill 属性，以便使用时控制 （path标签硬编码的就不管了）
-        svgstart = svgstart.replace(/\s+xmlns\s?=\s?".+?"/, ""); // 删除 xmlns 属性
-
-        !viewBox && width && height && (viewBox = `0 0 ${width} ${height}`); // 无 viewBox 且有 width、height 时，生成 viewBox
-
-        // 设定 id、viewBox 属性，svg 替换为 symbol
-        return `<symbol id="${id}" viewBox="${viewBox}" ${svgstart.substring(4)} ${svg.substring(0, svg.length - 6)}</symbol>`;
-    }
-
-    bus.on(
-        "外部SVG-SYMBOL使用的第三方包中的图标文件",
-        (function() {
-            // 本项目页面关联的第三方组件如果使用了外部SVG-SYMBOL
-            // 则打包该组件所在项目的SVG图标目录中的全部图标文件
-            return function() {
-                let oSetPackageFile = new Set(); // 使用了外部SVG-SYMBOL的第三方包的项目配置文件
-                let oFiles = bus.at("源文件对象清单");
-                for (let file in oFiles) {
-                    let context = bus.at("组件编译缓存", file);
-                    if (context && context.result && context.result.isPage) {
-                        let allreferences = context.result.allreferences || [];
-                        for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
-                            if (tagpkg.indexOf(":") > 0) {
-                                srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
-                                ctx = bus.at("组件编译缓存", srcFile);
-                                if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
-                                    oSetPackageFile.add(bus.at("文件所在项目配置文件", srcFile));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                let files = [];
-                oSetPackageFile.forEach(file => {
-                    let oPjtContext = bus.at("项目配置处理", file);
-                    files.push(...File.files(oPjtContext.path.svgicons, "**.svg"));
-                });
-
-                return files;
-            };
-        })()
-    );
-
-    bus.on(
-        "页面是否引用外部SVG-SYMBOL文件",
-        (function() {
-            return function(srcFile) {
-                let context = bus.at("组件编译缓存", srcFile);
-                if (!context || !context.result || !context.result.isPage) {
-                    return false; // 不是页面
-                }
-
-                if (context.result.hasRefSvgSymbol) {
-                    return true; // 页面有使用
-                }
-
-                let allreferences = context.result.allreferences || [];
-                for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
-                    srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
-                    ctx = bus.at("组件编译缓存", srcFile);
-                    if (ctx && ctx.result && ctx.result.hasRefSvgSymbol) {
-                        return true; // 页面关联组件有使用
-                    }
-                }
-
-                return false; // 没使用或没编译通过
-            };
-        })()
-    );
-
-    // ------- f38m-gen-svg-symbol end
-})();
-
-/* ------- f40m-highlight-file-parser-btf ------- */
-(() => {
-    // ------- f40m-highlight-file-parser-btf start
-    const bus = require("@gotoeasy/bus");
-
-    bus.on(
-        "BTF内容解析",
-        (function() {
-            return function(text) {
-                let LF = text.indexOf("\r\n") >= 0 ? "\r\n" : "\n";
-                let lines = text.split(LF);
-
-                let tokens = [];
-                parse(tokens, lines);
-
-                tokens.forEach(token => {
-                    if (token.type === "BlockText") {
-                        token.value = token.value.join(LF);
-                    }
-                });
-
-                return tokens;
-            };
-        })()
-    );
-
-    function parse(tokens, lines) {
-        let sLine,
-            oName,
-            comment,
-            blockStart = false;
-        for (let i = 0; i < lines.length; i++) {
-            sLine = lines[i];
-
-            if (isBlockStart(sLine)) {
-                oName = getBlockName(sLine);
-                comment = sLine.substring(oName.len + 2);
-                tokens.push({ type: "BlockName", name: oName.name, comment: comment }); // 名称不含中括号
-                blockStart = true;
-            } else if (isBlockEnd(sLine)) {
-                tokens.push({ type: "Comment", value: sLine });
-                blockStart = false;
-            } else if (isDocumentEnd(sLine)) {
-                tokens.push({ type: "Comment", value: sLine });
-                blockStart = false;
-            } else {
-                if (blockStart) {
-                    // text line
-                    if (tokens[tokens.length - 1].type !== "BlockText") {
-                        tokens.push({ type: "BlockText", name: tokens[tokens.length - 1].name, value: [] });
-                    }
-                    let oBlockText = tokens[tokens.length - 1];
-                    oBlockText.value.push(sLine);
-                } else {
-                    // ignore line
-                    tokens.push({ type: "Comment", value: sLine });
-                }
-            }
-        }
-    }
-
-    function isBlockStart(sLine) {
-        return sLine.startsWith("[") && sLine.indexOf("]") > 0;
-    }
-
-    function isBlockEnd(sLine) {
-        return sLine.startsWith("---------");
-    }
-
-    function isDocumentEnd(sLine) {
-        return sLine.startsWith("=========");
-    }
-
-    function getBlockName(sLine) {
-        let name, len;
-        for (let i = 1; i < sLine.length; i++) {
-            if (sLine.charAt(i - 1) !== "\\" && sLine.charAt(i) === "]") {
-                name = sLine.substring(1, i).toLowerCase();
-                len = name.length;
-                return { name, len };
-            }
-        }
-
-        name = sLine.substring(1, sLine.lastIndexOf("]")).toLowerCase();
-        len = name.length;
-        return { name, len };
-    }
-
-    // ------- f40m-highlight-file-parser-btf end
-})();
-
-/* ------- f42m-highlight-$code-of-``` ------- */
-(() => {
-    // ------- f42m-highlight-$code-of-``` start
-    const bus = require("@gotoeasy/bus");
-    const refractor = require("refractor");
-    const rehype = require("rehype");
-
-    // --------------------------------------------
-    // 自定义 inilike 高亮规则，分隔符为等号、冒号
-    // --------------------------------------------
-    inilike.displayName = "inilike";
-    inilike.aliases = [];
-    function inilike(Prism) {
-        Prism.languages.inilike = {
-            constant: /^[ \t]*[^\s=:]+?(?=[ \t]*[=:])/m,
-            "attr-value": { pattern: /(=|:).*/, inside: { punctuation: /^(=|:)/ } }
-        };
-    }
-    refractor.register(inilike);
-    // --------------------------------------------
-
-    bus.on(
-        "语法高亮转换",
-        (function(tagpkgHighlight = "@rpose/buildin:```", oClass) {
-            return function(code = "", lang = "clike") {
-                // 取语法高亮组件文件的绝对地址，用于哈希语法高亮的样式类
-                if (!oClass) {
-                    oClass = {};
-                    oClass["token"] = bus.at("哈希样式类名", tagpkgHighlight, "token");
-                    oClass["comment"] = bus.at("哈希样式类名", tagpkgHighlight, "comment");
-                    oClass["selector"] = bus.at("哈希样式类名", tagpkgHighlight, "selector");
-                }
-
-                // 特殊处理btf、rpose格式代码
-                if (/^(btf|rpose)$/i.test(lang)) {
-                    let html = highlightBtfLike(code);
-                    return "<ol><li>" + html.split(/\r?\n/).join("</li><li>") + "</li></ol>";
-                }
-
-                // 转换改为 <ol><li> 形式显示
-                !refractor.registered(lang) && (lang = "clike"); // 不支持的语言，默认按 clike 处理
-                let html = highlight(code, lang);
-                return "<ol><li>" + html.split(/\r?\n/).join("</li><li>") + "</li></ol>";
-            };
-
-            function highlightBtfLike(code) {
-                let html = [];
-                let tokens = bus.at("BTF内容解析", code);
-                tokens.forEach(token => {
-                    if (token.type === "BlockName") {
-                        html.push(btfBlockName("[" + token.name + "]") + btfComment(token.comment));
-                    } else if (token.type === "BlockText") {
-                        let lang = token.name;
-                        if (!refractor.registered(lang)) {
-                            if (/^(actions|methods|options|state)$/i.test(lang)) {
-                                lang = "js";
-                            } else if (/^view$/i.test(lang)) {
-                                lang = "markup";
-                            } else {
-                                lang = "inilike";
-                            }
-                        }
-                        html.push(highlight(token.value, lang));
-                    } else if (token.type === "Comment") {
-                        html.push(btfComment(token.value));
-                    } else {
-                        throw new Error("unknow type");
-                    }
-                });
-                return html.join("\n");
-            }
-
-            function btfComment(code) {
-                return code
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/(\S+.*)/g, `<span class="${oClass["token"]} ${oClass["comment"]}">$1</span>`); // 注释
-            }
-            function btfBlockName(code) {
-                return code
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/(.*)/g, `<span class="${oClass["token"]} ${oClass["selector"]}">$1</span>`); // 块名
-            }
-
-            function highlight(code, lang) {
-                let nodes = refractor.highlight(code, lang);
-                renameClassName(nodes); // 修改类名
-                return rehype()
-                    .stringify({ type: "root", children: nodes })
-                    .toString();
-            }
-
-            function renameClassName(nodes) {
-                nodes &&
-                    nodes.forEach(node => {
-                        if (node.properties && node.properties.className) {
-                            let classes = [];
-                            node.properties.className.forEach(cls => {
-                                !oClass[cls] && (oClass[cls] = bus.at("哈希样式类名", tagpkgHighlight, cls)); // 缓存
-                                classes.push(oClass[cls]);
-                            });
-                            node.properties.className = classes;
-                        }
-                        renameClassName(node.children);
-                    });
-            }
-        })()
-    );
-
-    // ------- f42m-highlight-$code-of-``` end
-})();
-
-/* ------- f45p-astedit-transform-tag-``` ------- */
-(() => {
-    // ------- f45p-astedit-transform-tag-``` start
-    const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
-
-    bus.on(
-        "编译插件",
-        (function() {
-            // 给```节点添加@taglib指令
-            return postobject.plugin("f45p-astedit-transform-tag-```", function(root) {
-                root.walk("Tag", (node, object) => {
-                    if (object.value !== "```") return;
-
-                    // 查找Attributes，没找到则创建
-                    let attrsNode;
-                    for (let i = 0, nd; (nd = node.nodes[i++]); ) {
-                        if (nd.type === "Attributes") {
-                            attrsNode = nd; // 因为固定有代码属性$CODE，一定能找到Attributes
-                            break;
-                        }
-                    }
-
-                    // 查找代码属性$CODE
-                    let codeNode, lang;
-                    for (let i = 0, nd; (nd = attrsNode.nodes[i++]); ) {
-                        if (nd.object.name === "$CODE") {
-                            codeNode = nd;
-                            nd.object.value = nd.object.value.replace(/\\\{/g, "{").replace(/\\\}/g, "}"); // 表达式转义还原
-                        } else if (nd.object.name === "lang") {
-                            lang = nd.object.value;
-                        }
-                    }
-                    codeNode.object.value = bus.at("语法高亮转换", codeNode.object.value, lang); // 代码转换为语法高亮的html
-
-                    // 添加@taglib属性
-                    let taglibNode = this.createNode({ type: "Attribute" });
-                    taglibNode.object.name = "@taglib";
-                    taglibNode.object.value = "@rpose/buildin:```";
-                    let loc = Object.assign({}, object.loc);
-                    loc.end.line = loc.start.line;
-                    loc.end.column = 3;
-                    loc.end.pos = loc.start.pos + 3;
-                    taglibNode.object.loc = loc;
-                    attrsNode.addChild(taglibNode);
-                });
-            });
-        })()
-    );
-
-    // ------- f45p-astedit-transform-tag-``` end
-})();
-
-/* ------- f55p-astedit-normolize-flag-is-svg-tag ------- */
-(() => {
-    // ------- f55p-astedit-normolize-flag-is-svg-tag start
+    // ------- g11p-astedit-set-flag-is-svg-tag start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
@@ -5118,7 +5118,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 判断是否为SVG标签或SVG子标签，并加上标记
-            return postobject.plugin("f55p-astedit-normolize-flag-is-svg-tag", function(root) {
+            return postobject.plugin("g11p-astedit-set-flag-is-svg-tag", function(root) {
                 root.walk(
                     "Tag",
                     (node, object) => {
@@ -5142,12 +5142,12 @@ console.time("load");
         })()
     );
 
-    // ------- f55p-astedit-normolize-flag-is-svg-tag end
+    // ------- g11p-astedit-set-flag-is-svg-tag end
 })();
 
-/* ------- f65p-astedit-normolize-flag-is-standard-tag ------- */
+/* ------- g13p-astedit-set-flag-is-standard-tag ------- */
 (() => {
-    // ------- f65p-astedit-normolize-flag-is-standard-tag start
+    // ------- g13p-astedit-set-flag-is-standard-tag start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
@@ -5157,7 +5157,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 判断是否为标准标签，并加上标记
-            return postobject.plugin("f65p-astedit-normolize-flag-is-standard-tag", function(root) {
+            return postobject.plugin("g13p-astedit-set-flag-is-standard-tag", function(root) {
                 root.walk(
                     "Tag",
                     (node, object) => {
@@ -5169,7 +5169,7 @@ console.time("load");
         })()
     );
 
-    // ------- f65p-astedit-normolize-flag-is-standard-tag end
+    // ------- g13p-astedit-set-flag-is-standard-tag end
 })();
 
 /* ------- g15p-astedit-group-attribtue-{prop} ------- */
@@ -5314,7 +5314,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 style 不能重复
                         throw new Err("duplicate attribute of style", {
                             file: context.input.file,
@@ -5339,9 +5339,9 @@ console.time("load");
     // ------- g35p-astedit-process-attribtue-style end
 })();
 
-/* ------- g40m-@class-gen-css ------- */
+/* ------- h10m-@class-gen-css ------- */
 (() => {
-    // ------- g40m-@class-gen-css start
+    // ------- h10m-@class-gen-css start
     const bus = require("@gotoeasy/bus");
     const hash = require("@gotoeasy/hash");
 
@@ -5414,12 +5414,12 @@ console.time("load");
         return null;
     }
 
-    // ------- g40m-@class-gen-css end
+    // ------- h10m-@class-gen-css end
 })();
 
-/* ------- g43p-astedit-process-attribtue-@class ------- */
+/* ------- h15p-astedit-process-attribtue-@class ------- */
 (() => {
-    // ------- g43p-astedit-process-attribtue-@class start
+    // ------- h15p-astedit-process-attribtue-@class start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5434,7 +5434,7 @@ console.time("load");
             // 创建类名（atclass-hashxxxx）插入到class属性
             // 创建atclass样式
             // --------------------------------------
-            return postobject.plugin("g43p-astedit-process-attribtue-@class", function(root, context) {
+            return postobject.plugin("h15p-astedit-process-attribtue-@class", function(root, context) {
                 let style = context.style;
                 let atclasscss = (style.atclasscss = style.atclasscss || []);
 
@@ -5461,7 +5461,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @class 不能重复
                         throw new Err("duplicate attribute of @class", {
                             file: context.input.file,
@@ -5508,12 +5508,138 @@ console.time("load");
         })()
     );
 
-    // ------- g43p-astedit-process-attribtue-@class end
+    // ------- h15p-astedit-process-attribtue-@class end
 })();
 
-/* ------- g45p-astedit-process-attribtue-class ------- */
+/* ------- h20m-parse-attribtue-class ------- */
 (() => {
-    // ------- g45p-astedit-process-attribtue-class start
+    // ------- h20m-parse-attribtue-class start
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+
+    // class="foo {bar: isBar, baz: isBaz}" => [ {Name: {value:'foo', start, end}, Expr: {value:1, start, end}},
+    //                                           {Name: {value:'bar', start, end}, Expr: {value:'isBar', start, end}},
+    //                                           {Name: {value:'baz', start, end}, Expr: {value:'isBaz', start, end}} ]
+    bus.on(
+        "解析CLASS属性",
+        (function() {
+            // file, text 用于错误提示
+            return function(classAttrValue, offset, file, text) {
+                if (!classAttrValue.trim()) return [];
+
+                return parseToClasses(classAttrValue);
+
+                function parseToClasses(strClass) {
+                    // 分割放入数组，并计算保存好偏移位置
+                    // foo {bar: isBar, baz: isBaz}  => [{value: 'foo', start: 0, end: xxx}, {value: '{bar: isBar, baz: isBaz}', start: xxx, end: xxx}]
+                    let ary = [];
+                    let clas = strClass.replace(/\{.*?\}/g, function(sMatch, idx) {
+                        ary.push({ value: sMatch, start: offset + idx, end: offset + idx + sMatch.length });
+                        return "鬱".repeat(sMatch.length);
+                    });
+                    clas.replace(/[\S]+/g, function(sMatch, idx) {
+                        if (!sMatch.startsWith("鬱")) {
+                            ary.push({ value: sMatch, start: offset + idx, end: offset + idx + sMatch.length });
+                        }
+                    });
+
+                    // 解析为单个类名对象
+                    let result = [];
+                    ary.forEach(v => {
+                        if (v.value.startsWith("{")) {
+                            result.push(...parseExprClass(v));
+                        } else {
+                            result.push(parseSingleClass(v));
+                        }
+                    });
+
+                    // 类名重复性检查
+                    let map = new Map();
+                    for (let i = 0, oItem; (oItem = result[i++]); ) {
+                        if (map.has(oItem.Name.value)) {
+                            throw new Err(`duplicate class name [${oItem.Name.value}]`, { file, text, start: oItem.Name.start, end: oItem.Name.end });
+                        }
+                        map.set(oItem.Name.value, oItem);
+                    }
+
+                    // 返回解析结果
+                    return result;
+                }
+
+                // 解析单个类名
+                function parseSingleClass(oClas) {
+                    return { Name: oClas, Expr: { value: 1, start: oClas.start, end: oClas.end } };
+                }
+
+                // 解析N个表达式类名
+                function parseExprClass(oClas) {
+                    let sClas = oClas.value.replace(/,?\s*\}$/, ""); // 删除后面大括号，以及可能的冗余逗号 （开头大括号不删除，以不影响偏移计算）
+
+                    // 简单检查
+                    if (sClas.indexOf(":") < 0) {
+                        throw new Err("invalid format", { file, text, start: oClas.start, end: oClas.end });
+                    }
+
+                    // 解析出样式类名及位置信息
+                    // {foo: expr1, bar: expr2 => [{name: 'foo', start: 0, end: 3}, {name: 'bar', start: nnn, end: nnn}]
+                    // {foo: expr1, bar: expr2 => 鬱鬱鬱鬱鬱 expr1鬱鬱鬱鬱鬱 expr2
+                    let names = [];
+                    sClas = sClas.replace(/^{\s*(\S+?\s*:)|,\s*(\S+?\s*:)/g, function(sMatch, name1, name2, idx) {
+                        let matchName = name1 || name2; // [foo :]
+                        let value = matchName.replace(/\s*:$/, ""); // [foo :] => [foo]
+                        let start = oClas.start + idx + (sMatch.length - matchName.length); // 样式类名foo的起始位置
+                        let end = start + value.length; // 样式类名foo的结束位置
+
+                        names.push({ value, start, end }); // 保存样式类名及位置信息
+
+                        return "鬱".repeat(sMatch.length); // 用等长特殊字符替换以保持位置信息不变
+                    });
+
+                    // 解析出表达式及位置信息
+                    // 鬱鬱鬱鬱鬱 expr1鬱鬱鬱鬱鬱 expr2 => [{expr: ' expr1', start: nnn, end: nnn}, {expr: ' expr2', start: nnn, end: nnn}]
+                    let exprs = [];
+                    sClas.replace(/[^鬱]+/g, function(sMatch, idx) {
+                        let value = sMatch.trim();
+                        let start = oClas.start + idx + (sMatch.length - sMatch.trimStart().length);
+                        let end = start + sMatch.trimEnd().length;
+
+                        exprs.push({ value, start, end });
+                    });
+
+                    // 检查长度是否一致
+                    if (names.length != exprs.length) {
+                        throw new Err("invalid format", { file, text, start: oClas.start, end: oClas.end });
+                    }
+                    // 检查样式名（不能有空格）
+                    for (let i = 0, oItem; (oItem = names[i++]); ) {
+                        if (/\s+/.test(oItem.value)) {
+                            throw new Err(`invalid class name [${oItem.value}]`, { file, text, start: oItem.start, end: oItem.end });
+                        }
+                    }
+                    // 检查表达式（不能为空）
+                    for (let i = 0, oItem; (oItem = exprs[i++]); ) {
+                        if (!oItem.value.trim()) {
+                            throw new Err(`invalid class expression`, { file, text, start: oItem.start, end: oItem.end });
+                        }
+                    }
+
+                    // 整理结果
+                    let rs = [];
+                    for (let i = 0; i < names.length; i++) {
+                        rs.push({ Name: names[i], Expr: exprs[i] });
+                    }
+                    return rs;
+                }
+            };
+        })()
+    );
+
+    // ------- h20m-parse-attribtue-class end
+})();
+
+/* ------- h25p-astedit-process-attribtue-class ------- */
+(() => {
+    // ------- h25p-astedit-process-attribtue-class start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5523,7 +5649,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 class 属性
-            return postobject.plugin("g45p-astedit-process-attribtue-class", function(root, context) {
+            return postobject.plugin("h25p-astedit-process-attribtue-class", function(root, context) {
                 root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5545,7 +5671,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 class 不能重复
                         throw new Err("duplicate attribute of class", {
                             file: context.input.file,
@@ -5559,7 +5685,13 @@ console.time("load");
                     let oNode = ary[0].clone();
                     oNode.type = "Class";
                     oNode.object.type = "Class";
-                    oNode.object.classes = getClasses(oNode.object.value); // 取出全部类名保存备用
+                    oNode.object.classes = bus.at(
+                        "解析CLASS属性",
+                        oNode.object.value,
+                        oNode.object.loc.start.pos,
+                        context.input.file,
+                        context.input.text
+                    ); // 解析出全部类名表达式保存备用
 
                     node.addChild(oNode);
                     ary[0].remove(); // 删除节点
@@ -5568,50 +5700,12 @@ console.time("load");
         })()
     );
 
-    function getClasses(clas) {
-        // TODO 含大括号冒号的复杂表达式
-        let result = [];
-        clas = clas.replace(/\{.*?\}/g, function(match) {
-            let str = match.substring(1, match.length - 1); // {'xxx': ... , yyy: ...} => 'xxx': ... , yyy: ...
-
-            let idx, key, val;
-            while (str.indexOf(":") > 0) {
-                idx = str.indexOf(":");
-                key = str
-                    .substring(0, idx)
-                    .replace(/['"]/g, "")
-                    .trim(); // key
-
-                val = str.substring(idx + 1);
-                let idx2 = val.indexOf(":");
-                if (idx2 > 0) {
-                    val = val.substring(0, idx2);
-                    val = val.substring(0, val.lastIndexOf(",")); // val
-                    str = str.substring(idx + 1 + val.length + 1); // 更新临时变量
-                } else {
-                    str = "";
-                }
-
-                key && result.push(key);
-            }
-
-            return "";
-        });
-
-        let ary = clas.split(/\s+/);
-        for (let i = 0; i < ary.length; i++) {
-            ary[i].trim() && result.push(ary[i].trim());
-        }
-
-        return result;
-    }
-
-    // ------- g45p-astedit-process-attribtue-class end
+    // ------- h25p-astedit-process-attribtue-class end
 })();
 
-/* ------- h15p-astedit-process-attribtue-@ref ------- */
+/* ------- h35p-astedit-process-attribtue-@ref ------- */
 (() => {
-    // ------- h15p-astedit-process-attribtue-@ref start
+    // ------- h35p-astedit-process-attribtue-@ref start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5621,7 +5715,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @ref 属性
-            return postobject.plugin("h15p-astedit-process-attribtue-@ref", function(root, context) {
+            return postobject.plugin("h35p-astedit-process-attribtue-@ref", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5643,7 +5737,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @ref 不能重复
                         throw new Err("duplicate attribute of @ref", {
                             file: context.input.file,
@@ -5673,12 +5767,12 @@ console.time("load");
         })()
     );
 
-    // ------- h15p-astedit-process-attribtue-@ref end
+    // ------- h35p-astedit-process-attribtue-@ref end
 })();
 
-/* ------- h25p-astedit-process-attribtue-@if ------- */
+/* ------- h45p-astedit-process-attribtue-@if ------- */
 (() => {
-    // ------- h25p-astedit-process-attribtue-@if start
+    // ------- h45p-astedit-process-attribtue-@if start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5688,7 +5782,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @if 属性
-            return postobject.plugin("h25p-astedit-process-attribtue-@if", function(root, context) {
+            return postobject.plugin("h45p-astedit-process-attribtue-@if", function(root, context) {
                 root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5710,7 +5804,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @if 不能重复
                         throw new Err("duplicate attribute of @if", {
                             file: context.input.file,
@@ -5732,12 +5826,12 @@ console.time("load");
         })()
     );
 
-    // ------- h25p-astedit-process-attribtue-@if end
+    // ------- h45p-astedit-process-attribtue-@if end
 })();
 
-/* ------- h35p-astedit-process-attribtue-@show ------- */
+/* ------- h55p-astedit-process-attribtue-@show ------- */
 (() => {
-    // ------- h35p-astedit-process-attribtue-@show start
+    // ------- h55p-astedit-process-attribtue-@show start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5750,7 +5844,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @show 属性
-            return postobject.plugin("h35p-astedit-process-attribtue-@show", function(root, context) {
+            return postobject.plugin("h55p-astedit-process-attribtue-@show", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5772,7 +5866,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @show 不能重复
                         throw new Err("duplicate attribute of @show", {
                             file: context.input.file,
@@ -5815,12 +5909,12 @@ console.time("load");
         })()
     );
 
-    // ------- h35p-astedit-process-attribtue-@show end
+    // ------- h55p-astedit-process-attribtue-@show end
 })();
 
-/* ------- h45p-astedit-process-attribtue-@for ------- */
+/* ------- h65p-astedit-process-attribtue-@for ------- */
 (() => {
-    // ------- h45p-astedit-process-attribtue-@for start
+    // ------- h65p-astedit-process-attribtue-@for start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5830,7 +5924,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @for 属性
-            return postobject.plugin("h45p-astedit-process-attribtue-@for", function(root, context) {
+            return postobject.plugin("h65p-astedit-process-attribtue-@for", function(root, context) {
                 root.walk("Tag", node => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5852,7 +5946,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @for 不能重复
                         throw new Err("duplicate attribute of @for", {
                             file: context.input.file,
@@ -5874,12 +5968,12 @@ console.time("load");
         })()
     );
 
-    // ------- h45p-astedit-process-attribtue-@for end
+    // ------- h65p-astedit-process-attribtue-@for end
 })();
 
-/* ------- h55p-astedit-process-attribtue-@csslib ------- */
+/* ------- h75p-astedit-process-attribtue-@csslib ------- */
 (() => {
-    // ------- h55p-astedit-process-attribtue-@csslib start
+    // ------- h75p-astedit-process-attribtue-@csslib start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5889,7 +5983,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @csslib 属性 （不做建库处理）
-            return postobject.plugin("h55p-astedit-process-attribtue-@csslib", function(root, context) {
+            return postobject.plugin("h75p-astedit-process-attribtue-@csslib", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5911,7 +6005,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @csslib 不能重复
                         throw new Err("duplicate attribute of @csslib", {
                             file: context.input.file,
@@ -5941,12 +6035,12 @@ console.time("load");
         })()
     );
 
-    // ------- h55p-astedit-process-attribtue-@csslib end
+    // ------- h75p-astedit-process-attribtue-@csslib end
 })();
 
-/* ------- h65p-astedit-process-attribtue-@taglib ------- */
+/* ------- h85p-astedit-process-attribtue-@taglib ------- */
 (() => {
-    // ------- h65p-astedit-process-attribtue-@taglib start
+    // ------- h85p-astedit-process-attribtue-@taglib start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -5956,7 +6050,7 @@ console.time("load");
         (function() {
             // 处理标签中指定类型的属性，提取后新建节点管理
             // 处理标签中的 @taglib 属性
-            return postobject.plugin("h65p-astedit-process-attribtue-@taglib", function(root, context) {
+            return postobject.plugin("h85p-astedit-process-attribtue-@taglib", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
 
@@ -5978,7 +6072,7 @@ console.time("load");
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
-                    if (ary.legnth > 1) {
+                    if (ary.length > 1) {
                         // 属性 @taglib 不能重复
                         throw new Err("duplicate attribute of @taglib", {
                             file: context.input.file,
@@ -6008,7 +6102,7 @@ console.time("load");
         })()
     );
 
-    // ------- h65p-astedit-process-attribtue-@taglib end
+    // ------- h85p-astedit-process-attribtue-@taglib end
 })();
 
 /* ------- j15p-astedit-process-tag-img ------- */
@@ -6669,9 +6763,9 @@ console.time("load");
     // ------- k75p-astedit-transform-tag-name-by-buildin end
 })();
 
-/* ------- k875p-astedit-transform-tag-if-for ------- */
+/* ------- k85p-astedit-transform-tag-if-for ------- */
 (() => {
-    // ------- k875p-astedit-transform-tag-if-for start
+    // ------- k85p-astedit-transform-tag-if-for start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -6681,7 +6775,7 @@ console.time("load");
         (function() {
             // 内置for标签和if标签的转换
             // 前面已处理@for和@if，这里直接提升子节点就行了（节点无关属性全忽略）
-            return postobject.plugin("k875p-astedit-transform-tag-if-for", function(root, context) {
+            return postobject.plugin("k85p-astedit-transform-tag-if-for", function(root, context) {
                 root.walk("Tag", (node, object) => {
                     if (!/^(if|for)$/i.test(object.value)) return;
 
@@ -6702,7 +6796,7 @@ console.time("load");
         })()
     );
 
-    // ------- k875p-astedit-transform-tag-if-for end
+    // ------- k85p-astedit-transform-tag-if-for end
 })();
 
 /* ------- k95p-astedit-transform-tag-slot ------- */
@@ -6910,36 +7004,33 @@ console.time("load");
     // ------- k95p-astedit-transform-tag-slot end
 })();
 
-/* ------- m17p-csslibify-gen-css-@csslib ------- */
+/* ------- m15p-astedit-check-and-fix-alias-csslibify ------- */
 (() => {
-    // ------- m17p-csslibify-gen-css-@csslib start
+    // ------- m15p-astedit-check-and-fix-alias-csslibify start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
     const File = require("@gotoeasy/file");
     const findNodeModules = require("find-node-modules");
 
+    const Alias = "DEFAULT_ALIAS_AUTO_ADD";
+
     bus.on(
         "编译插件",
         (function() {
-            // 含@csslib的标签，按需查询引用样式库
-            return postobject.plugin("m17p-csslibify-gen-css-@csslib", function(root, context) {
+            // 检查样式类名和样式库是否匹配
+            // 如果匹配的是无名样式库，自动添加别名，便于后续查询样式
+            return postobject.plugin("m15p-astedit-check-and-fix-alias-csslibify", function(root, context) {
                 let oPrjContext = bus.at("项目配置处理", context.input.file);
                 let oPrjCsslibs = oPrjContext.result.oCsslibs; // 项目[csslib]配置的样式库 (asname：lib)
+                let oCsslibPkgs = context.result.oCsslibPkgs; // 组件[csslib]配置的样式库【别名-包名】映射关系
                 let oCsslibs = context.result.oCsslibs; // 组件[csslib]配置的样式库 (asname：lib)
                 let oAtCsslibPkgs = (context.result.oAtCsslibPkgs = context.result.oAtCsslibPkgs || {}); // 组件@csslib配置的样式库【别名-包名】映射关系
                 let oAtCsslibs = (context.result.oAtCsslibs = context.result.oAtCsslibs || {}); // 组件@csslib配置的样式库 (asname：lib)
 
-                let atcsslibtagcss = (context.result.atcsslibtagcss = context.result.atcsslibtagcss || []); // @csslib的标准标签样式
-
-                let hashClassName = bus.on("哈希样式类名")[0];
-                let rename = (pkg, cls) => hashClassName(context.input.file, cls + "@" + pkg); // 自定义改名函数(总是加@)
-                let strict = true; // 样式库严格匹配模式
-
                 root.walk("Class", (node, object) => {
-                    // 查找@csslib属性节点，@csslib仅作用于当前所在标签，汇总当前标签和样式类，用当前样式库按严格匹配模式一次性取出
-                    let atcsslibNode,
-                        querys = [];
+                    // 查找@csslib属性节点，@csslib仅作用于当前所在标签
+                    let atcsslibNode;
                     for (let i = 0, nd; (nd = node.parent.nodes[i++]); ) {
                         if (nd.type === "@csslib") {
                             atcsslibNode = nd;
@@ -7055,74 +7146,68 @@ console.time("load");
                         let atcsslib = bus.at("样式库", csslib);
                         oAtCsslibs[csslib.alias] = atcsslib; // 存起来备查
                         oAtCsslibPkgs[csslib.alias] = atcsslib.pkg; // 保存样式库匿名关系，用于脚本类名转换
+                        atcsslib.isAtCsslib = true;
+                        atcsslib.attag = node.parent.object.standard ? node.parent.object.value : ""; // 保存当前标准标签名，便于@csslib查询样式库
 
                         // ---------------------------------
-                        // 保存当前标准标签名，便于@csslib查询样式库
-                        node.parent.object.standard && querys.push(node.parent.object.value); // 标准标签名
-
-                        // ---------------------------------
-                        // 检查当前标签的样式类
-                        for (let i = 0, ary, clspkg, clsname, atname; (clspkg = object.classes[i++]); ) {
-                            ary = clspkg.split("@");
+                        // 检查当前标签的样式类，并修改添加实际库名@后缀
+                        let oCsslibPC;
+                        for (let i = 0, ary, oCls, clsname, atname; (oCls = object.classes[i++]); ) {
+                            ary = oCls.Name.value.split("@");
                             clsname = "." + ary[0]; // 类名
-                            atname = ary.length > 1 ? ary[1] : "*"; // 库别名
+                            atname = ary.length > 1 ? ary[1] : ""; // 库别名
 
-                            if (csslib.alias === atname) {
-                                // 属于@csslib样式
-                                querys.push(clsname); // 匹配当前@csslib样式库
-
-                                if (atname === "*" && atcsslib.has(clsname)) {
-                                    // 【重要】存起来，后面哈希类名使用
-                                    (object.atcsslibx = object.atcsslibx || []).push(ary[0]); // 当前节点使用了@csslib=*的样式名
-                                }
-
-                                if (atname !== "*" && !atcsslib.has(clsname)) {
-                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                    throw new Err(`css class "${clsname}" not found in csslib "${csslib.pkg}"`, {
-                                        file: context.input.file,
-                                        text: context.input.text,
-                                        start: csslib.pos.start,
-                                        end: csslib.pos.end
-                                    });
-                                }
-                            } else if (oCsslibs[atname]) {
-                                // 属于组件[csslib]样式
-                                let oCsslib = oCsslibs[atname];
-                                if (!oCsslib.has(clsname)) {
-                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                    throw new Err(`css class "${clsname}" not found in csslib "${atname}"`, {
-                                        file: context.input.file,
-                                        text: context.input.text,
-                                        start: object.loc.start.pos,
-                                        end: object.loc.end.pos
-                                    });
-                                }
-                            } else if (oPrjCsslibs[atname]) {
-                                // 属于项目[csslib]样式
-                                let oCsslib = oPrjCsslibs[atname];
-                                if (!oCsslib.has(clsname)) {
-                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                    throw new Err(`css class "${clsname}" not found in csslib "${atname}"`, {
-                                        file: context.input.file,
-                                        text: context.input.text,
-                                        start: object.loc.start.pos,
-                                        end: object.loc.end.pos
-                                    });
+                            if (atname) {
+                                // 样式类有别名
+                                if (csslib.alias === atname) {
+                                    // @csslib库匹配成功，但找不到样式类，报错
+                                    if (!atcsslib.has(clsname)) {
+                                        throw new Err(`class "${clsname}" not found in @csslib "${atname}"`, {
+                                            file: context.input.file,
+                                            text: context.input.text,
+                                            start: oCls.Name.start,
+                                            end: oCls.Name.end
+                                        });
+                                    }
+                                } else {
+                                    oCsslibPC = oCsslibs[atname] || oPrjCsslibs[atname];
+                                    if (oCsslibPC) {
+                                        // [csslib]库匹配成功，但找不到样式类，报错
+                                        if (!oCsslibPC.has(clsname)) {
+                                            throw new Err(`class "${clsname}" not found in [csslib] "${atname}"`, {
+                                                file: context.input.file,
+                                                text: context.input.text,
+                                                start: oCls.Name.start,
+                                                end: oCls.Name.end
+                                            });
+                                        }
+                                    } else {
+                                        // 找不到指定别名的样式库，报错
+                                        throw new Err(`csslib not found "${atname}"`, {
+                                            file: context.input.file,
+                                            text: context.input.text,
+                                            start: oCls.Name.start,
+                                            end: oCls.Name.end
+                                        });
+                                    }
                                 }
                             } else {
-                                // 有@别名后缀，但在@csslib、组件[csslib]、项目[csslib]中都找不到相应的样式库配置
-                                if (atname !== "*") {
-                                    throw new Err(`undefined csslib "${atname}" of "${clspkg}"`, {
-                                        file: context.input.file,
-                                        text: context.input.text,
-                                        start: object.loc.start.pos,
-                                        end: object.loc.end.pos
-                                    });
+                                // 样式类无别名
+                                if (csslib.alias === "*" && atcsslib.has(clsname)) {
+                                    // 无名@csslib库匹配成功，且能找到样式类，起个别名添加
+                                    oCls.Name.value = ary[0] + "@" + Alias; // 给@csslib无名样式库起一个哈希码别名
+                                    oAtCsslibs[Alias] = atcsslib; // 自动配置一个同一别名的@csslib样式库
+                                    oAtCsslibPkgs[Alias] = atcsslib.pkg; // 保存样式库匿名关系，用于脚本类名转换
+                                } else {
+                                    oCsslibPC = oCsslibs["*"] || oPrjCsslibs["*"];
+                                    if (oCsslibPC && oCsslibPC.has(clsname)) {
+                                        oCls.Name.value = ary[0] + "@" + Alias; // 给[csslib]无名样式库起一个哈希码别名
+                                        oCsslibs[Alias] = oCsslibPC; // 自动配置一个同一别名的组件[csslib]样式库
+                                        oCsslibPkgs[Alias] = oCsslibPC.pkg; // 保存样式库匿名关系，用于脚本类名转换
+                                    }
                                 }
                             }
                         }
-
-                        querys.length && atcsslibtagcss.push(atcsslib.get(...querys, { rename, strict })); // 用当前样式库一次性查取
 
                         atcsslibNode.remove(); // @csslib的样式已生成，该节点删除
                     } else {
@@ -7131,45 +7216,42 @@ console.time("load");
                         // ==============================================================================
 
                         // ---------------------------------
-                        // 检查当前标签的样式类
-                        for (let i = 0, ary, clspkg, clsname, atname; (clspkg = object.classes[i++]); ) {
-                            ary = clspkg.split("@");
+                        // 检查当前标签的样式类，并修改添加实际库名@后缀
+                        let oCsslibPC;
+                        for (let i = 0, ary, oCls, clsname, atname; (oCls = object.classes[i++]); ) {
+                            ary = oCls.Name.value.split("@");
                             clsname = "." + ary[0]; // 类名
-                            atname = ary.length > 1 ? ary[1] : "*"; // 库别名
+                            atname = ary.length > 1 ? ary[1] : ""; // 库别名
 
-                            if (oCsslibs[atname]) {
-                                // 属于组件[csslib]样式
-                                let oCsslib = oCsslibs[atname];
-                                if (!oCsslib.has(clsname)) {
-                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                    throw new Err(`css class "${clsname}" not found in csslib "${atname}"`, {
+                            if (atname) {
+                                // 样式类有别名
+                                oCsslibPC = oCsslibs[atname] || oPrjCsslibs[atname];
+                                if (oCsslibPC) {
+                                    // [csslib]库匹配成功，但找不到样式类，报错
+                                    if (!oCsslibPC.has(clsname)) {
+                                        throw new Err(`class "${clsname}" not found in [csslib] "${atname}"`, {
+                                            file: context.input.file,
+                                            text: context.input.text,
+                                            start: oCls.Name.start,
+                                            end: oCls.Name.end
+                                        });
+                                    }
+                                } else {
+                                    // 找不到指定别名的样式库，报错
+                                    throw new Err(`csslib not found "${atname}"`, {
                                         file: context.input.file,
                                         text: context.input.text,
-                                        start: object.loc.start.pos,
-                                        end: object.loc.end.pos
-                                    });
-                                }
-                            } else if (oPrjCsslibs[atname]) {
-                                // 属于项目[csslib]样式
-                                let oCsslib = oPrjCsslibs[atname];
-                                if (!oCsslib.has(clsname)) {
-                                    // 按宽松模式检查样式库是否有指定样式类，没有则报错
-                                    throw new Err(`css class "${clsname}" not found in csslib "${atname}"`, {
-                                        file: context.input.file,
-                                        text: context.input.text,
-                                        start: object.loc.start.pos,
-                                        end: object.loc.end.pos
+                                        start: oCls.Name.start,
+                                        end: oCls.Name.end
                                     });
                                 }
                             } else {
-                                // 有@别名后缀，但无@csslib、且在组件[csslib]、项目[csslib]中都找不到相应的样式库配置
-                                if (atname !== "*") {
-                                    throw new Err(`undefined csslib "${atname}" of "${clspkg}"`, {
-                                        file: context.input.file,
-                                        text: context.input.text,
-                                        start: object.loc.start.pos,
-                                        end: object.loc.end.pos
-                                    });
+                                // 样式类无别名
+                                oCsslibPC = oCsslibs["*"] || oPrjCsslibs["*"];
+                                if (oCsslibPC && oCsslibPC.has(clsname)) {
+                                    oCls.Name.value = ary[0] + "@" + Alias; // 给[csslib]无名样式库起一个哈希码别名
+                                    oCsslibs[Alias] = oCsslibPC; // 自动配置一个同一别名的组件[csslib]样式库
+                                    oCsslibPkgs[Alias] = oCsslibPC.pkg; // 保存样式库匿名关系，用于脚本类名转换
                                 }
                             }
                         }
@@ -7190,19 +7272,19 @@ console.time("load");
         }
     }
 
-    // ------- m17p-csslibify-gen-css-@csslib end
+    // ------- m15p-astedit-check-and-fix-alias-csslibify end
 })();
 
-/* ------- n15p-astedit-remove-blank-text ------- */
+/* ------- m25p-astedit-remove-blank-text ------- */
 (() => {
-    // ------- n15p-astedit-remove-blank-text start
+    // ------- m25p-astedit-remove-blank-text start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n15p-astedit-remove-blank-text", function(root) {
+            return postobject.plugin("m25p-astedit-remove-blank-text", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeText, (node, object) => {
@@ -7226,19 +7308,19 @@ console.time("load");
         })()
     );
 
-    // ------- n15p-astedit-remove-blank-text end
+    // ------- m25p-astedit-remove-blank-text end
 })();
 
-/* ------- n25p-astedit-remove-html-comment ------- */
+/* ------- m35p-astedit-remove-html-comment ------- */
 (() => {
-    // ------- n25p-astedit-remove-html-comment start
+    // ------- m35p-astedit-remove-html-comment start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n25p-astedit-remove-html-comment", function(root) {
+            return postobject.plugin("m35p-astedit-remove-html-comment", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeHtmlComment, node => {
@@ -7248,19 +7330,19 @@ console.time("load");
         })()
     );
 
-    // ------- n25p-astedit-remove-html-comment end
+    // ------- m35p-astedit-remove-html-comment end
 })();
 
-/* ------- n35p-astedit-join-text-node ------- */
+/* ------- m45p-astedit-join-text-node ------- */
 (() => {
-    // ------- n35p-astedit-join-text-node start
+    // ------- m45p-astedit-join-text-node start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n35p-astedit-join-text-node", function(root) {
+            return postobject.plugin("m45p-astedit-join-text-node", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 // TODO 用选项常量
@@ -7336,19 +7418,19 @@ console.time("load");
         return false;
     }
 
-    // ------- n35p-astedit-join-text-node end
+    // ------- m45p-astedit-join-text-node end
 })();
 
-/* ------- n45p-astedit-remove-jscode-blank-comment ------- */
+/* ------- m55p-astedit-remove-jscode-blank-comment ------- */
 (() => {
-    // ------- n45p-astedit-remove-jscode-blank-comment start
+    // ------- m55p-astedit-remove-jscode-blank-comment start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("n45p-astedit-remove-jscode-blank-comment", function(root) {
+            return postobject.plugin("m55p-astedit-remove-jscode-blank-comment", function(root) {
                 const OPTS = bus.at("视图编译选项");
 
                 root.walk(OPTS.TypeCodeBlock, (node, object) => {
@@ -7376,7 +7458,7 @@ console.time("load");
 
         return false;
     }
-    // ------- n45p-astedit-remove-jscode-blank-comment end
+    // ------- m55p-astedit-remove-jscode-blank-comment end
 })();
 
 /* ------- p00m-component-js-template-fn ------- */
@@ -7913,10 +7995,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- p24m-component-astgen-node-style end
 })();
 
-/* ------- p26m-component-astgen-node-class ------- */
+/* ------- p26m-component-astgen-node-class-rename ------- */
 (() => {
-    // ------- p26m-component-astgen-node-class start
+    // ------- p26m-component-astgen-node-class-rename start
     const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
 
     bus.on(
         "astgen-node-class",
@@ -7938,71 +8021,47 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 if (!classNode || !classNode.object.value) return ""; // 没有类属性节点或没有类属性值，返回空白
 
                 // 生成
-                return classStrToObjectString(classNode, context);
+                return parseClassesToObjectString(classNode, context);
             };
         })()
     );
 
-    function classStrToObjectString(classNode, context) {
-        // TODO 含大括号冒号的复杂表达式
+    function parseClassesToObjectString(classNode, context) {
         let oPrjContext = bus.at("项目配置处理", context.input.file);
-        let oAllCsslibPkgs = Object.assign({}, context.result.oAtCsslibPkgs, context.result.oCsslibPkgs, oPrjContext.result.oCsslibPkgs); // 存放项目和组件及@csslib配置的样式库【别名-库名】映射
-        let oNonameCsslibPC = context.result.oCsslibs["*"] || oPrjContext.result.oCsslibs["*"]; // 项目或组件[csslib]配置的无名样式库
-        let oRs = {};
-        let clas = classNode.object.value;
-        let atcsslibx = classNode.object.atcsslibx || []; // 当前节点使用了@csslib=*的样式名
+        let oAllCsslibs = Object.assign({}, oPrjContext.result.oCsslibs, context.result.oCsslibs, context.result.oAtCsslibs);
 
-        clas = clas.replace(/\{.*?\}/g, function(match) {
-            let str = match.substring(1, match.length - 1); // {'xxx': ... , yyy: ...} => 'xxx': ... , yyy: ...
-
-            let idx, cls, expr;
-            while (str.indexOf(":") > 0) {
-                idx = str.indexOf(":");
-                cls = str.substring(0, idx).replace(/['"]/g, ""); // cls
-
-                expr = str.substring(idx + 1);
-                let idx2 = expr.indexOf(":");
-                if (idx2 > 0) {
-                    expr = expr.substring(0, idx2);
-                    expr = expr.substring(0, expr.lastIndexOf(",")); // expr
-                    str = str.substring(idx + 1 + expr.length + 1); // 更新临时变量
-                } else {
-                    str = "";
+        let classes = classNode.object.classes;
+        let rs = [];
+        for (let i = 0, oCls, ary, clspkg, clas, expr, csslib; (oCls = classes[i++]); ) {
+            ary = oCls.Name.value.split("@");
+            if (ary.length > 1) {
+                // 别名库样式，把别名改成真实库名 (无别名样式也都已自动添加别名)
+                csslib = oAllCsslibs[ary[1]];
+                if (!csslib) {
+                    // 理应检查过，不该发生
+                    throw new Err("csslib not found: " + ary[1], {
+                        file: context.input.file,
+                        text: context.input.text,
+                        start: oCls.Name.start,
+                        end: oCls.Name.end
+                    });
                 }
-
-                expr = expr.replace(/\\/g, "皛"); // 补丁案 ...... 把class里表达式的斜杠临时替换掉，避免JSON处理时不认正则表达式的转义字符，在输出代码时替换回来
-                oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(cls, oAllCsslibPkgs, oNonameCsslibPC, atcsslibx))] = "@(" + expr + ")@";
+                clspkg = ary[0] + "@" + csslib.pkg;
+            } else {
+                // 普通无别名样式类
+                clspkg = oCls.Name.value;
             }
 
-            return "";
-        });
+            clas = bus.at("哈希样式类名", context.input.file, clspkg);
+            expr = oCls.Expr.value;
 
-        let ary = clas.split(/\s/);
-        for (let i = 0; i < ary.length; i++) {
-            ary[i].trim() && (oRs[bus.at("哈希样式类名", context.input.file, getClassPkg(ary[i], oAllCsslibPkgs, oNonameCsslibPC, atcsslibx))] = 1);
+            rs.push(`'${clas}': (${expr})`); // 'class' : (expr)
         }
 
-        let rs = JSON.stringify(oRs).replace(/('@|@'|"@|@")/g, "");
-        rs = rs.replace(/皛/g, "\\"); // 补丁案 ...... 把class里表达式的【皛】替换回斜杠，以达到正常输出正则表达式的目的
-        return rs;
+        return "{" + rs.join(",") + "}";
     }
 
-    function getClassPkg(cls, oAllCsslibPkgs, oNonameCsslibPC, atcsslibx) {
-        let ary = cls.trim().split("@");
-        if (ary.length > 1) {
-            return ary[0] + "@" + oAllCsslibPkgs[ary[1]];
-        } else {
-            if (atcsslibx.includes(ary[0]) || (oNonameCsslibPC && oNonameCsslibPC.has(ary[0]))) {
-                // <div class="foo" @csslib="*=xxx">,    foo => foo@*，即，@csslib的无名库，标签中的类名要特定修改
-                // <div class="foo">, [csslib]="*=xxx",  foo => foo@*，即，[csslib]的无名库，标签中的类名已要特定修改
-                return ary[0] + "@*";
-            }
-        }
-
-        return ary[0];
-    }
-
-    // ------- p26m-component-astgen-node-class end
+    // ------- p26m-component-astgen-node-class-rename end
 })();
 
 /* ------- p28m-component-astgen-node-{prop} ------- */
@@ -8382,8 +8441,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let oAtCsslibPkgs = (context.result.oAtCsslibPkgs = context.result.oAtCsslibPkgs || {}); // 组件@csslib配置的样式库【别名-包名】映射关系
                 let oAtCsslibs = (context.result.oAtCsslibs = context.result.oAtCsslibs || {}); // 组件@csslib配置的样式库 (asname：lib)
 
-                let style = context.style;
-                style.csslibset = style.csslibset || new Set();
                 let script = context.script;
                 let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
@@ -8673,18 +8730,20 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- s50m-component-css-classname-rename end
 })();
 
-/* ------- s55p-component-query-css-[csslib] ------- */
+/* ------- s55p-component-query-css-@csslib-[csslib] ------- */
 (() => {
-    // ------- s55p-component-query-css-[csslib] start
+    // ------- s55p-component-query-css-@csslib-[csslib] start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
+
+    const Alias = "DEFAULT_ALIAS_AUTO_ADD";
 
     bus.on(
         "编译插件",
         (function() {
             // 组件单位按需查询引用样式库
-            return postobject.plugin("s55p-component-query-css-[csslib]", function(root, context) {
+            return postobject.plugin("s55p-component-query-css-@csslib-[csslib]", function(root, context) {
                 let oPrjContext = bus.at("项目配置处理", context.input.file);
                 let oPrjCsslibs = oPrjContext.result.oCsslibs; // 项目[csslib]配置的样式库 (asname：lib)
                 let oCsslibs = context.result.oCsslibs; // 组件[csslib]配置的样式库 (asname：lib)
@@ -8694,7 +8753,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let oCssSet = (style.csslibset = style.csslibset || new Set()); // 组件单位样式库引用的样式
                 let scriptclassnames = context.script.classnames;
                 let hashClassName = bus.on("哈希样式类名")[0];
-                let rename = (pkg, cls) => hashClassName(context.input.file, cls + "@" + pkg); // 自定义改名函数(总是加@)
+                let rename = (pkg, cls) => hashClassName(context.input.file, cls + "@" + pkg); // 自定义改名函数
                 let strict = true; // 样式库严格匹配模式
                 let universal = false; // 不查取通用样式
                 let opts = { rename, strict, universal };
@@ -8702,21 +8761,15 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 let ary,
                     oQuerys = {};
                 let nonameCsslibPC = oCsslibs["*"] || oPrjCsslibs["*"]; // 组件或项目[csslib]配置的无名样式库对象（别名为*）
-                let nonameCsslibPCA = oAtCsslibs["*"] || oCsslibs["*"] || oPrjCsslibs["*"]; // [csslib]或@csslib的无名样式库对象（别名为*）
-                // view中@csslib部分已生成样式存放于atcsslibtagcss，剩余[csslib]部分需要生成
                 root.walk("Class", (node, object) => {
                     // 按样式库单位汇总组件内全部样式类
-                    for (let i = 0, clspkg, clsname, asname; (clspkg = object.classes[i++]); ) {
-                        ary = clspkg.split("@");
+                    for (let i = 0, oCls, clsname, asname; (oCls = object.classes[i++]); ) {
+                        ary = oCls.Name.value.split("@");
                         clsname = "." + ary[0]; // 类名
-                        asname = ary.length > 1 ? ary[1] : "*"; // 库别名
-                        if (asname === "*") {
-                            if (nonameCsslibPC && nonameCsslibPC.has(clsname)) {
-                                (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出，仅[csslib]有无名库且能查到时才汇总
-                            }
-                        } else {
-                            (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出
-                        }
+                        asname = ary.length > 1 ? ary[1] : ""; // 库别名 (无名库都已自动添加@别名后缀)
+
+                        // 前面已做别名库存在性检查，有别名时直接添加即可
+                        asname && (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出
                     }
                 });
 
@@ -8727,12 +8780,12 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     asname = ary.length > 1 ? ary[1] : "*"; // 库别名
 
                     if (asname === "*") {
-                        // 【注意】 @csslib有*，脚本中所有无名样式类，只要存在@csslib中的都会被相应改名，可能会出现冲突误改
-                        if (nonameCsslibPCA && nonameCsslibPCA.has(clsname)) {
-                            (oQuerys[asname] = oQuerys[asname] || []).push(clsname); // 按库名单位汇总样式类，后续组件单位将一次性取出，有无名库且能查到时才汇总
+                        if (nonameCsslibPC) {
+                            // 忽视@csslib无名库，@csslib无名库仅单一标签有效，脚本中多出的不管
+                            (oQuerys[Alias] = oQuerys[Alias] || []).push(clsname); // 仅[csslib]有无名库时才汇总
                         }
                     } else {
-                        // '*'以外的样式库，检查指定样式库在（项目[csslib]+组件[csslib]+@csslib）中是否存在
+                        // 别名库，检查指定样式库在（项目[csslib]+组件[csslib]+@csslib）中是否存在
                         if (!oAtCsslibs[asname] && !oCsslibs[asname] && !oPrjCsslibs[asname]) {
                             throw new Err("csslib not found (check classname in script): " + asname + "\nfile:" + context.input.file); // TODO 友好提示
                         }
@@ -8741,21 +8794,23 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                 let csslib,
                     tags = context.result.standardtags; // 用本组件的全部标准标签，解析完后才能用本插件
-                for (let asname in oQuerys) {
-                    // 在js脚本中可能有无名库样式类，所以总是要查出来
-                    csslib = oAtCsslibs[asname] || oCsslibs[asname] || oPrjCsslibs[asname]; // 别名无重复，不会有问题
-                    if (csslib) {
-                        oCssSet.add(csslib.get(...tags, ...new Set(oQuerys[asname]), opts)); // 用本组件的全部标准标签+同一样式库的类名，查取样式库
+                for (let alias in oQuerys) {
+                    csslib = oAtCsslibs[alias] || oCsslibs[alias] || oPrjCsslibs[alias]; // 别名无重复，不会有问题
+                    if (!csslib) {
+                        throw new Error("csslib not found: " + alias); // 应该检查过，在这里不应该还找不到样式库
+                    }
+
+                    if (csslib.isAtCsslib) {
+                        oCssSet.add(csslib.get(csslib.attag, ...new Set(oQuerys[alias]), opts)); // @csslib样式库
                     } else {
-                        // 应该检查过，在这里不应该还找不到样式库
-                        throw new Error("csslib not found: " + asname);
+                        oCssSet.add(csslib.get(...tags, ...new Set(oQuerys[alias]), opts)); // [csslib]样式库，用本组件的全部标准标签+相关样式类进行查询
                     }
                 }
             });
         })()
     );
 
-    // ------- s55p-component-query-css-[csslib] end
+    // ------- s55p-component-query-css-@csslib-[csslib] end
 })();
 
 /* ------- s65p-component-gen-css ------- */
@@ -9438,7 +9493,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             return function renameCssClassName(srcFile, clsName) {
                 let name = clsName;
 
-                // 特殊名称不哈希（已哈希的也是下划线开头）
+                // 特殊名称不哈希（已哈希的是下划线开头）
                 if (name.startsWith("_")) {
                     return name;
                 }
@@ -9446,12 +9501,12 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 const env = bus.at("编译环境");
                 if (clsName.indexOf("@") > 0) {
                     let ary = clsName.split("@");
-                    if (!ary[1] || ary[1] === "*") {
-                        // @csslib无名库特殊处理
-                        ary[0] += "___" + hash(bus.at("标签全名", srcFile));
-                        ary[1] = "csslib-x";
-                    }
+                    !ary[1] && (ary[1] = "UNKNOW");
+
                     name = `${ary[1]}---${ary[0]}`; // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
+
+                    //            let tag = bus.at('标签全名', srcFile);
+                    //            name = `${ary[1]}---${ary[0]}___${hash(tag)}`;                  // 引用样式库时，使用命名空间前缀，如 pkgname---the-class___xxxxx (不足：类名过多)
                 } else {
                     if (name.indexOf("---") > 0 || name.indexOf("___") > 0) {
                         // 已经改过名
