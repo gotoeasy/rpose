@@ -12,12 +12,12 @@ bus.on('编译插件', function(){
             let view = object.text ? object.text.value : '';
             if ( !view ) return node.remove();
 
-            let tokenParser = bus.at('视图TOKEN解析器', context.input.text, view, context.input.file, object.text.loc.start.pos);
+            let tokenParser = bus.at('视图TOKEN解析器', context.input.file, context.input.text, view, object.text.pos.start);
             let type = 'View';
             let src = view;
-            let loc = object.text.loc;
+            let pos = object.text.pos;
             let nodes = tokenParser.parse();
-            let objToken = {type, src, loc, nodes};
+            let objToken = {type, src, pos, nodes};
 
             let nodeToken = this.createNode(objToken);
             node.replaceWith(nodeToken);

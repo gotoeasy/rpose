@@ -32,7 +32,7 @@ bus.on('编译插件', function(){
 
             if ( ary.length > 1 ) {
                 // 属性 @if 不能重复
-                throw new Err('duplicate attribute of @if', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
+                throw new Err('duplicate attribute of @if', { ...context.input, ...ary[1].object.Name.pos });
             }
 
             // 创建节点保存

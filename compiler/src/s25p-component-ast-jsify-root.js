@@ -62,8 +62,8 @@ function topNodesWithoutScriptJsify(nodes=[], context){
     if ( nodes.length > 1 ) {
         let text = context.input.text;
         let file = context.input.file;
-        let start = nodes[1].object.loc.start.pos;
-        nodes[0].type !== 'Tag' && (start = nodes[0].object.loc.start.pos);
+        let start = nodes[1].object.pos.start;
+        nodes[0].type !== 'Tag' && (start = nodes[0].object.pos.start);
         throw new Err('invalid top tag', {text, file, start});              // 组件顶部只能有一个标签
     }
 
@@ -71,7 +71,7 @@ function topNodesWithoutScriptJsify(nodes=[], context){
     if ( node.type !== 'Tag' ) {
         let text = context.input.text;
         let file = context.input.file;
-        let start = nodes[0].object.loc.start.pos;
+        let start = nodes[0].object.pos.start;
         throw new Err('missing top tag', {text, file, start});              // 组件顶部只能有一个标签
     }
 

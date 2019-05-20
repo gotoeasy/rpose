@@ -12,7 +12,7 @@ bus.on('编译插件', function(){
             if ( !/^(if|for)$/i.test(object.value) ) return;
 
             if ( !node.ok ){
-                throw new Err(`missing attribute @${object.value} of tag <${object.value}>`, {file: context.input.file, text: context.input.text, start: object.loc.start.pos})
+                throw new Err(`missing attribute @${object.value} of tag <${object.value}>`, { ...context.input, start: object.pos.start })
             }
 
             node.nodes.forEach( nd => {

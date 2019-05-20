@@ -16,12 +16,12 @@ bus.on('编译插件', function(){
 
             let type = OPTS.TypeCodeBlock;
             let value = parseFor(context, object);
-            let loc = object.loc;
-            let jsNode = this.createNode({type, value, loc});
+            let pos = object.pos;
+            let jsNode = this.createNode({type, value, pos});
             tagNode.before(jsNode);
 
             value = '}';
-            jsNode = this.createNode({type, value, loc});
+            jsNode = this.createNode({type, value, pos});
             tagNode.after(jsNode);
 
             node.remove();
@@ -183,5 +183,5 @@ function parseFor(context, object){
 
 function getError(context, object, msg='invalid format of @for'){
     // 格式错误
-    return new Err(msg, {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+    return new Err(msg, { ...context.input, ...object.Value.pos });
 }

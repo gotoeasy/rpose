@@ -7,7 +7,7 @@ bus.on('解析csslib', function(){
     return function normalizeTaglib(csslib, file=''){
 
         let alias, pkg, filters = [], match;
-        if ( (match = csslib.match(/^(.*?)=(.*?):(.*)$/)) ) {
+        if ( (match = csslib.match(/^([\s\S]*?)=([\s\S]*?):([\s\S]*)$/)) ) {
             // alias=pkg:filters
             alias = match[1].trim();
             pkg = match[2].trim();
@@ -15,12 +15,12 @@ bus.on('解析csslib', function(){
                 filter = filter.trim();
                 filter && filters.push(filter);
             });
-        }else if ( (match = csslib.match(/^(.*?)=(.*)$/)) ) {
+        }else if ( (match = csslib.match(/^([\s\S]*?)=([\s\S]*)$/)) ) {
             // alias=pkg
             alias = match[1].trim();
             pkg = match[2].trim();
             filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
-        }else if ( (match = csslib.match(/^(.*?):(.*)$/)) ) {
+        }else if ( (match = csslib.match(/^([\s\S]*?):([\s\S]*)$/)) ) {
             // pkg:filters
             alias = '*';
             pkg = match[1].trim();
@@ -35,8 +35,8 @@ bus.on('解析csslib', function(){
             filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
         }
 
-        if ( !alias || /[:=/\s]+/.test(alias) ) {
-            return null;                                                                    // 写等号又漏写别名，或别名中包含冒号等号斜杠空格，都当做格式有误处理
+        if ( !pkg || !alias || /[:=/\s]+/.test(alias) ) {
+            return null;                                                                    // 无包名，或写等号又漏写别名，或别名中包含冒号等号斜杠空格，都当做格式有误处理
         }
 
         return {alias, pkg, filters, file};

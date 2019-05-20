@@ -32,10 +32,10 @@ bus.on('编译插件', function(){
             });
 
             let value = OPTS.ExpressionStart + aryRs.join(' + ') + OPTS.ExpressionEnd;
-            let start = ary[0].object.loc.start;
-            let end = ary[ary.length-1].object.loc.end;
-            let loc = {start, end};
-            let tNode = this.createNode({type: OPTS.TypeExpression, value, loc});
+            let start = ary[0].object.pos.start;
+            let end = ary[ary.length-1].object.pos.end;
+            let pos = {start, end};
+            let tNode = this.createNode({type: OPTS.TypeExpression, value, pos});
             node.before(tNode);
             ary.forEach(nd => nd.remove());
         });

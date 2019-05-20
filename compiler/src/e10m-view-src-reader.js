@@ -1,6 +1,6 @@
 const bus = require('@gotoeasy/bus');
 
-const SOF = '\u0000'; // HTML解析：开始符
+const SOF = '\ufff0'; // HTML解析：开始符
 const EOF = '\uffff'; // HTML解析：结束符
 
 

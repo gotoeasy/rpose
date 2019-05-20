@@ -32,7 +32,7 @@ bus.on('解析生成AST节点插件', function(){
             context.input = {text};
 
             // 像[view]一样解析为Token
-            let tokenParser = bus.at('视图TOKEN解析器', text, text);
+            let tokenParser = bus.at('视图TOKEN解析器', text, text, text, 0);
             let type = 'Node';
             let nodes = tokenParser.parse();
             let objToken = {type, nodes};
@@ -57,7 +57,7 @@ bus.on('解析生成AST节点插件', function(){
             if ( eqNode && eqNode.type === OPTS.TypeEqual ) {
                 // 键=值的三个节点
                 let valNode = eqNode.after();
-                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: bus.at('是否表达式', valNode.object.value), loc: context.input.loc};
+                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: bus.at('是否表达式', valNode.object.value), pos: context.input.pos};
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
                 eqNode.remove();
@@ -65,7 +65,7 @@ bus.on('解析生成AST节点插件', function(){
 
             } else {
                 // 单一键节点（应该没有...）
-                let oAttr = {type: 'Attribute', name: object.value, value: true, isExpression: false, loc: context.input.loc}
+                let oAttr = {type: 'Attribute', name: object.value, value: true, isExpression: false, pos: context.input.pos}
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
             }
@@ -113,8 +113,8 @@ bus.on('解析生成AST节点插件', function(){
 
             let type = 'Tag';
             let value = object.value;
-            let loc = context.input.loc;
-            let tagNode = this.createNode({type, value, loc})
+            let pos = context.input.pos;
+            let tagNode = this.createNode({type, value, pos})
 
             let tagAttrsNode = node.after();
             if ( tagAttrsNode && tagAttrsNode.type === 'Attributes' ) {
@@ -144,8 +144,8 @@ bus.on('解析生成AST节点插件', function(){
                 if ( nextNode.type === OPTS.TypeTagOpen ) {
                     let type = 'Tag';
                     let value = nextNode.object.value;
-                    let loc = nextNode.object.loc;
-                    let subTagNode = this.createNode({type, value, loc});
+                    let pos = nextNode.object.pos;
+                    let subTagNode = this.createNode({type, value, pos});
                     normolizeTagNode(subTagNode, nextNode);
 
                     tagNode.addChild( subTagNode );
@@ -158,14 +158,14 @@ bus.on('解析生成AST节点插件', function(){
             }
 
             if ( !nextNode ) {
-                throw new Err('missing close tag', {text: context.input.text, start: tagNode.object.loc.start.pos});
+                throw new Err('missing close tag', { text: context.input.text, start: tagNode.object.pos.start });
             }
 
             if ( nextNode.type === OPTS.TypeTagClose ) {
                 if ( nodeTagOpen.object.value !== nextNode.object.value ) {
-                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, {text: context.input.text, start: tagNode.object.loc.start.pos, end: nextNode.object.loc.end.pos});
+                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, { text: context.input.text, ...tagNode.object.pos });
                 }
-                tagNode.object.loc.end = nextNode.object.loc.end;
+                tagNode.object.pos.end = nextNode.object.pos.end;
                 nextNode.remove();
                 return tagNode;
             }
@@ -181,8 +181,8 @@ bus.on('解析生成AST节点插件', function(){
 
             let type = 'Tag';
             let value = object.value;
-            let loc = object.loc;
-            let tagNode = this.createNode({type, value, loc});
+            let pos = object.pos;
+            let tagNode = this.createNode({type, value, pos});
             normolizeTagNode(tagNode, node);
 
             node.replaceWith(tagNode);

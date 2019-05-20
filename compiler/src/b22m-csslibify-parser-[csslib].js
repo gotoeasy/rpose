@@ -20,7 +20,7 @@ bus.on('解析[csslib]', function(){
             if ( !csslib ) continue;                                                        // 跳过空白行
 
             oCsslib = bus.at('解析csslib', csslib, file);
-            let pos = getStartPos(lines, i, obj.loc.start.pos);                             // taglib位置
+            let pos = getStartPos(lines, i, obj.pos.start);                                 // taglib位置
 
             // 无效的csslib格式
             if ( !oCsslib ) {

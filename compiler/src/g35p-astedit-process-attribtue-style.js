@@ -32,7 +32,7 @@ bus.on('编译插件', function(){
 
             if ( ary.length > 1 ) {
                 // 属性 style 不能重复
-                throw new Err('duplicate attribute of style', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
+                throw new Err('duplicate attribute of style', { ...context.input, ...ary[1].object.pos });
             }
 
             // 创建节点保存

@@ -43,13 +43,13 @@ bus.on('编译插件', function(){
                 let oImage = hashImageName(context, srcAttrNode);
                 if ( oImage.code === -1 ) {
                     // 文件不存在
-                    throw new Err('image file not found', {file: context.input.file, text: context.input.text, start: srcAttrNode.object.loc.start.pos, end: srcAttrNode.object.loc.end.pos});
+                    throw new Err('image file not found', { ...context.input, ...srcAttrNode.object.pos });
                 } else if ( oImage.code === -2 ) {
                     // 不支持项目外文件（会引起版本管理混乱）
-                    throw new Err('file should not out of project (' + oImage.file + ')', {file: context.input.file, text: context.input.text, start: srcAttrNode.object.loc.start.pos, end: srcAttrNode.object.loc.end.pos});
+                    throw new Err('file should not out of project (' + oImage.file + ')', { ...context.input, ...srcAttrNode.object.pos });
                 } else if ( oImage.code === -3 ) {
                     // 不支持用绝对路径，避免换机器环境引起混乱
-                    throw new Err('unsupport absolute file path', {file: context.input.file, text: context.input.text, start: srcAttrNode.object.loc.start.pos, end: srcAttrNode.object.loc.end.pos});
+                    throw new Err('unsupport absolute file path', { ...context.input, ...srcAttrNode.object.pos });
                 }
                 // 修改成替换用目录，文件名用哈希
                 srcAttrNode.object.value = '%imagepath%' + oImage.name;

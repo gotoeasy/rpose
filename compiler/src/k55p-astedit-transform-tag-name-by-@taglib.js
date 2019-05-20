@@ -14,7 +14,7 @@ bus.on('编译插件', function(){
             // 父节点
             let tagNode = node.parent;
             if ( tagNode.object.standard ) {
-                throw new Err('unsupport @taglib on standard tag', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                throw new Err('unsupport @taglib on standard tag', { ...context.input, ...object.Name.pos });
             }
 
             let tagName = tagNode.object.value.toLowerCase();                  // 标签名
@@ -22,7 +22,7 @@ bus.on('编译插件', function(){
                 // 标签名如果没有使用@前缀，要检查是否已存在有组件文件，有则报错
                 let cpFile = bus.at('标签项目源文件', tagNode.object.value);    // 当前项目范围内查找标签对应的源文件
                 if ( cpFile ) {
-                    throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                    throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, { ...context.input, ...object.Name.pos });
                 }
             }
             
@@ -39,7 +39,7 @@ bus.on('编译插件', function(){
                 tag = match[1];
             }else if ( attaglib.indexOf('=') >= 0 ) {
                 // @taglib = "=@scope/pkg"
-                throw new Err('invalid attribute value of @taglib', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                throw new Err('invalid attribute value of @taglib', { ...context.input, ...object.Value.pos });
             }else if ( (match = attaglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/)) ) {
                 // @taglib = "@scope/pkg:component"
                 pkg = match[1];
@@ -49,20 +49,20 @@ bus.on('编译插件', function(){
                 pkg = match[1];
                 tag = tagName;
             }else {
-                throw new Err('invalid attribute value of @taglib', { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                throw new Err('invalid attribute value of @taglib', { ...context.input, ...object.Value.pos });
             }
 
             tag.startsWith('@') && (tag = tag.substring(1));                            // 去除组件名的@前缀
 
             let install = bus.at('自动安装', pkg);
             if ( !install ) {
-                throw new Err('package install failed: ' + pkg, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                throw new Err('package install failed: ' + pkg, { ...context.input, ...object.Value.pos });
             }
 
             let taglib = bus.at('解析taglib', `${pkg}:${tag}`, context.input.file);
             let srcFile = bus.at('标签库源文件', taglib);                               // 从指定模块查找
             if ( !srcFile ) {
-                throw new Err('component not found: ' + object.value, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                throw new Err('component not found: ' + object.value, { ...context.input, ...object.Value.pos });
             }
 
             let tagpkg = bus.at('标签全名', srcFile);

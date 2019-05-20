@@ -85,8 +85,8 @@ bus.on('项目配置处理插件', function(){
  
             let type = object.name.value;
             let value = object.text.value;
-            let loc = object.text.loc;
-            let oNode = this.createNode({type, value, loc});
+            let pos = object.text.pos
+            let oNode = this.createNode({type, value, pos});
             node.replaceWith(oNode);
         });
 

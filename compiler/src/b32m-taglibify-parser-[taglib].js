@@ -18,7 +18,7 @@ bus.on('解析[taglib]', function(){
             if ( !taglib ) continue;                                                        // 跳过空白行
 
             oTaglib = bus.at('解析taglib', taglib, file);
-            let pos = getStartPos(lines, i, obj.loc.start.pos);                             // taglib位置
+            let pos = getStartPos(lines, i, obj.pos.start);                                 // taglib位置
 
             // 无效的taglib格式
             if ( !oTaglib ) {

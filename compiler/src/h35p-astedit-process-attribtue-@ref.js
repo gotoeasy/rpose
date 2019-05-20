@@ -32,10 +32,10 @@ bus.on('编译插件', function(){
 
             if ( ary.length > 1 ) {
                 // 属性 @ref 不能重复
-                throw new Err('duplicate attribute of @ref', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
+                throw new Err('duplicate attribute of @ref', { ...context.input, ...ary[1].object.Name.pos });
             }
             if ( /^(if|for)$/.test(object.value) ) {
-                throw new Err(`unsupport attribute @ref on tag <${object.value}>`, {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
+                throw new Err(`unsupport attribute @ref on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
             }
 
             // 创建节点保存

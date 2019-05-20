@@ -1294,7 +1294,7 @@ console.time("load");
     bus.on(
         "项目配置文件解析",
         (function() {
-            return function(text, keepLoc = true) {
+            return function(text) {
                 let lines = text.split("\n"); // 行内容包含换行符
                 let lineCounts = []; // 行长度包含换行符
                 for (let i = 0, max = lines.length; i < max; i++) {
@@ -1306,31 +1306,31 @@ console.time("load");
                 parse(nodes, lines, lineCounts);
 
                 nodes.forEach(block => {
+                    let type = "ProjectBtfBlockText";
                     if (block.buf.length) {
-                        let type = "ProjectBtfBlockText";
-                        let lastLine = block.buf.pop();
-
                         // 值
-                        block.buf.push(lastLine.replace(/\r?\n$/, "")); // 删除最后一行回车换行符
+                        let lastLine = block.buf.pop();
+                        let tmp = lastLine.replace(/\r?\n$/, ""); // 删除最后一行回车换行符
+                        tmp && block.buf.push(tmp); // 删除最后一行回车换行符后仍有内容则加回去
                         let value = block.buf.join(""); // 无损拼接
 
                         // 开始位置
-                        let start = { pos: sumLineCount(lineCounts, block.name.loc.start.line + 1) }; // 块内容开始位置（即块名行为止合计长度）
-
+                        let start = sumLineCount(lineCounts, block.startLine); // 块内容开始位置（即块名行为止合计长度）
                         // 结束位置
-                        let line = block.name.loc.start.line + block.buf.length; // 结束行
-                        let column = block.buf[block.buf.length - 1].length; // 结束列
-                        let pos = sumLineCount(lineCounts, line) + column; // 结束位置
-                        let end = { line, column, pos };
+                        let end = sumLineCount(lineCounts, block.startLine + block.buf.length - 1) + tmp.length;
 
-                        block.text = { type, value, loc: { start, end } };
+                        block.text = { type, value, pos: { start, end } };
+                    } else {
+                        // 值
+                        let value = "";
+                        // 开始位置
+                        let start = sumLineCount(lineCounts, block.startLine); // 块内容开始位置（即块名行为止合计长度）
+                        // 结束位置
+                        let end = start;
+
+                        block.text = { type, value, pos: { start, end } };
                     }
                     delete block.buf;
-                    if (keepLoc === false) {
-                        delete block.name.loc;
-                        block.comment !== undefined && delete block.comment.loc;
-                        block.text !== undefined && delete block.text.loc;
-                    }
                 });
                 return { nodes };
             };
@@ -1352,23 +1352,17 @@ console.time("load");
                 oName = getBlockName(sLine); // oName.len包含转义字符长度
                 comment = sLine.substring(oName.len + 2).replace(/\r?\n$/, ""); // 块注释，忽略换行符
 
-                let line = i; // 行号，下标从0开始
-                let column = 0; // 列号，下标从0开始(计中括号)
-                let pos = sumLineCount(lineCounts, line);
-                let start = { line, column, pos }; // 起始位置信息
-                column = oName.len + 2;
-                pos += column;
-                let end = { line, column, pos }; // 结束位置信息
-
-                block.name = { type: "ProjectBtfBlockName", value: oName.name, loc: { start, end } }; // 位置包含中括号
+                let start = sumLineCount(lineCounts, i); // 开始位置信息，含左中括号
+                let end = start + oName.len + 2; // 结束位置信息，含右中括号
+                block.name = { type: "ProjectBtfBlockName", value: oName.name, pos: { start, end } }; // 位置包含中括号
                 if (comment) {
-                    start = Object.assign({}, end); // 注释的开始位置=块名的结束位置
-                    column = start.column + comment.length;
-                    pos = start.pos + comment.length;
-                    end = { line, column, pos };
-                    block.comment = { type: "ProjectBtfBlockComment", value: comment, loc: { start, end } }; // 注释(不计换行符)
+                    start = end; // 注释的开始位置=块名的结束位置
+                    end = start + comment.length;
+                    block.comment = { type: "ProjectBtfBlockComment", value: comment, pos: { start, end } }; // 注释(不计换行符)
                 }
+
                 block.buf = [];
+                block.startLine = i + 1; // 块内容开始行
 
                 blocks.push(block);
                 blockStart = true;
@@ -1494,7 +1488,7 @@ console.time("load");
                     if (!csslib) continue; // 跳过空白行
 
                     oCsslib = bus.at("解析csslib", csslib, file);
-                    let pos = getStartPos(lines, i, obj.loc.start.pos); // taglib位置
+                    let pos = getStartPos(lines, i, obj.pos.start); // taglib位置
 
                     // 无效的csslib格式
                     if (!oCsslib) {
@@ -1594,7 +1588,7 @@ console.time("load");
                     pkg,
                     filters = [],
                     match;
-                if ((match = csslib.match(/^(.*?)=(.*?):(.*)$/))) {
+                if ((match = csslib.match(/^([\s\S]*?)=([\s\S]*?):([\s\S]*)$/))) {
                     // alias=pkg:filters
                     alias = match[1].trim();
                     pkg = match[2].trim();
@@ -1607,12 +1601,12 @@ console.time("load");
                             filter = filter.trim();
                             filter && filters.push(filter);
                         });
-                } else if ((match = csslib.match(/^(.*?)=(.*)$/))) {
+                } else if ((match = csslib.match(/^([\s\S]*?)=([\s\S]*)$/))) {
                     // alias=pkg
                     alias = match[1].trim();
                     pkg = match[2].trim();
                     filters.push("**.min.css"); // 默认取npm包下所有压缩后文件*.min.css
-                } else if ((match = csslib.match(/^(.*?):(.*)$/))) {
+                } else if ((match = csslib.match(/^([\s\S]*?):([\s\S]*)$/))) {
                     // pkg:filters
                     alias = "*";
                     pkg = match[1].trim();
@@ -1632,8 +1626,8 @@ console.time("load");
                     filters.push("**.min.css"); // 默认取npm包下所有压缩后文件*.min.css
                 }
 
-                if (!alias || /[:=/\s]+/.test(alias)) {
-                    return null; // 写等号又漏写别名，或别名中包含冒号等号斜杠空格，都当做格式有误处理
+                if (!pkg || !alias || /[:=/\s]+/.test(alias)) {
+                    return null; // 无包名，或写等号又漏写别名，或别名中包含冒号等号斜杠空格，都当做格式有误处理
                 }
 
                 return { alias, pkg, filters, file };
@@ -1746,7 +1740,7 @@ console.time("load");
                     if (!taglib) continue; // 跳过空白行
 
                     oTaglib = bus.at("解析taglib", taglib, file);
-                    let pos = getStartPos(lines, i, obj.loc.start.pos); // taglib位置
+                    let pos = getStartPos(lines, i, obj.pos.start); // taglib位置
 
                     // 无效的taglib格式
                     if (!oTaglib) {
@@ -1944,8 +1938,8 @@ console.time("load");
 
                     let type = object.name.value;
                     let value = object.text.value;
-                    let loc = object.text.loc;
-                    let oNode = this.createNode({ type, value, loc });
+                    let pos = object.text.pos;
+                    let oNode = this.createNode({ type, value, pos });
                     node.replaceWith(oNode);
                 });
             });
@@ -2064,7 +2058,7 @@ console.time("load");
     bus.on(
         "RPOSE源文件解析",
         (function() {
-            return function(text, keepLoc = true) {
+            return function(text) {
                 let lines = text.split("\n"); // 行内容包含换行符
                 let lineCounts = []; // 行长度包含换行符
                 for (let i = 0, max = lines.length; i < max; i++) {
@@ -2076,28 +2070,31 @@ console.time("load");
                 parse(nodes, lines, lineCounts);
 
                 nodes.forEach(block => {
+                    let type = "RposeBlockText";
                     if (block.buf.length) {
-                        let type = "RposeBlockText";
-                        let lastLine = block.buf.pop();
-
                         // 值
-                        block.buf.push(lastLine.replace(/\r?\n$/, "")); // 删除最后一行回车换行符
+                        let lastLine = block.buf.pop();
+                        let tmp = lastLine.replace(/\r?\n$/, ""); // 删除最后一行回车换行符
+                        tmp && block.buf.push(tmp); // 删除最后一行回车换行符后仍有内容则加回去
                         let value = block.buf.join(""); // 无损拼接
 
                         // 开始位置
-                        let start = { pos: sumLineCount(lineCounts, block.name.loc.start.line + 1) }; // 块内容开始位置（即块名行为止合计长度）
-
+                        let start = sumLineCount(lineCounts, block.startLine); // 块内容开始位置（即块名行为止合计长度）
                         // 结束位置
-                        let end = { pos: start + value.length };
+                        let end = sumLineCount(lineCounts, block.startLine + block.buf.length - 1) + tmp.length;
 
-                        block.text = { type, value, loc: { start, end } };
+                        block.text = { type, value, pos: { start, end } };
+                    } else {
+                        // 值
+                        let value = "";
+                        // 开始位置
+                        let start = sumLineCount(lineCounts, block.startLine); // 块内容开始位置（即块名行为止合计长度）
+                        // 结束位置
+                        let end = start;
+
+                        block.text = { type, value, pos: { start, end } };
                     }
                     delete block.buf;
-                    if (keepLoc === false) {
-                        delete block.name.loc;
-                        block.comment !== undefined && delete block.comment.loc;
-                        block.text !== undefined && delete block.text.loc;
-                    }
                 });
                 return { nodes };
             };
@@ -2119,23 +2116,17 @@ console.time("load");
                 oName = getBlockName(sLine); // oName.len包含转义字符长度
                 comment = sLine.substring(oName.len + 2).replace(/\r?\n$/, ""); // 块注释，忽略换行符
 
-                let line = i; // 行号，下标从0开始
-                let column = 0; // 列号，下标从0开始(计中括号)
-                let pos = sumLineCount(lineCounts, line);
-                let start = { line, column, pos }; // 起始位置信息
-                column = oName.len + 2;
-                pos += column;
-                let end = { line, column, pos }; // 结束位置信息
-
-                block.name = { type: "RposeBlockName", value: oName.name, loc: { start, end } }; // 位置包含中括号
+                let start = sumLineCount(lineCounts, i); // 开始位置信息，含左中括号
+                let end = start + oName.len + 2; // 结束位置信息，含右中括号
+                block.name = { type: "RposeBlockName", value: oName.name, pos: { start, end } }; // 位置包含中括号
                 if (comment) {
-                    start = Object.assign({}, end); // 注释的开始位置=块名的结束位置
-                    column = start.column + comment.length;
-                    pos = start.pos + comment.length;
-                    end = { line, column, pos };
-                    block.comment = { type: "RposeBlockComment", value: comment, loc: { start, end } }; // 注释(不计换行符)
+                    start = end; // 注释的开始位置=块名的结束位置
+                    end = start + comment.length;
+                    block.comment = { type: "RposeBlockComment", value: comment, pos: { start, end } }; // 注释(不计换行符)
                 }
+
                 block.buf = [];
+                block.startLine = i + 1; // 块内容开始行
 
                 blocks.push(block);
                 blockStart = true;
@@ -3082,7 +3073,7 @@ console.time("load");
     // ------- e10m-view-src-reader start
     const bus = require("@gotoeasy/bus");
 
-    const SOF = "\u0000"; // HTML解析：开始符
+    const SOF = "\ufff0"; // HTML解析：开始符
     const EOF = "\uffff"; // HTML解析：结束符
 
     // ------------ 字符阅读器 ------------
@@ -3182,36 +3173,23 @@ console.time("load");
 
     // TODO 未转义字符引起的解析错误，友好提示
 
-    // \{ = '\u0000\u0001', \} = '\ufffe\uffff'
+    // \{ = '\ufff0\ufff1', \} = '\ufffe\uffff'
     function escape(str) {
-        return str == null ? null : str.replace(/\\{/g, "\u0000\u0001").replace(/\\}/g, "\ufffe\uffff");
+        return str == null ? null : str.replace(/\\{/g, "\ufff0\ufff1").replace(/\\}/g, "\ufffe\uffff");
     }
     function unescape(str) {
-        return str == null ? null : str.replace(/\u0000\u0001/g, "{").replace(/\ufffe\uffff/g, "}");
+        return str == null ? null : str.replace(/\ufff0\ufff1/g, "{").replace(/\ufffe\uffff/g, "}");
     }
 
-    function getLocation(src, startPos, endPos, PosOffset) {
-        let ary,
-            line,
-            start = {},
-            end = {};
-
-        ary = src.substring(0, startPos + PosOffset).split("\n");
-        start.line = ary.length - 1;
-        line = ary.pop();
-        start.column = line.length;
-        start.pos = PosOffset + startPos;
-
-        ary = src.substring(0, endPos + PosOffset).split("\n");
-        end.line = ary.length - 1;
-        line = ary.pop();
-        end.column = line.length;
-        end.pos = PosOffset + endPos;
-
-        return { start, end };
+    function offsetPos(oPos, PosOffset) {
+        if (oPos) {
+            oPos.start != null && (oPos.start += PosOffset);
+            oPos.end != null && (oPos.end += PosOffset);
+        }
+        return oPos;
     }
 
-    function TokenParser(fileText, viewText, file, PosOffset) {
+    function TokenParser(file, fileText, viewText, PosOffset) {
         let src = escape(viewText); // 不含[view]的块内容
         // ------------ 变量 ------------
         let options = bus.at("视图编译选项");
@@ -3225,10 +3203,6 @@ console.time("load");
                 // 无内容
             }
 
-            tokens.forEach(token => {
-                token.loc = getLocation(fileText, token.pos.start, token.pos.end, PosOffset);
-                delete token.pos;
-            });
             return tokens;
         };
 
@@ -3266,7 +3240,7 @@ console.time("load");
                     reader.skip(1); // 跳过【>】
                     oPos.end = reader.getPos();
 
-                    token = { type: options.TypeTagClose, value: tagNm.trim(), pos: oPos }; // Token: 闭合标签
+                    token = { type: options.TypeTagClose, value: tagNm.trim(), pos: offsetPos(oPos, PosOffset) }; // Token: 闭合标签
                     tokens.push(token);
                     return 1;
                 }
@@ -3285,13 +3259,13 @@ console.time("load");
 
             // 节点名
             oPos = {};
-            oPos.start = reader.getPos();
+            oPos.start = PosOffset + reader.getPos();
             reader.skip(1); // 跳过起始【<】
             while (/[^\s/>]/.test(reader.getCurrentChar())) {
                 tagNm += reader.readChar(); // 非空白都按名称处理
             }
 
-            let tokenTagNm = { type: "", value: unescape(tagNm).trim(), pos: oPos }; // Token: 标签 (类型待后续解析更新)
+            let tokenTagNm = { type: "", value: unescape(tagNm), pos: oPos }; // Token: 标签 (类型待后续解析更新，偏移位置自行计算)
             tokens.push(tokenTagNm);
 
             // 全部属性
@@ -3307,7 +3281,7 @@ console.time("load");
                 // 无内容的自闭合标签，如<one-tag/>
                 tokenTagNm.type = options.TypeTagSelfClose; // 更新 Token: 标签
                 reader.skip(2); // 跳过【/>】
-                oPos.end = reader.getPos();
+                oPos.end = PosOffset + reader.getPos();
                 return 1;
             }
 
@@ -3320,12 +3294,12 @@ console.time("load");
                 }
 
                 reader.skip(1); // 跳过【>】
-                oPos.end = reader.getPos();
+                oPos.end = PosOffset + reader.getPos();
                 return 1;
             }
 
             // 前面已检查，不应该走到这里.......
-            throw new Err('tag missing ">"', "file=" + file, { text: fileText, start: oPos.start + PosOffset });
+            throw new Err('tag missing ">"', "file=" + file, { text: fileText, pos: oPos }); // 已计算好偏移
         }
 
         // HTML节点属性
@@ -3374,7 +3348,7 @@ console.time("load");
 
             oPos.end = reader.getPos();
 
-            let token = { type: options.TypeAttributeName, value: unescape(key), pos: oPos }; // Token: 属性名
+            let token = { type: options.TypeAttributeName, value: unescape(key), pos: offsetPos(oPos, PosOffset) }; // Token: 属性名
             tokens.push(token);
 
             // 跳过空白
@@ -3383,64 +3357,69 @@ console.time("load");
             oPos.start = reader.getPos();
 
             if (reader.getCurrentChar() === "=") {
-                oPos.end = reader.getPos() + 1;
-                token = { type: options.TypeEqual, value: "=", pos: oPos }; // Token: 属性等号
+                let PosEqual = PosOffset + reader.getPos();
+                reader.skip(1); // 跳过等号
+                oPos.end = reader.getPos();
+
+                token = { type: options.TypeEqual, value: "=", pos: offsetPos(oPos, PosOffset) }; // Token: 属性等号
                 tokens.push(token);
 
                 // --------- 键值属性 ---------
-                reader.skip(1); // 跳过等号
-                let PosEqual = reader.getPos() + PosOffset;
                 reader.skipBlank(); // 跳过等号右边空白
                 oPos = {};
-                oPos.start = reader.getPos();
 
                 if (reader.getCurrentChar() === '"') {
                     // 值由双引号包围
                     reader.skip(1); // 跳过左双引号
+                    oPos.start = reader.getPos();
                     while (!reader.eof() && reader.getCurrentChar() !== '"') {
                         let ch = reader.readChar();
-                        ch !== "\r" && ch !== "\n" && (val += ch); // 忽略回车换行，其他只要不是【"】就算属性值
-                        //  val += ch;    // 忽略回车换行，其他只要不是【"】就算属性值
+                        val += ch; // 其他只要不是【"】就算属性值
+
+                        if ((ch === "=" || ch === ">") && val.indexOf("\n") > 0 && val.indexOf("{") < 0) {
+                            // 遇到等号或标签结束符，且当前的属性值不可能是表达式，且属性值已含换行，基本上是错了
+                            throw new Err('invalid attribute value format (missing right ")', { file, text: fileText, start: PosEqual });
+                        }
                     }
 
                     if (reader.eof() || reader.getCurrentChar() !== '"') {
                         // 属性值漏一个双引号，如<tag aaa=" />
-                        throw new Err('invalid attribute value format (missing ")', "file=" + file, { text: fileText, start: PosEqual });
+                        throw new Err('invalid attribute value format (missing right ")', { file, text: fileText, start: PosEqual });
                     }
 
-                    reader.skip(1); // 跳过右双引号
                     oPos.end = reader.getPos();
+                    reader.skip(1); // 跳过右双引号
 
-                    token = { type: options.TypeAttributeValue, value: unescape(val), pos: oPos }; // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
+                    token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) }; // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                     tokens.push(token);
                 } else if (reader.getCurrentChar() === "'") {
                     // 值由单引号包围
                     reader.skip(1); // 跳过左单引号
-                    let posStart = reader.getPos();
+                    oPos.start = reader.getPos();
                     while (!reader.eof() && reader.getCurrentChar() !== "'") {
                         let ch = reader.readChar();
-                        ch != "\r" && ch != "\n" && (val += ch); // 忽略回车换行，其他只要不是【'】就算属性值
-                        //   val += ch;    // 忽略回车换行，其他只要不是【'】就算属性值
+                        val += ch; // 其他只要不是【'】就算属性值
+
+                        if ((ch === "=" || ch === ">") && val.indexOf("\n") > 0 && val.indexOf("{") < 0) {
+                            // 遇到等号或标签结束符，且当前的属性值不可能是表达式，且属性值已含换行，基本上是错了
+                            throw new Err("invalid attribute value format (missing right ')", { file, text: fileText, start: PosEqual });
+                        }
                     }
 
                     if (reader.eof() || reader.getCurrentChar() !== "'") {
                         // 属性值漏一个单引号，如<tag aaa=' />
-                        throw new Err("invalid attribute value format (missing ')", "file=" + file, {
-                            text: fileText,
-                            start: PosEqual,
-                            end: posStart + PosOffset
-                        });
+                        throw new Err("invalid attribute value format (missing right ')", { file, text: fileText, start: PosEqual });
                     }
 
-                    reader.skip(1); // 跳过右单引号
                     oPos.end = reader.getPos();
+                    reader.skip(1); // 跳过右单引号
 
-                    token = { type: options.TypeAttributeValue, value: unescape(val), pos: oPos }; // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
+                    token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) }; // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                     tokens.push(token);
                 } else if (reader.getCurrentChar() === "{") {
                     // 值省略引号包围
                     let stack = [];
-                    let posStart = reader.getPos() + 1;
+                    oPos.start = reader.getPos();
                     while (!reader.eof()) {
                         if (reader.getCurrentChar() === "{") {
                             stack.push("{");
@@ -3458,36 +3437,29 @@ console.time("load");
                     }
                     if (reader.eof()) {
                         // 属性值漏，如<tag aaa={ />
-                        throw new Err("invalid attribute value format (missing })", "file=" + file, {
-                            text: fileText,
-                            start: PosEqual,
-                            end: posStart + PosOffset
-                        });
+                        throw new Err("invalid attribute value format (missing right })", { file, text: fileText, start: PosEqual });
                     }
                     oPos.end = reader.getPos();
-                    token = { type: options.TypeAttributeValue, value: unescape(val), pos: oPos }; // Token: 属性值
+                    token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) }; // Token: 属性值
                     tokens.push(token);
                 } else {
-                    // 值应该是单纯数值
+                    // 值应该是单纯数值或true/false
+                    oPos.start = reader.getPos();
                     while (/[^\s/>]/.test(reader.getCurrentChar())) {
                         val += reader.readChar(); // 连续可见字符就放进去
                     }
+                    oPos.end = reader.getPos();
 
                     if (!val) {
                         // 属性值漏，如<tag aaa= />
-                        throw new Err("missing attribute value", "file=" + file, { text: fileText, start: PosEqual, end: PosEqual + 1 });
+                        throw new Err("missing attribute value", { file, text: fileText, start: PosEqual });
                     }
-                    if (!/^(\d+|\d+\.?\d+)$/.test(val)) {
-                        // 属性值不带引号或大括号，应该是单纯数值，如果不是则报错，如<tag aaa=00xxx  />
-                        throw new Err("invalid attribute value", "file=" + file, {
-                            text: fileText,
-                            start: PosEqual,
-                            end: reader.getPos() + PosOffset
-                        });
+                    if (!/^(\d+|\d+\.?\d+|true|false)$/.test(val)) {
+                        // 属性值不带引号或大括号，应该是单纯数值或true/false，如果不是则报错，如<tag aaa=00xxx  />
+                        throw new Err("invalid attribute value", { file, text: fileText, pos: offsetPos(oPos, PosOffset) });
                     }
 
-                    oPos.end = reader.getPos();
-                    token = { type: options.TypeAttributeValue, value: val - 0, pos: oPos }; // Token: 属性值
+                    token = { type: options.TypeAttributeValue, value: val - 0, pos: offsetPos(oPos, PosOffset) }; // Token: 属性值
                     tokens.push(token);
                 }
             } else {
@@ -3508,7 +3480,7 @@ console.time("load");
                 let oPos = {};
                 oPos.start = idxStart;
                 oPos.end = idxEnd + 3;
-                token = { type: options.TypeHtmlComment, value: unescape(src.substring(pos + 4, idxEnd)), pos: oPos }; // Token: HTML注释
+                token = { type: options.TypeHtmlComment, value: unescape(src.substring(pos + 4, idxEnd)), pos: offsetPos(oPos, PosOffset) }; // Token: HTML注释
                 reader.skip(idxEnd + 3 - pos); // 位置更新
 
                 tokens.push(token);
@@ -3532,9 +3504,9 @@ console.time("load");
                 let value = escape(src.substring(pos + 9, idxEnd));
                 reader.skip(idxEnd + 3 - pos); // 位置更新
 
-                if (!/\{.*?}/.test(value)) {
+                if (!/\{[\s\S]*?}/.test(value)) {
                     // 不含表达式
-                    token = { type: options.TypeText, value, pos: oPos }; // Token: 无表达式的文本
+                    token = { type: options.TypeText, value, pos: offsetPos(oPos, PosOffset) }; // Token: 无表达式的文本
                     tokens.push(token);
                 } else {
                     let idx1,
@@ -3547,14 +3519,14 @@ console.time("load");
                             txt = unescape(value.substring(0, idx1));
                             oPosTxt = { start: iStart, end: iStart + txt.length };
                             iStart = oPosTxt.end;
-                            token = { type: options.TypeText, value: txt, pos: oPosTxt }; // Token: 无表达式的文本
+                            token = { type: options.TypeText, value: txt, pos: offsetPos(oPosTxt, PosOffset) }; // Token: 无表达式的文本
                             tokens.push(token);
                         }
 
                         txt = unescape(value.substring(idx1, idx2 + 1));
                         oPosTxt = { start: iStart, end: iStart + txt.length };
                         iStart = oPosTxt.end;
-                        token = { type: options.TypeExpression, value: txt, pos: oPosTxt }; // Token: 表达式文本
+                        token = { type: options.TypeExpression, value: txt, pos: offsetPos(oPosTxt, PosOffset) }; // Token: 表达式文本
                         tokens.push(token);
                         value = value.substring(idx2 + 1);
                     }
@@ -3562,7 +3534,7 @@ console.time("load");
                         txt = unescape(value);
                         oPosTxt = { start: iStart, end: iStart + txt.length };
                         iStart = oPosTxt.end;
-                        token = { type: options.TypeText, value: txt, pos: oPosTxt }; // Token: 无表达式的文本
+                        token = { type: options.TypeText, value: txt, pos: offsetPos(oPosTxt, PosOffset) }; // Token: 无表达式的文本
                         tokens.push(token);
                     }
                 }
@@ -3591,7 +3563,7 @@ console.time("load");
             let token;
             start = pos;
             end = pos + len;
-            token = { type: options.TypeTagSelfClose, value: "```", pos: { start, end } }; // Token: 代码标签
+            token = { type: options.TypeTagSelfClose, value: "```", pos: offsetPos({ start, end }, PosOffset) }; // Token: 代码标签
             tokens.push(token);
 
             // 【Token】 lang
@@ -3600,11 +3572,11 @@ console.time("load");
             if (lang) {
                 start = pos + match.index;
                 end = start + lang.length;
-                token = { type: options.TypeAttributeName, value: "lang", pos: { start, end } };
+                token = { type: options.TypeAttributeName, value: "lang", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeEqual, value: "=", pos: { start, end } };
+                token = { type: options.TypeEqual, value: "=", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeAttributeValue, value: lang, pos: { start, end } };
+                token = { type: options.TypeAttributeValue, value: lang, pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
             }
 
@@ -3620,29 +3592,29 @@ console.time("load");
             if (height) {
                 start = pos + match.index;
                 end = start + height.length;
-                token = { type: options.TypeAttributeName, value: "height", pos: { start, end } };
+                token = { type: options.TypeAttributeName, value: "height", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeEqual, value: "=", pos: { start, end } };
+                token = { type: options.TypeEqual, value: "=", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
                 height = /^\d+$/.test(height) ? height + "px" : height; // 默认单位px
-                token = { type: options.TypeAttributeValue, value: height, pos: { start, end } };
+                token = { type: options.TypeAttributeValue, value: height, pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
             }
 
             // 【Token】 ref                                         // ???? TODO ...............................
-            match = rs[1].match(/\bref\s?=\s?"(.*?)"/i);
+            match = rs[1].match(/\bref\s?=\s?"([\s\S]*?)"/i);
             let ref = match && match[0] ? match[0] : "";
             if (ref) {
-                token = { type: options.TypeAttributeName, value: "ref", pos: { start, end } };
+                token = { type: options.TypeAttributeName, value: "ref", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeEqual, value: "=", pos: { start, end } };
+                token = { type: options.TypeEqual, value: "=", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeAttributeValue, value: ref, pos: { start, end } };
+                token = { type: options.TypeAttributeValue, value: ref, pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
             }
 
             // 【Token】 $CODE
-            let $CODE = rs[2].replace(/\u0000\u0001/g, "\\{").replace(/\ufffe\uffff/g, "\\}"); // 转义，确保值为原输入
+            let $CODE = rs[2].replace(/\ufff0\ufff1/g, "\\{").replace(/\ufffe\uffff/g, "\\}"); // 转义，确保值为原输入
             $CODE = $CODE.replace(/\n\\+```/g, match => "\n" + match.substring(2)); // 删除一个转义斜杠     \n\``` => \n``` ，  \n\\``` => \n\```
             /^\\+```/.test($CODE) && ($CODE = $CODE.substring(1)); // 删除一个转义斜杠     \``` => ``` ，  \\``` => \```
 
@@ -3651,11 +3623,11 @@ console.time("load");
 
             start = pos + rs[1].length;
             end = start + rs[2].length;
-            token = { type: options.TypeAttributeName, value: "$CODE", pos: { start, end } };
+            token = { type: options.TypeAttributeName, value: "$CODE", pos: offsetPos({ start, end }, PosOffset) };
             tokens.push(token);
-            token = { type: options.TypeEqual, value: "=", pos: { start, end } };
+            token = { type: options.TypeEqual, value: "=", pos: offsetPos({ start, end }, PosOffset) };
             tokens.push(token);
-            token = { type: options.TypeAttributeValue, value: $CODE, pos: { start, end } };
+            token = { type: options.TypeAttributeValue, value: $CODE, pos: offsetPos({ start, end }, PosOffset) };
             tokens.push(token);
 
             reader.skip(len); // 位置更新
@@ -3673,7 +3645,11 @@ console.time("load");
                 let oPos = {};
                 oPos.start = idxStart;
                 oPos.end = idxEnd + options.CodeBlockEnd.length;
-                token = { type: options.TypeCodeBlock, value: unescape(src.substring(pos + options.CodeBlockStart.length, idxEnd)), pos: oPos }; // Token: 代码块
+                token = {
+                    type: options.TypeCodeBlock,
+                    value: unescape(src.substring(pos + options.CodeBlockStart.length, idxEnd)),
+                    pos: offsetPos(oPos, PosOffset)
+                }; // Token: 代码块
                 reader.skip(idxEnd + options.CodeBlockEnd.length - pos); // 位置更新
 
                 tokens.push(token);
@@ -3710,7 +3686,7 @@ console.time("load");
 
             if (text) {
                 oPos.end = reader.getPos();
-                token = { type: options.TypeText, value: unescape(text), pos: oPos }; // Token: 文本
+                token = { type: options.TypeText, value: unescape(text), pos: offsetPos(oPos, PosOffset) }; // Token: 文本
                 tokens.push(token);
                 return 1;
             }
@@ -3731,7 +3707,7 @@ console.time("load");
 
             if (token) {
                 oPos.end = reader.getPos();
-                token.pos = oPos;
+                token.pos = offsetPos(oPos, PosOffset);
                 tokens.push(token);
                 return 1;
             }
@@ -3751,8 +3727,8 @@ console.time("load");
         }
     }
 
-    bus.on("视图TOKEN解析器", function(fileText, srcView, file, PosOffset = 0) {
-        return new TokenParser(fileText, srcView, file, PosOffset);
+    bus.on("视图TOKEN解析器", function(file, fileText, srcView, PosOffset = 0) {
+        return new TokenParser(file, fileText, srcView, PosOffset);
     });
 
     // ------- e12m-view-parse-to-tokens end
@@ -3774,12 +3750,12 @@ console.time("load");
                     let view = object.text ? object.text.value : "";
                     if (!view) return node.remove();
 
-                    let tokenParser = bus.at("视图TOKEN解析器", context.input.text, view, context.input.file, object.text.loc.start.pos);
+                    let tokenParser = bus.at("视图TOKEN解析器", context.input.file, context.input.text, view, object.text.pos.start);
                     let type = "View";
                     let src = view;
-                    let loc = object.text.loc;
+                    let pos = object.text.pos;
                     let nodes = tokenParser.parse();
-                    let objToken = { type, src, loc, nodes };
+                    let objToken = { type, src, pos, nodes };
 
                     let nodeToken = this.createNode(objToken);
                     node.replaceWith(nodeToken);
@@ -3818,30 +3794,25 @@ console.time("load");
 
                         if (bus.at("是否表达式", object.value)) {
                             // 键值属性的属性名不支持表达式
-                            throw new Err("unsupport expression on attribute name", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: object.loc.start.pos,
-                                end: object.loc.end.pos
-                            });
+                            throw new Err("unsupport expression on attribute name", { ...context.input, ...object.pos });
                         }
 
                         if (/^\s*\{\s*\}\s*$/.test(valNode.object.value)) {
                             // 属性值的表达式不能为空白
-                            throw new Err("invalid empty expression", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: valNode.object.loc.start.pos,
-                                end: valNode.object.loc.end.pos
-                            });
+                            throw new Err("invalid empty expression", { ...context.input, ...valNode.object.pos });
                         }
 
+                        let Name = { pos: object.pos };
+                        let Value = { pos: valNode.object.pos };
+                        let pos = { start: object.pos.start, end: valNode.object.pos.end };
                         let oAttr = {
                             type: "Attribute",
                             name: object.value,
                             value: valNode.object.value,
+                            Name,
+                            Value,
                             isExpression: bus.at("是否表达式", valNode.object.value),
-                            loc: { start: object.loc.start, end: valNode.object.loc.end }
+                            pos
                         };
                         let attrNode = this.createNode(oAttr);
                         node.replaceWith(attrNode);
@@ -3849,7 +3820,7 @@ console.time("load");
                         valNode.remove();
                     } else {
                         // 单一键节点
-                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, loc: object.loc };
+                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, pos: object.pos };
                         if (bus.at("是否表达式", object.value)) {
                             oAttr.isExpression = true; // 对象表达式
                             oAttr.isObjectExpression = true; // 对象表达式
@@ -3901,8 +3872,8 @@ console.time("load");
                 root.walk(OPTS.TypeTagSelfClose, (node, object) => {
                     let type = "Tag";
                     let value = object.value;
-                    let loc = object.loc;
-                    let tagNode = this.createNode({ type, value, loc });
+                    let pos = object.pos;
+                    let tagNode = this.createNode({ type, value, pos });
 
                     let tagAttrsNode = node.after();
                     if (tagAttrsNode && tagAttrsNode.type === "Attributes") {
@@ -3939,8 +3910,8 @@ console.time("load");
                         if (nextNode.type === OPTS.TypeTagOpen) {
                             let type = "Tag";
                             let value = nextNode.object.value;
-                            let loc = nextNode.object.loc;
-                            let subTagNode = this.createNode({ type, value, loc });
+                            let pos = nextNode.object.pos;
+                            let subTagNode = this.createNode({ type, value, pos });
                             normolizeTagNode(subTagNode, nextNode);
 
                             tagNode.addChild(subTagNode);
@@ -3953,21 +3924,17 @@ console.time("load");
                     }
 
                     if (!nextNode) {
-                        throw new Err("missing close tag", "file=" + context.input.file, {
-                            text: context.input.text,
-                            start: tagNode.object.loc.start.pos
-                        });
+                        throw new Err("missing close tag", { ...context.input, start: tagNode.object.pos.start });
                     }
 
                     if (nextNode.type === OPTS.TypeTagClose) {
                         if (nodeTagOpen.object.value !== nextNode.object.value) {
-                            throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, "file=" + context.input.file, {
-                                text: context.input.text,
-                                start: tagNode.object.loc.start.pos,
-                                end: nextNode.object.loc.end.pos
+                            throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, {
+                                ...context.input,
+                                ...tagNode.object.pos
                             });
                         }
-                        tagNode.object.loc.end = nextNode.object.loc.end;
+                        tagNode.object.pos.end = nextNode.object.pos.end;
                         nextNode.remove();
                         return tagNode;
                     }
@@ -3981,8 +3948,8 @@ console.time("load");
 
                     let type = "Tag";
                     let value = object.value;
-                    let loc = object.loc;
-                    let tagNode = this.createNode({ type, value, loc });
+                    let pos = object.pos;
+                    let tagNode = this.createNode({ type, value, pos });
                     normolizeTagNode(tagNode, node);
 
                     node.replaceWith(tagNode);
@@ -4237,11 +4204,9 @@ console.time("load");
                     let taglibNode = this.createNode({ type: "Attribute" });
                     taglibNode.object.name = "@taglib";
                     taglibNode.object.value = "@rpose/buildin:```";
-                    let loc = Object.assign({}, object.loc);
-                    loc.end.line = loc.start.line;
-                    loc.end.column = 3;
-                    loc.end.pos = loc.start.pos + 3;
-                    taglibNode.object.loc = loc;
+                    let pos = Object.assign({}, object.pos);
+                    pos.end += 3;
+                    taglibNode.object.pos = pos;
                     attrsNode.addChild(taglibNode);
                 });
             });
@@ -4262,10 +4227,10 @@ console.time("load");
     bus.on(
         "SVG图标文件解析",
         (function() {
-            return function(file, attrs, loc) {
+            return function(file, attrs, pos) {
                 // TODO 缓存
                 let plugins = bus.on("SVG图标文件解析插件");
-                let rs = postobject(plugins).process({ file, attrs, loc });
+                let rs = postobject(plugins).process({ file, attrs, pos });
 
                 return rs.result;
             };
@@ -4287,7 +4252,7 @@ console.time("load");
                 root.walk((node, object) => {
                     let file = object.file;
                     let attrs = object.attrs; // 自定义的svg属性
-                    let loc = object.loc;
+                    let pos = object.pos;
                     let text = File.read(object.file);
 
                     // 不支持大于50K的svg图标文件
@@ -4306,10 +4271,10 @@ console.time("load");
                         text = text.substring(idx + 2);
                     }
 
-                    context.input = { file, text, attrs, loc };
+                    context.input = { file, text, attrs, pos };
 
                     // 像[view]一样解析为Token
-                    let tokenParser = bus.at("视图TOKEN解析器", text, text, file);
+                    let tokenParser = bus.at("视图TOKEN解析器", file, text, text, 0);
                     let type = "Svgicon";
                     let nodes = tokenParser.parse();
                     let objToken = { type, nodes };
@@ -4339,7 +4304,7 @@ console.time("load");
                             name: object.value,
                             value: valNode.object.value,
                             isExpression: false,
-                            loc: context.input.loc
+                            pos: context.input.pos
                         };
                         let attrNode = this.createNode(oAttr);
                         node.replaceWith(attrNode);
@@ -4347,7 +4312,7 @@ console.time("load");
                         valNode.remove();
                     } else {
                         // 单一键节点（应该没有...）
-                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, loc: context.input.loc };
+                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, pos: context.input.pos };
                         let attrNode = this.createNode(oAttr);
                         node.replaceWith(attrNode);
                     }
@@ -4394,8 +4359,8 @@ console.time("load");
 
                     let type = "Tag";
                     let value = object.value;
-                    let loc = context.input.loc;
-                    let tagNode = this.createNode({ type, value, loc });
+                    let pos = context.input.pos;
+                    let tagNode = this.createNode({ type, value, pos });
 
                     let tagAttrsNode = node.after();
                     if (tagAttrsNode && tagAttrsNode.type === "Attributes") {
@@ -4422,8 +4387,8 @@ console.time("load");
                         if (nextNode.type === OPTS.TypeTagOpen) {
                             let type = "Tag";
                             let value = nextNode.object.value;
-                            let loc = nextNode.object.loc;
-                            let subTagNode = this.createNode({ type, value, loc });
+                            let pos = nextNode.object.pos;
+                            let subTagNode = this.createNode({ type, value, pos });
                             normolizeTagNode(subTagNode, nextNode);
 
                             tagNode.addChild(subTagNode);
@@ -4436,21 +4401,17 @@ console.time("load");
                     }
 
                     if (!nextNode) {
-                        throw new Err("missing close tag", "file=" + context.input.file, {
-                            text: context.input.text,
-                            start: tagNode.object.loc.start.pos
-                        });
+                        throw new Err("missing close tag", { ...context.input, start: tagNode.object.pos.start });
                     }
 
                     if (nextNode.type === OPTS.TypeTagClose) {
                         if (nodeTagOpen.object.value !== nextNode.object.value) {
-                            throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, "file=" + context.input.file, {
-                                text: context.input.text,
-                                start: tagNode.object.loc.start.pos,
-                                end: nextNode.object.loc.end.pos
+                            throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, {
+                                ...context.input,
+                                ...tagNode.object.pos
                             });
                         }
-                        tagNode.object.loc.end = nextNode.object.loc.end;
+                        tagNode.object.pos.end = nextNode.object.pos.end;
                         nextNode.remove();
                         return tagNode;
                     }
@@ -4464,8 +4425,8 @@ console.time("load");
 
                     let type = "Tag";
                     let value = object.value;
-                    let loc = object.loc;
-                    let tagNode = this.createNode({ type, value, loc });
+                    let pos = object.pos;
+                    let tagNode = this.createNode({ type, value, pos });
                     normolizeTagNode(tagNode, node);
 
                     node.replaceWith(tagNode);
@@ -4539,7 +4500,7 @@ console.time("load");
                 // 重置loc
                 root.walk(
                     (node, object) => {
-                        object.loc = context.input.loc;
+                        object.pos = context.input.pos;
                     },
                     { readonly: true }
                 );
@@ -4842,30 +4803,21 @@ console.time("load");
                     if (nodeSrc && iconName) {
                         // 不能同时有src、name属性
                         throw new Err("unsupport both src and name attribute on svgicon (src only or name only)", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
+                            ...context.input,
+                            ...object.pos
                         });
                     }
                     if (!nodeSrc && !iconName) {
                         // 不能都没有src、name属性
-                        throw new Err("missing src or name attribute of svgicon", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("missing src or name attribute of svgicon", { ...context.input, ...object.pos });
                     }
 
                     if (nodeSrc) {
                         // 使用src属性时，支持inline、inline-symbol类型，缺省为inline
                         if (nodeType && !/^inline$/i.test(iconType) && !/^inline-symbol$/i.test(iconType)) {
                             throw new Err('support type "inline" or "inline-symbol" only when use src attribute', {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: nodeType.object.loc.start.pos,
-                                end: nodeType.object.loc.end.pos
+                                ...context.input,
+                                ...nodeType.object.pos
                             });
                         }
 
@@ -4874,10 +4826,8 @@ console.time("load");
                         // 使用name属性时，支持symbol、web-font类型，缺省为symbol
                         if (nodeType && !/^symbol$/i.test(iconType) && !/^web[-]?font[s]?$/i.test(iconType)) {
                             throw new Err('support type "symbol" or "web-font" only when use name attribute', {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: nodeType.object.loc.start.pos,
-                                end: nodeType.object.loc.end.pos
+                                ...context.input,
+                                ...nodeType.object.pos
                             });
                         }
                         !nodeType && (iconType = "symbol"); // 写了name 时type缺省为 symbol
@@ -4889,12 +4839,7 @@ console.time("load");
                         // inline-symbol(内联svg symbol)
                         // 【特点】以页面为单位，按需内联引用
                         // -------------------------------
-                        let errLocInfo = {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: nodeSrc.object.loc.start.pos,
-                            end: nodeSrc.object.loc.end.pos
-                        }; // 定位src处
+                        let errLocInfo = { ...context.input, ...nodeSrc.object.pos }; // 定位src处
                         let propSrc = (nodeSrc.object.value + "").trim();
                         if (!propSrc) {
                             throw new Err("invalid value of attribute src", errLocInfo); // 必须指定图标
@@ -4955,12 +4900,7 @@ console.time("load");
                         // inline-svg(内联svg)
                         // 【特点】可灵活引用svg图标
                         // -------------------------------
-                        let errLocInfo = {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: nodeSrc.object.loc.start.pos,
-                            end: nodeSrc.object.loc.end.pos
-                        }; // 定位src处
+                        let errLocInfo = { ...context.input, ...nodeSrc.object.pos }; // 定位src处
                         let propSrc = (nodeSrc.object.value + "").trim();
                         if (!propSrc) {
                             throw new Err("invalid value of attribute src", errLocInfo); // 必须指定图标
@@ -4991,14 +4931,9 @@ console.time("load");
 
                         let nodeSvgTag;
                         try {
-                            nodeSvgTag = bus.at("SVG图标文件解析", svgfile, oAttrs, object.loc);
+                            nodeSvgTag = bus.at("SVG图标文件解析", svgfile, oAttrs, object.pos);
                         } catch (e) {
-                            throw new Err(e.message, e, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: nodeSrc.object.loc.start.pos,
-                                end: nodeSrc.object.loc.end.pos
-                            });
+                            throw new Err(e.message, e, { ...context.input, ...nodeSrc.object.pos });
                         }
 
                         // 替换为内联svg标签节点
@@ -5316,12 +5251,7 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 style 不能重复
-                        throw new Err("duplicate attribute of style", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of style", { ...context.input, ...ary[1].object.pos });
                     }
 
                     // 创建节点保存
@@ -5463,12 +5393,7 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @class 不能重复
-                        throw new Err("duplicate attribute of @class", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @class", { ...context.input, ...ary[1].object.Name.pos });
                     }
 
                     let atclassNode = ary[0]; // @class节点
@@ -5524,115 +5449,120 @@ console.time("load");
         "解析CLASS属性",
         (function() {
             // file, text 用于错误提示
-            return function(classAttrValue, offset, file, text) {
+            return function(file, text, classAttrValue, offset) {
                 if (!classAttrValue.trim()) return [];
 
-                return parseToClasses(classAttrValue);
-
-                function parseToClasses(strClass) {
-                    // 分割放入数组，并计算保存好偏移位置
-                    // foo {bar: isBar, baz: isBaz}  => [{value: 'foo', start: 0, end: xxx}, {value: '{bar: isBar, baz: isBaz}', start: xxx, end: xxx}]
-                    let ary = [];
-                    let clas = strClass.replace(/\{.*?\}/g, function(sMatch, idx) {
-                        ary.push({ value: sMatch, start: offset + idx, end: offset + idx + sMatch.length });
-                        return "鬱".repeat(sMatch.length);
-                    });
-                    clas.replace(/[\S]+/g, function(sMatch, idx) {
-                        if (!sMatch.startsWith("鬱")) {
-                            ary.push({ value: sMatch, start: offset + idx, end: offset + idx + sMatch.length });
-                        }
-                    });
-
-                    // 解析为单个类名对象
-                    let result = [];
-                    ary.forEach(v => {
-                        if (v.value.startsWith("{")) {
-                            result.push(...parseExprClass(v));
-                        } else {
-                            result.push(parseSingleClass(v));
-                        }
-                    });
-
-                    // 类名重复性检查
-                    let map = new Map();
-                    for (let i = 0, oItem; (oItem = result[i++]); ) {
-                        if (map.has(oItem.Name.value)) {
-                            throw new Err(`duplicate class name [${oItem.Name.value}]`, { file, text, start: oItem.Name.start, end: oItem.Name.end });
-                        }
-                        map.set(oItem.Name.value, oItem);
-                    }
-
-                    // 返回解析结果
-                    return result;
-                }
-
-                // 解析单个类名
-                function parseSingleClass(oClas) {
-                    return { Name: oClas, Expr: { value: 1, start: oClas.start, end: oClas.end } };
-                }
-
-                // 解析N个表达式类名
-                function parseExprClass(oClas) {
-                    let sClas = oClas.value.replace(/,?\s*\}$/, ""); // 删除后面大括号，以及可能的冗余逗号 （开头大括号不删除，以不影响偏移计算）
-
-                    // 简单检查
-                    if (sClas.indexOf(":") < 0) {
-                        throw new Err("invalid format", { file, text, start: oClas.start, end: oClas.end });
-                    }
-
-                    // 解析出样式类名及位置信息
-                    // {foo: expr1, bar: expr2 => [{name: 'foo', start: 0, end: 3}, {name: 'bar', start: nnn, end: nnn}]
-                    // {foo: expr1, bar: expr2 => 鬱鬱鬱鬱鬱 expr1鬱鬱鬱鬱鬱 expr2
-                    let names = [];
-                    sClas = sClas.replace(/^{\s*(\S+?\s*:)|,\s*(\S+?\s*:)/g, function(sMatch, name1, name2, idx) {
-                        let matchName = name1 || name2; // [foo :]
-                        let value = matchName.replace(/\s*:$/, ""); // [foo :] => [foo]
-                        let start = oClas.start + idx + (sMatch.length - matchName.length); // 样式类名foo的起始位置
-                        let end = start + value.length; // 样式类名foo的结束位置
-
-                        names.push({ value, start, end }); // 保存样式类名及位置信息
-
-                        return "鬱".repeat(sMatch.length); // 用等长特殊字符替换以保持位置信息不变
-                    });
-
-                    // 解析出表达式及位置信息
-                    // 鬱鬱鬱鬱鬱 expr1鬱鬱鬱鬱鬱 expr2 => [{expr: ' expr1', start: nnn, end: nnn}, {expr: ' expr2', start: nnn, end: nnn}]
-                    let exprs = [];
-                    sClas.replace(/[^鬱]+/g, function(sMatch, idx) {
-                        let value = sMatch.trim();
-                        let start = oClas.start + idx + (sMatch.length - sMatch.trimStart().length);
-                        let end = start + sMatch.trimEnd().length;
-
-                        exprs.push({ value, start, end });
-                    });
-
-                    // 检查长度是否一致
-                    if (names.length != exprs.length) {
-                        throw new Err("invalid format", { file, text, start: oClas.start, end: oClas.end });
-                    }
-                    // 检查样式名（不能有空格）
-                    for (let i = 0, oItem; (oItem = names[i++]); ) {
-                        if (/\s+/.test(oItem.value)) {
-                            throw new Err(`invalid class name [${oItem.value}]`, { file, text, start: oItem.start, end: oItem.end });
-                        }
-                    }
-                    // 检查表达式（不能为空）
-                    for (let i = 0, oItem; (oItem = exprs[i++]); ) {
-                        if (!oItem.value.trim()) {
-                            throw new Err(`invalid class expression`, { file, text, start: oItem.start, end: oItem.end });
-                        }
-                    }
-
-                    // 整理结果
-                    let rs = [];
-                    for (let i = 0; i < names.length; i++) {
-                        rs.push({ Name: names[i], Expr: exprs[i] });
-                    }
-                    return rs;
-                }
+                return parseToClasses(file, text, classAttrValue, offset);
             };
         })()
     );
+
+    function parseToClasses(file, text, strClass, offset) {
+        // 分割放入数组，并计算保存好偏移位置
+        // foo {bar: isBar, baz: isBaz}  => [{value: 'foo', start: 0, end: xxx}, {value: '{bar: isBar, baz: isBaz}', start: xxx, end: xxx}]
+        let ary = [];
+        let clas = strClass.replace(/\{[\s\S]*?\}/g, function(sMatch, idx) {
+            ary.push({ value: sMatch, start: offset + idx, end: offset + idx + sMatch.length });
+            return "鬱".repeat(sMatch.length);
+        });
+        clas.replace(/[\S]+/g, function(sMatch, idx) {
+            if (!sMatch.startsWith("鬱")) {
+                ary.push({ value: sMatch, start: offset + idx, end: offset + idx + sMatch.length });
+            }
+        });
+
+        // 解析为单个类名对象
+        let result = [];
+        ary.forEach(v => {
+            if (v.value.startsWith("{") && v.value.endsWith("}")) {
+                result.push(...parseExprClass(v, file, text));
+            } else {
+                result.push(parseSingleClass(v, file, text));
+            }
+        });
+
+        // 类名重复性检查
+        let map = new Map();
+        for (let i = 0, oItem; (oItem = result[i++]); ) {
+            if (map.has(oItem.Name.value)) {
+                throw new Err(`duplicate class name (${oItem.Name.value})`, { file, text, start: oItem.Name.start, end: oItem.Name.end });
+            }
+            map.set(oItem.Name.value, oItem);
+        }
+
+        // 返回解析结果
+        return result;
+    }
+
+    // 解析单个类名
+    function parseSingleClass(oClas, file, text) {
+        // 简单检查类名
+        if (/[/:{}\\,]/.test(oClas.value)) {
+            throw new Err("invalid format of class attribute", { file, text, ...oClas });
+        }
+
+        return { Name: oClas, Expr: { value: 1, start: oClas.start, end: oClas.end } };
+    }
+
+    // 解析N个表达式类名
+    function parseExprClass(oClas, file, text) {
+        let sClas = oClas.value.replace(/,?\s*\}$/, ""); // 删除后面大括号，以及可能的冗余逗号 （开头大括号不删除，以不影响偏移计算）
+
+        // 简单检查
+        if (sClas.indexOf(":") < 0) {
+            throw new Err("invalid format", { file, text, start: oClas.start, end: oClas.end });
+        }
+
+        // 解析出样式类名及位置信息
+        // {foo: expr1, bar: expr2 => [{name: 'foo', start: 0, end: 3}, {name: 'bar', start: nnn, end: nnn}]
+        // {foo: expr1, bar: expr2 => 鬱鬱鬱鬱鬱 expr1鬱鬱鬱鬱鬱 expr2
+        let names = [];
+        sClas = sClas.replace(/^{\s*(\S+?\s*:)|,\s*(\S+?\s*:)/g, function(sMatch, name1, name2, idx) {
+            let matchName = name1 || name2; // [foo :]
+            let value = matchName.replace(/\s*:$/, ""); // [foo :] => [foo]
+            let start = oClas.start + idx + (sMatch.length - matchName.length); // 样式类名foo的起始位置
+            let end = start + value.length; // 样式类名foo的结束位置
+
+            names.push({ value, start, end }); // 保存样式类名及位置信息
+
+            return "鬱".repeat(sMatch.length); // 用等长特殊字符替换以保持位置信息不变
+        });
+
+        // 解析出表达式及位置信息
+        // 鬱鬱鬱鬱鬱 expr1鬱鬱鬱鬱鬱 expr2 => [{expr: ' expr1', start: nnn, end: nnn}, {expr: ' expr2', start: nnn, end: nnn}]
+        let exprs = [];
+        sClas.replace(/[^鬱]+/g, function(sMatch, idx) {
+            let value = sMatch.trim();
+            let start = oClas.start + idx + (sMatch.length - sMatch.trimStart().length);
+            let end = start + sMatch.trimEnd().length;
+
+            exprs.push({ value, start, end });
+        });
+
+        // 检查长度是否一致
+        if (names.length != exprs.length) {
+            throw new Err("invalid format", { file, text, start: oClas.start, end: oClas.end });
+        }
+        // 检查样式名（不能有空格）
+        for (let i = 0, oItem; (oItem = names[i++]); ) {
+            if (/\s+/.test(oItem.value)) {
+                throw new Err(`invalid class name [${oItem.value}]`, { file, text, start: oItem.start, end: oItem.end });
+            }
+        }
+        // 检查表达式（不能为空）
+        for (let i = 0, oItem; (oItem = exprs[i++]); ) {
+            if (!oItem.value.trim()) {
+                throw new Err(`invalid class expression`, { file, text, start: oItem.start, end: oItem.end });
+            }
+        }
+
+        // 整理结果
+        let rs = [];
+        for (let i = 0; i < names.length; i++) {
+            rs.push({ Name: names[i], Expr: exprs[i] });
+        }
+        return rs;
+    }
 
     // ------- h20m-parse-attribtue-class end
 })();
@@ -5673,12 +5603,7 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 class 不能重复
-                        throw new Err("duplicate attribute of class", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of class", { ...context.input, ...ary[1].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -5687,10 +5612,10 @@ console.time("load");
                     oNode.object.type = "Class";
                     oNode.object.classes = bus.at(
                         "解析CLASS属性",
-                        oNode.object.value,
-                        oNode.object.loc.start.pos,
                         context.input.file,
-                        context.input.text
+                        context.input.text,
+                        oNode.object.value,
+                        oNode.object.Value.pos.start
                     ); // 解析出全部类名表达式保存备用
 
                     node.addChild(oNode);
@@ -5739,20 +5664,10 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @ref 不能重复
-                        throw new Err("duplicate attribute of @ref", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @ref", { ...context.input, ...ary[1].object.Name.pos });
                     }
                     if (/^(if|for)$/.test(object.value)) {
-                        throw new Err(`unsupport attribute @ref on tag <${object.value}>`, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        throw new Err(`unsupport attribute @ref on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -5806,12 +5721,7 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @if 不能重复
-                        throw new Err("duplicate attribute of @if", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @if", { ...context.input, ...ary[1].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -5868,20 +5778,10 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @show 不能重复
-                        throw new Err("duplicate attribute of @show", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @show", { ...context.input, ...ary[1].object.Name.pos });
                     }
                     if (/^(if|for)$/.test(object.value)) {
-                        throw new Err(`unsupport attribute @show on tag <${object.value}>`, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        throw new Err(`unsupport attribute @show on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -5892,12 +5792,9 @@ console.time("load");
                     let tmps = oNode.object.name.split(".");
                     let display = tmps.length > 1 ? tmps[1] : "block"; // @show / @show.flex
                     if (!DISPLAY_REG.test(display)) {
-                        throw new Err("invalid display type of @show: " + display, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        let pos = { ...oNode.object.Name.pos };
+                        pos.start += 6; // 略过 @show.xxx 中的[@show.]
+                        throw new Err("invalid display type (" + display + ")", { ...context.input, ...pos });
                     }
 
                     oNode.object.display = display;
@@ -5948,12 +5845,7 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @for 不能重复
-                        throw new Err("duplicate attribute of @for", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @for", { ...context.input, ...ary[1].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -6007,20 +5899,10 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @csslib 不能重复
-                        throw new Err("duplicate attribute of @csslib", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @csslib", { ...context.input, ...ary[1].object.Name.pos });
                     }
                     if (/^(if|for)$/.test(object.value)) {
-                        throw new Err(`unsupport attribute @csslib on tag <${object.value}>`, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        throw new Err(`unsupport attribute @csslib on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -6074,20 +5956,10 @@ console.time("load");
 
                     if (ary.length > 1) {
                         // 属性 @taglib 不能重复
-                        throw new Err("duplicate attribute of @taglib", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of @taglib", { ...context.input, ...ary[1].object.Name.pos });
                     }
                     if (/^(if|for|svgicon|router|router-link)$/.test(object.value)) {
-                        throw new Err(`unsupport @taglib on tag <${object.value}>`, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        throw new Err(`unsupport @taglib on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
                     }
 
                     // 创建节点保存
@@ -6154,28 +6026,16 @@ console.time("load");
                             let oImage = hashImageName(context, srcAttrNode);
                             if (oImage.code === -1) {
                                 // 文件不存在
-                                throw new Err("image file not found", {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: srcAttrNode.object.loc.start.pos,
-                                    end: srcAttrNode.object.loc.end.pos
-                                });
+                                throw new Err("image file not found", { ...context.input, ...srcAttrNode.object.pos });
                             } else if (oImage.code === -2) {
                                 // 不支持项目外文件（会引起版本管理混乱）
                                 throw new Err("file should not out of project (" + oImage.file + ")", {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: srcAttrNode.object.loc.start.pos,
-                                    end: srcAttrNode.object.loc.end.pos
+                                    ...context.input,
+                                    ...srcAttrNode.object.pos
                                 });
                             } else if (oImage.code === -3) {
                                 // 不支持用绝对路径，避免换机器环境引起混乱
-                                throw new Err("unsupport absolute file path", {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: srcAttrNode.object.loc.start.pos,
-                                    end: srcAttrNode.object.loc.end.pos
-                                });
+                                throw new Err("unsupport absolute file path", { ...context.input, ...srcAttrNode.object.pos });
                             }
                             // 修改成替换用目录，文件名用哈希
                             srcAttrNode.object.value = "%imagepath%" + oImage.name;
@@ -6246,12 +6106,7 @@ console.time("load");
 
                     if (bus.at("是否表达式", object.value)) {
                         // 属性 @ref 不能使用表达式
-                        throw new Err("@ref unsupport the expression", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("@ref unsupport the expression", { ...context.input, ...object.Value.pos });
                     }
 
                     // TODO @ref 转为特殊属性处理，需同步修改运行时脚本
@@ -6405,12 +6260,12 @@ console.time("load");
 
                     let type = OPTS.TypeCodeBlock;
                     let value = parseFor(context, object);
-                    let loc = object.loc;
-                    let jsNode = this.createNode({ type, value, loc });
+                    let pos = object.pos;
+                    let jsNode = this.createNode({ type, value, pos });
                     tagNode.before(jsNode);
 
                     value = "}";
-                    jsNode = this.createNode({ type, value, loc });
+                    jsNode = this.createNode({ type, value, pos });
                     tagNode.after(jsNode);
 
                     node.remove();
@@ -6566,7 +6421,7 @@ console.time("load");
 
     function getError(context, object, msg = "invalid format of @for") {
         // 格式错误
-        return new Err(msg, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+        return new Err(msg, { ...context.input, ...object.Value.pos });
     }
 
     // ------- k45p-astedit-transform-attribtue-@for end
@@ -6590,12 +6445,7 @@ console.time("load");
                     // 父节点
                     let tagNode = node.parent;
                     if (tagNode.object.standard) {
-                        throw new Err("unsupport @taglib on standard tag", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("unsupport @taglib on standard tag", { ...context.input, ...object.Name.pos });
                     }
 
                     let tagName = tagNode.object.value.toLowerCase(); // 标签名
@@ -6604,10 +6454,8 @@ console.time("load");
                         let cpFile = bus.at("标签项目源文件", tagNode.object.value); // 当前项目范围内查找标签对应的源文件
                         if (cpFile) {
                             throw new Err(`unsupport @taglib on existed component: ${tagNode.object.value}(${cpFile})`, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: object.loc.start.pos,
-                                end: object.loc.end.pos
+                                ...context.input,
+                                ...object.Name.pos
                             });
                         }
                     }
@@ -6627,12 +6475,7 @@ console.time("load");
                         tag = match[1];
                     } else if (attaglib.indexOf("=") >= 0) {
                         // @taglib = "=@scope/pkg"
-                        throw new Err("invalid attribute value of @taglib", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("invalid attribute value of @taglib", { ...context.input, ...object.Value.pos });
                     } else if ((match = attaglib.match(/^\s*(.+?)\s*:\s*(.+?)\s*$/))) {
                         // @taglib = "@scope/pkg:component"
                         pkg = match[1];
@@ -6642,35 +6485,20 @@ console.time("load");
                         pkg = match[1];
                         tag = tagName;
                     } else {
-                        throw new Err("invalid attribute value of @taglib", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("invalid attribute value of @taglib", { ...context.input, ...object.Value.pos });
                     }
 
                     tag.startsWith("@") && (tag = tag.substring(1)); // 去除组件名的@前缀
 
                     let install = bus.at("自动安装", pkg);
                     if (!install) {
-                        throw new Err("package install failed: " + pkg, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("package install failed: " + pkg, { ...context.input, ...object.Value.pos });
                     }
 
                     let taglib = bus.at("解析taglib", `${pkg}:${tag}`, context.input.file);
                     let srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
                     if (!srcFile) {
-                        throw new Err("component not found: " + object.value, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos,
-                            end: object.loc.end.pos
-                        });
+                        throw new Err("component not found: " + object.value, { ...context.input, ...object.Value.pos });
                     }
 
                     let tagpkg = bus.at("标签全名", srcFile);
@@ -6711,12 +6539,7 @@ console.time("load");
                             // 标签库中能找到的，按标签库更新为标签全名
                             let srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
                             if (!srcFile) {
-                                throw new Err("component not found: " + object.value, {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: object.loc.start.pos,
-                                    end: object.loc.end.pos
-                                });
+                                throw new Err("component not found: " + object.value, { ...context.input, ...object.pos });
                             }
 
                             object.value = bus.at("标签全名", srcFile); // 替换为标签全名，如 @scope/pkg:ui-btn
@@ -6780,11 +6603,7 @@ console.time("load");
                     if (!/^(if|for)$/i.test(object.value)) return;
 
                     if (!node.ok) {
-                        throw new Err(`missing attribute @${object.value} of tag <${object.value}>`, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: object.loc.start.pos
-                        });
+                        throw new Err(`missing attribute @${object.value} of tag <${object.value}>`, { ...context.input, start: object.pos.start });
                     }
 
                     node.nodes.forEach(nd => {
@@ -6841,12 +6660,7 @@ console.time("load");
                     if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) {
                         // 无名slot，存在多个slot时必须指定name
                         if (slots.length) {
-                            throw new Err(`missing attribute 'name' of tag <slot>`, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: object.loc.start.pos,
-                                end: object.loc.end.pos
-                            });
+                            throw new Err(`missing attribute 'name' of tag <slot>`, { ...context.input, ...object.pos });
                         }
                         slots.push("");
                         nonameSlotNodes.push(node); // 暂存无名插槽
@@ -6863,12 +6677,7 @@ console.time("load");
                     if (ary.length === 0) {
                         // 无名slot，存在多个slot时必须指定name
                         if (slots.length) {
-                            throw new Err(`missing attribute 'name' of tag <slot>`, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: object.loc.start.pos,
-                                end: object.loc.end.pos
-                            });
+                            throw new Err(`missing attribute 'name' of tag <slot>`, { ...context.input, ...object.pos });
                         }
                         slots.push("");
                         nonameSlotNodes.push(node); // 暂存无名插槽
@@ -6877,33 +6686,18 @@ console.time("load");
                     }
                     if (ary.length > 1) {
                         // 一个slot只能有一个name属性
-                        throw new Err("duplicate attribute of name", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[1].object.loc.start.pos,
-                            end: ary[1].object.loc.end.pos
-                        });
+                        throw new Err("duplicate attribute of name", { ...context.input, ...ary[1].object.Name.pos });
                     }
 
                     if (bus.at("是否表达式", ary[0].object.value)) {
                         // 插槽的属性 name 不能使用表达式
-                        throw new Err("slot name unsupport the expression", {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        throw new Err("slot name unsupport the expression", { ...context.input, ...ary[0].object.Value.pos });
                     }
 
                     let name = ary[0].object.value + "";
                     if (slots.includes(name)) {
                         // slot不能重名
-                        throw new Err("duplicate slot name: " + name, {
-                            file: context.input.file,
-                            text: context.input.text,
-                            start: ary[0].object.loc.start.pos,
-                            end: ary[0].object.loc.end.pos
-                        });
+                        throw new Err("duplicate slot name: " + name, { ...context.input, ...ary[0].object.Value.pos });
                     }
 
                     slots.push(name);
@@ -6914,12 +6708,7 @@ console.time("load");
                 let slots = (context.result.slots = context.result.slots || []);
                 if (slots.length > 1 && nonameSlotNodes.length) {
                     // 多个插槽时必须起名，且不能有重复
-                    throw new Err(`missing slot name on tag <slot>`, {
-                        file: context.input.file,
-                        text: context.input.text,
-                        start: nonameSlotNodes[0].object.loc.start.pos,
-                        end: nonameSlotNodes[0].object.loc.end.pos
-                    });
+                    throw new Err(`missing slot name on tag <slot>`, { ...context.input, ...nonameSlotNodes[0].object.pos });
                 }
 
                 if (context.result.slots) {
@@ -7004,9 +6793,9 @@ console.time("load");
     // ------- k95p-astedit-transform-tag-slot end
 })();
 
-/* ------- m15p-astedit-check-and-fix-alias-csslibify ------- */
+/* ------- m15p-astedit-check-and-fix-alias-@csslib-[csslib] ------- */
 (() => {
-    // ------- m15p-astedit-check-and-fix-alias-csslibify start
+    // ------- m15p-astedit-check-and-fix-alias-@csslib-[csslib] start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -7020,7 +6809,7 @@ console.time("load");
         (function() {
             // 检查样式类名和样式库是否匹配
             // 如果匹配的是无名样式库，自动添加别名，便于后续查询样式
-            return postobject.plugin("m15p-astedit-check-and-fix-alias-csslibify", function(root, context) {
+            return postobject.plugin("m15p-astedit-check-and-fix-alias-@csslib-[csslib]", function(root, context) {
                 let oPrjContext = bus.at("项目配置处理", context.input.file);
                 let oPrjCsslibs = oPrjContext.result.oCsslibs; // 项目[csslib]配置的样式库 (asname：lib)
                 let oCsslibPkgs = context.result.oCsslibPkgs; // 组件[csslib]配置的样式库【别名-包名】映射关系
@@ -7047,12 +6836,7 @@ console.time("load");
                         // 检查@csslib属性值
                         if (bus.at("是否表达式", object.value)) {
                             // @csslib属性值不能使用表达式
-                            throw new Err("unsupport expression on @csslib", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: atcsslibNode.object.loc.start.pos,
-                                end: atcsslibNode.object.loc.end.pos
-                            });
+                            throw new Err("unsupport expression on @csslib", { ...context.input, ...atcsslibNode.object.Value.pos });
                         }
 
                         // ---------------------------------
@@ -7060,46 +6844,26 @@ console.time("load");
                         let csslib = bus.at("解析csslib", atcsslibNode.object.value, context.input.file);
                         if (!csslib) {
                             // 无效的@csslib格式
-                            throw new Err("invalid @csslib value", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: atcsslibNode.object.loc.start.pos,
-                                end: atcsslibNode.object.loc.end.pos
-                            });
+                            throw new Err("invalid @csslib value", { ...context.input, ...atcsslibNode.object.Value.pos });
                         }
 
                         // ---------------------------------
                         // 保存@csslib位置以备用
-                        csslib.pos = { start: atcsslibNode.object.loc.start.pos, end: atcsslibNode.object.loc.end.pos };
+                        csslib.pos = { ...atcsslibNode.object.pos };
 
                         // ---------------------------------
                         // 检查别名冲突
                         if (oAtCsslibs[csslib.alias]) {
                             // 不能和组件内的其他@csslib有别名冲突 （冲突将导致js代码中的样式库类名困惑，无法判断进行正确的哈希改名）
-                            throw new Err("unsupport mutil @csslib with alias [*]", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: csslib.pos.start,
-                                end: csslib.pos.end
-                            });
+                            throw new Err("duplicate csslib name [*]", { ...context.input, ...csslib.pos });
                         }
                         if (oCsslibs[csslib.alias]) {
                             // 不能和组件[csslib]有别名冲突
-                            throw new Err("duplicate csslib name [*]", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: csslib.pos.start,
-                                end: csslib.pos.end
-                            });
+                            throw new Err("duplicate csslib name [*]", { ...context.input, ...csslib.pos });
                         }
                         if (oPrjCsslibs[csslib.alias]) {
                             // 不能和项目[csslib]有别名冲突
-                            throw new Err("duplicate csslib name [*]", {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: csslib.pos.start,
-                                end: csslib.pos.end
-                            });
+                            throw new Err("duplicate csslib name [*]", { ...context.input, ...csslib.pos });
                         }
 
                         // ---------------------------------
@@ -7110,33 +6874,18 @@ console.time("load");
                             let root = bus.at("文件所在项目根目录", context.input.file);
                             dir = csslib.pkg.replace(/\\/g, "/").replace(/^~\/*/, root + "/");
                             if (!File.existsDir(dir)) {
-                                throw new Err("folder not found [" + dir + "]", {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: csslib.pos.start,
-                                    end: csslib.pos.end
-                                });
+                                throw new Err("folder not found [" + dir + "]", { ...context.input, ...csslib.pos });
                             }
                         } else {
                             // 自动安装
                             if (!bus.at("自动安装", csslib.pkg)) {
-                                throw new Err("package install failed: " + csslib.pkg, {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: csslib.pos.start,
-                                    end: csslib.pos.end
-                                });
+                                throw new Err("package install failed: " + csslib.pkg, { ...context.input, ...csslib.pos });
                             }
 
                             dir = getNodeModulePath(csslib.pkg);
                             if (!dir) {
                                 // 要么安装失败，或又被删除，总之不应该找不到安装位置
-                                throw new Err("package install path not found: " + csslib.pkg, {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: csslib.pos.start,
-                                    end: csslib.pos.end
-                                });
+                                throw new Err("package install path not found: " + csslib.pkg, { ...context.input, ...csslib.pos });
                             }
                         }
                         csslib.dir = dir; // 待导入的样式文件存放目录
@@ -7163,8 +6912,7 @@ console.time("load");
                                     // @csslib库匹配成功，但找不到样式类，报错
                                     if (!atcsslib.has(clsname)) {
                                         throw new Err(`class "${clsname}" not found in @csslib "${atname}"`, {
-                                            file: context.input.file,
-                                            text: context.input.text,
+                                            ...context.input,
                                             start: oCls.Name.start,
                                             end: oCls.Name.end
                                         });
@@ -7175,8 +6923,7 @@ console.time("load");
                                         // [csslib]库匹配成功，但找不到样式类，报错
                                         if (!oCsslibPC.has(clsname)) {
                                             throw new Err(`class "${clsname}" not found in [csslib] "${atname}"`, {
-                                                file: context.input.file,
-                                                text: context.input.text,
+                                                ...context.input,
                                                 start: oCls.Name.start,
                                                 end: oCls.Name.end
                                             });
@@ -7184,8 +6931,7 @@ console.time("load");
                                     } else {
                                         // 找不到指定别名的样式库，报错
                                         throw new Err(`csslib not found "${atname}"`, {
-                                            file: context.input.file,
-                                            text: context.input.text,
+                                            ...context.input,
                                             start: oCls.Name.start,
                                             end: oCls.Name.end
                                         });
@@ -7272,7 +7018,7 @@ console.time("load");
         }
     }
 
-    // ------- m15p-astedit-check-and-fix-alias-csslibify end
+    // ------- m15p-astedit-check-and-fix-alias-@csslib-[csslib] end
 })();
 
 /* ------- m25p-astedit-remove-blank-text ------- */
@@ -7369,10 +7115,10 @@ console.time("load");
                     });
 
                     let value = OPTS.ExpressionStart + aryRs.join(" + ") + OPTS.ExpressionEnd;
-                    let start = ary[0].object.loc.start;
-                    let end = ary[ary.length - 1].object.loc.end;
-                    let loc = { start, end };
-                    let tNode = this.createNode({ type: OPTS.TypeExpression, value, loc });
+                    let start = ary[0].object.pos.start;
+                    let end = ary[ary.length - 1].object.pos.end;
+                    let pos = { start, end };
+                    let tNode = this.createNode({ type: OPTS.TypeExpression, value, pos });
                     node.before(tNode);
                     ary.forEach(nd => nd.remove());
                 });
@@ -7704,11 +7450,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         if (!object.standard) {
                             let file = bus.at("标签源文件", object.value, context.result.oTaglibs);
                             if (!file) {
-                                throw new Err("file not found of tag: " + object.value, {
-                                    file: context.input.file,
-                                    text: context.input.text,
-                                    start: object.loc.start.pos
-                                });
+                                throw new Err("file not found of tag: " + object.value, { ...context.input, start: object.pos.start });
                             }
                             let tagpkg = bus.at("标签全名", file);
                             oSet.add(tagpkg);
@@ -7887,12 +7629,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                             //value = `$actions['${value}']`;                    // "fnClick" => $actions['fnClick']
                         } else {
                             // 指定方法找不到
-                            throw new Err("action not found: " + fnNm, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: node.object.loc.start.pos,
-                                end: node.object.loc.end.pos
-                            });
+                            throw new Err("action not found: " + fnNm, { ...context.input, ...node.object.pos });
                         }
                     }
 
@@ -7995,9 +7732,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- p24m-component-astgen-node-style end
 })();
 
-/* ------- p26m-component-astgen-node-class-rename ------- */
+/* ------- p26m-component-astgen-node-class ------- */
 (() => {
-    // ------- p26m-component-astgen-node-class-rename start
+    // ------- p26m-component-astgen-node-class start
     const bus = require("@gotoeasy/bus");
     const Err = require("@gotoeasy/err");
 
@@ -8061,7 +7798,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         return "{" + rs.join(",") + "}";
     }
 
-    // ------- p26m-component-astgen-node-class-rename end
+    // ------- p26m-component-astgen-node-class end
 })();
 
 /* ------- p28m-component-astgen-node-{prop} ------- */
@@ -8370,8 +8107,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         if (nodes.length > 1) {
             let text = context.input.text;
             let file = context.input.file;
-            let start = nodes[1].object.loc.start.pos;
-            nodes[0].type !== "Tag" && (start = nodes[0].object.loc.start.pos);
+            let start = nodes[1].object.pos.start;
+            nodes[0].type !== "Tag" && (start = nodes[0].object.pos.start);
             throw new Err("invalid top tag", { text, file, start }); // 组件顶部只能有一个标签
         }
 
@@ -8380,7 +8117,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         if (node.type !== "Tag") {
             let text = context.input.text;
             let file = context.input.file;
-            let start = nodes[0].object.loc.start.pos;
+            let start = nodes[0].object.pos.start;
             throw new Err("missing top tag", { text, file, start }); // 组件顶部只能有一个标签
         }
 
@@ -9933,7 +9670,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     context.input = { text };
 
                     // 像[view]一样解析为Token
-                    let tokenParser = bus.at("视图TOKEN解析器", text, text);
+                    let tokenParser = bus.at("视图TOKEN解析器", text, text, text, 0);
                     let type = "Node";
                     let nodes = tokenParser.parse();
                     let objToken = { type, nodes };
@@ -9963,7 +9700,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                             name: object.value,
                             value: valNode.object.value,
                             isExpression: bus.at("是否表达式", valNode.object.value),
-                            loc: context.input.loc
+                            pos: context.input.pos
                         };
                         let attrNode = this.createNode(oAttr);
                         node.replaceWith(attrNode);
@@ -9971,7 +9708,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         valNode.remove();
                     } else {
                         // 单一键节点（应该没有...）
-                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, loc: context.input.loc };
+                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, pos: context.input.pos };
                         let attrNode = this.createNode(oAttr);
                         node.replaceWith(attrNode);
                     }
@@ -10018,8 +9755,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                     let type = "Tag";
                     let value = object.value;
-                    let loc = context.input.loc;
-                    let tagNode = this.createNode({ type, value, loc });
+                    let pos = context.input.pos;
+                    let tagNode = this.createNode({ type, value, pos });
 
                     let tagAttrsNode = node.after();
                     if (tagAttrsNode && tagAttrsNode.type === "Attributes") {
@@ -10046,8 +9783,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         if (nextNode.type === OPTS.TypeTagOpen) {
                             let type = "Tag";
                             let value = nextNode.object.value;
-                            let loc = nextNode.object.loc;
-                            let subTagNode = this.createNode({ type, value, loc });
+                            let pos = nextNode.object.pos;
+                            let subTagNode = this.createNode({ type, value, pos });
                             normolizeTagNode(subTagNode, nextNode);
 
                             tagNode.addChild(subTagNode);
@@ -10060,18 +9797,17 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     }
 
                     if (!nextNode) {
-                        throw new Err("missing close tag", { text: context.input.text, start: tagNode.object.loc.start.pos });
+                        throw new Err("missing close tag", { text: context.input.text, start: tagNode.object.pos.start });
                     }
 
                     if (nextNode.type === OPTS.TypeTagClose) {
                         if (nodeTagOpen.object.value !== nextNode.object.value) {
                             throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, {
                                 text: context.input.text,
-                                start: tagNode.object.loc.start.pos,
-                                end: nextNode.object.loc.end.pos
+                                ...tagNode.object.pos
                             });
                         }
-                        tagNode.object.loc.end = nextNode.object.loc.end;
+                        tagNode.object.pos.end = nextNode.object.pos.end;
                         nextNode.remove();
                         return tagNode;
                     }
@@ -10085,8 +9821,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                     let type = "Tag";
                     let value = object.value;
-                    let loc = object.loc;
-                    let tagNode = this.createNode({ type, value, loc });
+                    let pos = object.pos;
+                    let tagNode = this.createNode({ type, value, pos });
                     normolizeTagNode(tagNode, node);
 
                     node.replaceWith(tagNode);

@@ -13,7 +13,7 @@ bus.on('编译插件', function(){
 
             if ( bus.at('是否表达式', object.value) ) {
                 // 属性 @ref 不能使用表达式
-                throw new Err('@ref unsupport the expression', {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                throw new Err('@ref unsupport the expression', { ...context.input, ...object.Value.pos });
             }
 
 

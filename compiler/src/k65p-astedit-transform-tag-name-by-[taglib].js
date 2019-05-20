@@ -19,7 +19,7 @@ bus.on('编译插件', function(){
                 // 标签库中能找到的，按标签库更新为标签全名
                 let srcFile = bus.at('标签库源文件', taglib);                   // 从指定模块查找
                 if ( !srcFile ) {
-                    throw new Err('component not found: ' + object.value, { file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos });
+                    throw new Err('component not found: ' + object.value, { ...context.input, ...object.pos });
                 }
 
                 object.value = bus.at('标签全名', srcFile);                     // 替换为标签全名，如 @scope/pkg:ui-btn

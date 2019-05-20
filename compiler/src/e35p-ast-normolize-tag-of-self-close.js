@@ -12,8 +12,8 @@ bus.on('编译插件', function(){
 
             let type = 'Tag';
             let value = object.value;
-            let loc = object.loc;
-            let tagNode = this.createNode({type, value, loc})
+            let pos = object.pos;
+            let tagNode = this.createNode({type, value, pos})
 
             let tagAttrsNode = node.after();
             if ( tagAttrsNode && tagAttrsNode.type === 'Attributes' ) {

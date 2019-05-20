@@ -35,10 +35,10 @@ bus.on('编译插件', function(){
 
             if ( ary.length > 1 ) {
                 // 属性 @show 不能重复
-                throw new Err('duplicate attribute of @show', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
+                throw new Err('duplicate attribute of @show', { ...context.input, ...ary[1].object.Name.pos });
             }
             if ( /^(if|for)$/.test(object.value) ) {
-                throw new Err(`unsupport attribute @show on tag <${object.value}>`, {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
+                throw new Err(`unsupport attribute @show on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
             }
 
             // 创建节点保存
@@ -49,7 +49,9 @@ bus.on('编译插件', function(){
             let tmps = oNode.object.name.split('.');
             let display = tmps.length > 1 ? tmps[1] : 'block';                          // @show / @show.flex
             if ( !DISPLAY_REG.test(display) ) {
-                throw new Err('invalid display type of @show: ' + display, {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
+                let pos = {...oNode.object.Name.pos};
+                pos.start += 6; // 略过 @show.xxx 中的[@show.]
+                throw new Err('invalid display type (' + display + ')', { ...context.input, ...pos });
             }
 
             oNode.object.display = display;

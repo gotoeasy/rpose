@@ -17,8 +17,8 @@ bus.on('编译插件', function(){
                 if ( nextNode.type === OPTS.TypeTagOpen ) {
                     let type = 'Tag';
                     let value = nextNode.object.value;
-                    let loc = nextNode.object.loc;
-                    let subTagNode = this.createNode({type, value, loc});
+                    let pos = nextNode.object.pos;
+                    let subTagNode = this.createNode({type, value, pos});
                     normolizeTagNode(subTagNode, nextNode);
 
                     tagNode.addChild( subTagNode );
@@ -31,14 +31,14 @@ bus.on('编译插件', function(){
             }
 
             if ( !nextNode ) {
-                throw new Err('missing close tag', 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos});
+                throw new Err('missing close tag', { ...context.input, start: tagNode.object.pos.start });
             }
 
             if ( nextNode.type === OPTS.TypeTagClose ) {
                 if ( nodeTagOpen.object.value !== nextNode.object.value ) {
-                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos, end: nextNode.object.loc.end.pos});
+                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, { ...context.input, ...tagNode.object.pos });
                 }
-                tagNode.object.loc.end = nextNode.object.loc.end;
+                tagNode.object.pos.end = nextNode.object.pos.end;
                 nextNode.remove();
                 return tagNode;
             }
@@ -54,8 +54,8 @@ bus.on('编译插件', function(){
 
             let type = 'Tag';
             let value = object.value;
-            let loc = object.loc;
-            let tagNode = this.createNode({type, value, loc});
+            let pos = object.pos;
+            let tagNode = this.createNode({type, value, pos});
             normolizeTagNode(tagNode, node);
 
             node.replaceWith(tagNode);

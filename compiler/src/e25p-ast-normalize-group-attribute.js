@@ -23,15 +23,18 @@ bus.on('编译插件', function(){
 
                 if ( bus.at('是否表达式', object.value) ) {
                     // 键值属性的属性名不支持表达式
-                    throw new Err('unsupport expression on attribute name', {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                    throw new Err('unsupport expression on attribute name', { ...context.input, ...object.pos });
                 }
 
                 if ( /^\s*\{\s*\}\s*$/.test(valNode.object.value) ) {
                     // 属性值的表达式不能为空白
-                    throw new Err('invalid empty expression', {file: context.input.file, text: context.input.text, start: valNode.object.loc.start.pos, end: valNode.object.loc.end.pos});
+                    throw new Err('invalid empty expression', { ...context.input, ...valNode.object.pos } );
                 }
 
-                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: bus.at('是否表达式', valNode.object.value), loc: {start: object.loc.start, end: valNode.object.loc.end}}
+                let Name = {pos: object.pos};
+                let Value = {pos: valNode.object.pos};
+                let pos = {start: object.pos.start, end: valNode.object.pos.end };
+                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, Name, Value, isExpression: bus.at('是否表达式', valNode.object.value), pos };
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
                 eqNode.remove();
@@ -39,7 +42,7 @@ bus.on('编译插件', function(){
 
             } else {
                 // 单一键节点
-                let oAttr = {type: 'Attribute', name: object.value, value: true, isExpression: false, loc: object.loc}
+                let oAttr = {type: 'Attribute', name: object.value, value: true, isExpression: false, pos: object.pos }
                 if ( bus.at('是否表达式', object.value) ) {
                     oAttr.isExpression = true;             // 对象表达式
                     oAttr.isObjectExpression = true;       // 对象表达式

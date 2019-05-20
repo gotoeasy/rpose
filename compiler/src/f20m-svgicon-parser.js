@@ -6,10 +6,10 @@ const File = require('@gotoeasy/file');
 
 bus.on('SVG图标文件解析', function(){
 
-    return function(file, attrs, loc){
+    return function(file, attrs, pos){
         // TODO 缓存
         let plugins = bus.on('SVG图标文件解析插件');
-        let rs = postobject(plugins).process({file, attrs, loc});
+        let rs = postobject(plugins).process({file, attrs, pos});
 
         return rs.result;
     };
@@ -33,7 +33,7 @@ bus.on('SVG图标文件解析插件', function(){
 
             let file = object.file;
             let attrs = object.attrs;           // 自定义的svg属性
-            let loc = object.loc;
+            let pos = object.pos;
             let text = File.read(object.file);
 
             // 不支持大于50K的svg图标文件
@@ -52,10 +52,10 @@ bus.on('SVG图标文件解析插件', function(){
                 text = text.substring(idx+2);
             }
 
-            context.input = {file, text, attrs, loc};
+            context.input = {file, text, attrs, pos};
 
             // 像[view]一样解析为Token
-            let tokenParser = bus.at('视图TOKEN解析器', text, text, file);
+            let tokenParser = bus.at('视图TOKEN解析器', file, text, text, 0);
             let type = 'Svgicon';
             let nodes = tokenParser.parse();
             let objToken = {type, nodes};
@@ -80,7 +80,7 @@ bus.on('SVG图标文件解析插件', function(){
             if ( eqNode && eqNode.type === OPTS.TypeEqual ) {
                 // 键=值的三个节点
                 let valNode = eqNode.after();
-                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: false, loc: context.input.loc};
+                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: false, pos: context.input.pos};
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
                 eqNode.remove();
@@ -88,7 +88,7 @@ bus.on('SVG图标文件解析插件', function(){
 
             } else {
                 // 单一键节点（应该没有...）
-                let oAttr = {type: 'Attribute', name: object.value, value: true, isExpression: false, loc: context.input.loc}
+                let oAttr = {type: 'Attribute', name: object.value, value: true, isExpression: false, pos: context.input.pos}
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
             }
@@ -136,8 +136,8 @@ bus.on('SVG图标文件解析插件', function(){
 
             let type = 'Tag';
             let value = object.value;
-            let loc = context.input.loc;
-            let tagNode = this.createNode({type, value, loc})
+            let pos = context.input.pos;
+            let tagNode = this.createNode({type, value, pos})
 
             let tagAttrsNode = node.after();
             if ( tagAttrsNode && tagAttrsNode.type === 'Attributes' ) {
@@ -167,8 +167,8 @@ bus.on('SVG图标文件解析插件', function(){
                 if ( nextNode.type === OPTS.TypeTagOpen ) {
                     let type = 'Tag';
                     let value = nextNode.object.value;
-                    let loc = nextNode.object.loc;
-                    let subTagNode = this.createNode({type, value, loc});
+                    let pos = nextNode.object.pos;
+                    let subTagNode = this.createNode({type, value, pos});
                     normolizeTagNode(subTagNode, nextNode);
 
                     tagNode.addChild( subTagNode );
@@ -181,14 +181,14 @@ bus.on('SVG图标文件解析插件', function(){
             }
 
             if ( !nextNode ) {
-                throw new Err('missing close tag', 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos});
+                throw new Err('missing close tag', { ...context.input, start: tagNode.object.pos.start});
             }
 
             if ( nextNode.type === OPTS.TypeTagClose ) {
                 if ( nodeTagOpen.object.value !== nextNode.object.value ) {
-                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, 'file=' + context.input.file, {text: context.input.text, start: tagNode.object.loc.start.pos, end: nextNode.object.loc.end.pos});
+                    throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, { ...context.input, ...tagNode.object.pos });
                 }
-                tagNode.object.loc.end = nextNode.object.loc.end;
+                tagNode.object.pos.end = nextNode.object.pos.end;
                 nextNode.remove();
                 return tagNode;
             }
@@ -204,8 +204,8 @@ bus.on('SVG图标文件解析插件', function(){
 
             let type = 'Tag';
             let value = object.value;
-            let loc = object.loc;
-            let tagNode = this.createNode({type, value, loc});
+            let pos = object.pos;
+            let tagNode = this.createNode({type, value, pos});
             normolizeTagNode(tagNode, node);
 
             node.replaceWith(tagNode);
@@ -281,7 +281,7 @@ bus.on('SVG图标文件解析插件', function(){
 
         // 重置loc
         root.walk( (node, object) => {
-            object.loc = context.input.loc;
+            object.pos = context.input.pos;
         }, {readonly: true});
 
         // 用svgicon属性覆盖svg属性

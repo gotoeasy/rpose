@@ -37,7 +37,7 @@ bus.on('编译插件', function(){
             if ( !attrsNode || !attrsNode.nodes || !attrsNode.nodes.length ){
                 // 无名slot，存在多个slot时必须指定name
                 if ( slots.length ) {
-                    throw new Err(`missing attribute 'name' of tag <slot>`, {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                    throw new Err(`missing attribute 'name' of tag <slot>`, { ...context.input, ...object.pos });
                 }
                 slots.push('');
                 nonameSlotNodes.push(node);                         // 暂存无名插槽
@@ -53,7 +53,7 @@ bus.on('编译插件', function(){
             if ( ary.length === 0 ){
                 // 无名slot，存在多个slot时必须指定name
                 if ( slots.length ) {
-                    throw new Err(`missing attribute 'name' of tag <slot>`, {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                    throw new Err(`missing attribute 'name' of tag <slot>`, { ...context.input, ...object.pos });
                 }
                 slots.push('');
                 nonameSlotNodes.push(node);                         // 暂存无名插槽
@@ -62,18 +62,18 @@ bus.on('编译插件', function(){
             }
             if ( ary.length > 1 ){
                 // 一个slot只能有一个name属性
-                throw new Err('duplicate attribute of name', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
+                throw new Err('duplicate attribute of name', { ...context.input, ...ary[1].object.Name.pos });
             }
 
             if ( bus.at('是否表达式', ary[0].object.value) ) {
                 // 插槽的属性 name 不能使用表达式
-                throw new Err('slot name unsupport the expression', {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
+                throw new Err('slot name unsupport the expression', { ...context.input, ...ary[0].object.Value.pos });
             }
 
             let name = ary[0].object.value + '';
             if ( slots.includes(name) ){
                 // slot不能重名
-                throw new Err('duplicate slot name: ' + name, {file: context.input.file, text: context.input.text, start: ary[0].object.loc.start.pos, end: ary[0].object.loc.end.pos});
+                throw new Err('duplicate slot name: ' + name, { ...context.input, ...ary[0].object.Value.pos });
             }
 
             slots.push(name);
@@ -85,7 +85,7 @@ bus.on('编译插件', function(){
         let slots = context.result.slots = context.result.slots || [];
         if ( slots.length > 1 && nonameSlotNodes.length ) {
             // 多个插槽时必须起名，且不能有重复
-            throw new Err(`missing slot name on tag <slot>`, {file: context.input.file, text: context.input.text, start: nonameSlotNodes[0].object.loc.start.pos, end: nonameSlotNodes[0].object.loc.end.pos});
+            throw new Err(`missing slot name on tag <slot>`, { ...context.input, ...nonameSlotNodes[0].object.pos });
         }
 
         if ( context.result.slots ) {

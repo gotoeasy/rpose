@@ -32,14 +32,14 @@ bus.on('编译插件', function(){
 
             if ( ary.length > 1 ) {
                 // 属性 class 不能重复
-                throw new Err('duplicate attribute of class', {file: context.input.file, text: context.input.text, start: ary[1].object.loc.start.pos, end: ary[1].object.loc.end.pos});
+                throw new Err('duplicate attribute of class', { ...context.input, ...ary[1].object.Name.pos });
             }
 
             // 创建节点保存
             let oNode = ary[0].clone();
             oNode.type = 'Class';
             oNode.object.type = 'Class';
-            oNode.object.classes = bus.at('解析CLASS属性', oNode.object.value, oNode.object.loc.start.pos, context.input.file, context.input.text); // 解析出全部类名表达式保存备用
+            oNode.object.classes = bus.at('解析CLASS属性', context.input.file, context.input.text, oNode.object.value, oNode.object.Value.pos.start); // 解析出全部类名表达式保存备用
 
             node.addChild(oNode);
             ary[0].remove();    // 删除节点

@@ -47,19 +47,19 @@ bus.on('编译插件', function(){
             if ( nodeSrc && iconName ) {
                 // 不能同时有src、name属性
                 throw new Err('unsupport both src and name attribute on svgicon (src only or name only)',
-                    {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                    { ...context.input, ...object.pos });
             }
             if ( !nodeSrc && !iconName ) {
                 // 不能都没有src、name属性
                 throw new Err('missing src or name attribute of svgicon',
-                    {file: context.input.file, text: context.input.text, start: object.loc.start.pos, end: object.loc.end.pos});
+                    { ...context.input, ...object.pos });
             }
 
             if ( nodeSrc ) {
                 // 使用src属性时，支持inline、inline-symbol类型，缺省为inline
                 if ( nodeType && !/^inline$/i.test(iconType) && !/^inline-symbol$/i.test(iconType) ) {
                     throw new Err('support type "inline" or "inline-symbol" only when use src attribute',
-                        {file: context.input.file, text: context.input.text, start: nodeType.object.loc.start.pos, end: nodeType.object.loc.end.pos});
+                        { ...context.input, ...nodeType.object.pos });
                 }
 
                 !iconType && (iconType = 'inline');             // 写了src 时type缺省为 inline
@@ -67,7 +67,7 @@ bus.on('编译插件', function(){
                 // 使用name属性时，支持symbol、web-font类型，缺省为symbol
                 if ( nodeType && !/^symbol$/i.test(iconType) && !/^web[-]?font[s]?$/i.test(iconType) ) {
                     throw new Err('support type "symbol" or "web-font" only when use name attribute',
-                        {file: context.input.file, text: context.input.text, start: nodeType.object.loc.start.pos, end: nodeType.object.loc.end.pos});
+                        { ...context.input, ...nodeType.object.pos });
                 }
                 !nodeType && (iconType = 'symbol');             // 写了name 时type缺省为 symbol
             }
@@ -78,7 +78,7 @@ bus.on('编译插件', function(){
                 // inline-symbol(内联svg symbol)
                 // 【特点】以页面为单位，按需内联引用
                 // -------------------------------
-                let errLocInfo = {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos};    // 定位src处
+                let errLocInfo = { ...context.input, ...nodeSrc.object.pos };    // 定位src处
                 let propSrc = (nodeSrc.object.value+'').trim();
                 if ( !propSrc ) {
                     throw new Err('invalid value of attribute src', errLocInfo);                                // 必须指定图标
@@ -141,7 +141,7 @@ bus.on('编译插件', function(){
                 // inline-svg(内联svg)
                 // 【特点】可灵活引用svg图标
                 // -------------------------------
-                let errLocInfo = {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos};    // 定位src处
+                let errLocInfo = { ...context.input, ...nodeSrc.object.pos };    // 定位src处
                 let propSrc = (nodeSrc.object.value+'').trim();
                 if ( !propSrc ) {
                     throw new Err('invalid value of attribute src', errLocInfo);                                // 必须指定图标
@@ -171,9 +171,9 @@ bus.on('编译插件', function(){
 
                 let nodeSvgTag;
                 try{
-                    nodeSvgTag = bus.at('SVG图标文件解析', svgfile, oAttrs, object.loc);
+                    nodeSvgTag = bus.at('SVG图标文件解析', svgfile, oAttrs, object.pos);
                 }catch(e){
-                    throw new Err( e.message, e, {file: context.input.file, text: context.input.text, start: nodeSrc.object.loc.start.pos, end: nodeSrc.object.loc.end.pos});
+                    throw new Err( e.message, e, { ...context.input, ...nodeSrc.object.pos });
                 }
                
                 // 替换为内联svg标签节点
