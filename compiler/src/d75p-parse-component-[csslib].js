@@ -31,6 +31,9 @@ bus.on('编译插件', function(){
                 }
 
                 oCsslib = bus.at('样式库', csslib);                 // 转换为样式库对象
+                if ( oCsslib.isEmpty ) {
+                    throw new Err('css file not found', { file: context.input.file, text: context.input.text, start: csslib.pos.start, end: csslib.pos.end });
+                }
                 oCsslibs[alias] = oCsslib;                          // 存放样式库对象
                 oCsslibPkgs[alias] = oCsslib.pkg;                   // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
             }

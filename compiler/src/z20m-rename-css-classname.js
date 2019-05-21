@@ -11,8 +11,8 @@ bus.on('哈希样式类名', function(){
     // 
     // 非release模式
     // foo          => foo___xxxxx
-    // foo@pkg      => pkg---foo
-    // pkg---foo    => pkg---foo（视为已改名不再修改）
+    // foo@pkg      => foo---pkg
+    // foo---pkg    => foo---pkg（视为已改名不再修改）
     // foo___xxxxx  => foo___xxxxx（视为已改名不再修改）
     // -------------------------------------------------------
     return function renameCssClassName(srcFile, clsName){
@@ -30,10 +30,7 @@ bus.on('哈希样式类名', function(){
             let ary = clsName.split('@');
             !ary[1] && (ary[1] = 'UNKNOW');
 
-            name = `${ary[1]}---${ary[0]}`;                                 // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
-
-//            let tag = bus.at('标签全名', srcFile);
-//            name = `${ary[1]}---${ary[0]}___${hash(tag)}`;                  // 引用样式库时，使用命名空间前缀，如 pkgname---the-class___xxxxx (不足：类名过多)
+            name = `${ary[0]}---${ary[1]}`;                                 // 引用样式库时，使用命名空间后缀，如 the-class---pkgname
         }else{
             if ( name.indexOf('---') > 0 || name.indexOf('___') > 0 ) {
                 // 已经改过名

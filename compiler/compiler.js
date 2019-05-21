@@ -1449,11 +1449,13 @@ console.time("load");
 
                 let pkg = oCsslib.pkg; // 样式库包名
                 if (pkg.startsWith("~")) {
-                    pkg = "dir-" + hash(oCsslib.dir); // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
+                    pkg = hash(oCsslib.dir); // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
                 }
 
                 let csslib = csslibify(pkg, oCsslib.alias, libid);
                 !csslib._imported.length && cssfiles.forEach(cssfile => csslib.imp(cssfile)); // 未曾导入时，做导入
+
+                csslib.isEmpty = !cssfiles.length; // 保存标志便于判断
 
                 return csslib;
             };
@@ -2008,6 +2010,15 @@ console.time("load");
                     let oCsslib;
                     for (let alias in csslibs) {
                         oCsslib = bus.at("样式库", csslibs[alias]); // 转换为样式库对象
+                        if (oCsslib.isEmpty) {
+                            throw new Err("css file not found", {
+                                file: context.input.file,
+                                text: context.input.text,
+                                start: csslibs[alias].pos.start,
+                                end: csslibs[alias].pos.end
+                            });
+                        }
+
                         oCsslibs[alias] = oCsslib; // 存放样式库对象
                         oCsslibPkgs[alias] = oCsslib.pkg; // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
                     }
@@ -2926,6 +2937,14 @@ console.time("load");
                         }
 
                         oCsslib = bus.at("样式库", csslib); // 转换为样式库对象
+                        if (oCsslib.isEmpty) {
+                            throw new Err("css file not found", {
+                                file: context.input.file,
+                                text: context.input.text,
+                                start: csslib.pos.start,
+                                end: csslib.pos.end
+                            });
+                        }
                         oCsslibs[alias] = oCsslib; // 存放样式库对象
                         oCsslibPkgs[alias] = oCsslib.pkg; // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
                     }
@@ -3175,10 +3194,20 @@ console.time("load");
 
     // \{ = '\ufff0\ufff1', \} = '\ufffe\uffff'
     function escape(str) {
-        return str == null ? null : str.replace(/\\{/g, "\ufff0\ufff1").replace(/\\}/g, "\ufffe\uffff");
+        return str == null
+            ? null
+            : str
+                  .replace(/\\\\/g, "\ufff2\ufff2")
+                  .replace(/\\{/g, "\ufff0\ufff1")
+                  .replace(/\\}/g, "\ufffe\uffff");
     }
     function unescape(str) {
-        return str == null ? null : str.replace(/\ufff0\ufff1/g, "{").replace(/\ufffe\uffff/g, "}");
+        return str == null
+            ? null
+            : str
+                  .replace(/\ufff2\ufff2/g, "\\\\")
+                  .replace(/\ufff0\ufff1/g, "{")
+                  .replace(/\ufffe\uffff/g, "}");
     }
 
     function offsetPos(oPos, PosOffset) {
@@ -3372,9 +3401,13 @@ console.time("load");
                     // 值由双引号包围
                     reader.skip(1); // 跳过左双引号
                     oPos.start = reader.getPos();
-                    while (!reader.eof() && reader.getCurrentChar() !== '"') {
+                    while (!reader.eof() && (reader.getCurrentChar() !== '"' || reader.getPrevChar() === "\\")) {
                         let ch = reader.readChar();
-                        val += ch; // 其他只要不是【"】就算属性值
+                        if (reader.getPrevString(2) === '\\"') {
+                            val = val.substring(0, val.length - 1) + ch; // 双引号转义
+                        } else {
+                            val += ch; // 其他只要不是【"】就算属性值
+                        }
 
                         if ((ch === "=" || ch === ">") && val.indexOf("\n") > 0 && val.indexOf("{") < 0) {
                             // 遇到等号或标签结束符，且当前的属性值不可能是表达式，且属性值已含换行，基本上是错了
@@ -3390,15 +3423,20 @@ console.time("load");
                     oPos.end = reader.getPos();
                     reader.skip(1); // 跳过右双引号
 
+                    val = val.replace(/\ufff2\ufff2/g, "\\"); // 俩反斜杠属于转义，转换为单个反斜杠
                     token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) }; // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                     tokens.push(token);
                 } else if (reader.getCurrentChar() === "'") {
                     // 值由单引号包围
                     reader.skip(1); // 跳过左单引号
                     oPos.start = reader.getPos();
-                    while (!reader.eof() && reader.getCurrentChar() !== "'") {
+                    while (!reader.eof() && (reader.getCurrentChar() !== "'" || reader.getPrevChar() === "\\")) {
                         let ch = reader.readChar();
-                        val += ch; // 其他只要不是【'】就算属性值
+                        if (reader.getPrevString(2) === "\\'") {
+                            val = val.substring(0, val.length - 1) + ch; // 单引号转义
+                        } else {
+                            val += ch; // 其他只要不是【'】就算属性值
+                        }
 
                         if ((ch === "=" || ch === ">") && val.indexOf("\n") > 0 && val.indexOf("{") < 0) {
                             // 遇到等号或标签结束符，且当前的属性值不可能是表达式，且属性值已含换行，基本上是错了
@@ -3414,6 +3452,7 @@ console.time("load");
                     oPos.end = reader.getPos();
                     reader.skip(1); // 跳过右单引号
 
+                    val = val.replace(/\ufff2\ufff2/g, "\\"); // 俩反斜杠属于转义，转换为单个反斜杠
                     token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) }; // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                     tokens.push(token);
                 } else if (reader.getCurrentChar() === "{") {
@@ -3576,7 +3615,7 @@ console.time("load");
                 tokens.push(token);
                 token = { type: options.TypeEqual, value: "=", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeAttributeValue, value: lang, pos: offsetPos({ start, end }, PosOffset) };
+                token = { type: options.TypeAttributeValue, value: unescape(lang), pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
             }
 
@@ -3609,7 +3648,7 @@ console.time("load");
                 tokens.push(token);
                 token = { type: options.TypeEqual, value: "=", pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
-                token = { type: options.TypeAttributeValue, value: ref, pos: offsetPos({ start, end }, PosOffset) };
+                token = { type: options.TypeAttributeValue, value: unescape(ref), pos: offsetPos({ start, end }, PosOffset) };
                 tokens.push(token);
             }
 
@@ -6893,6 +6932,14 @@ console.time("load");
                         // ---------------------------------
                         // 创建@csslib样式库
                         let atcsslib = bus.at("样式库", csslib);
+                        if (atcsslib.isEmpty) {
+                            throw new Err("css file not found", {
+                                file: context.input.file,
+                                text: context.input.text,
+                                start: csslib.pos.start,
+                                end: csslib.pos.end
+                            });
+                        }
                         oAtCsslibs[csslib.alias] = atcsslib; // 存起来备查
                         oAtCsslibPkgs[csslib.alias] = atcsslib.pkg; // 保存样式库匿名关系，用于脚本类名转换
                         atcsslib.isAtCsslib = true;
@@ -8171,22 +8218,20 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             // ---------------------------------------------------------------
             return postobject.plugin("s35p-component-script-selector-rename", function(root, context) {
                 let oPrjContext = bus.at("项目配置处理", context.input.file);
-                let oPrjCsslibPkgs = oPrjContext.result.oCsslibPkgs; // 项目[csslib]配置的样式库【别名-包名】映射关系
                 let oPrjCsslibs = oPrjContext.result.oCsslibs; // 项目[csslib]配置的样式库 (asname：lib)
-                let oCsslibPkgs = context.result.oCsslibPkgs; // 组件[csslib]配置的样式库【别名-包名】映射关系
                 let oCsslibs = context.result.oCsslibs; // 组件[csslib]配置的样式库 (asname：lib)
-                let oAtCsslibPkgs = (context.result.oAtCsslibPkgs = context.result.oAtCsslibPkgs || {}); // 组件@csslib配置的样式库【别名-包名】映射关系
                 let oAtCsslibs = (context.result.oAtCsslibs = context.result.oAtCsslibs || {}); // 组件@csslib配置的样式库 (asname：lib)
 
                 let script = context.script;
                 let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
 
-                let classnames = (script.classnames = script.classnames || []); // 脚本代码中用到的样式类
+                let classnames = (script.classnames = script.classnames || []); // 脚本代码中用到的样式类，存起来后续继续处理
+
                 if (script.actions && reg.test(script.actions)) {
-                    script.actions = transformJsSelector(script.actions, context.input.file);
+                    script.actions = transformJsSelector(script.actions, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
                 }
                 if (script.methods && reg.test(script.methods)) {
-                    script.methods = transformJsSelector(script.methods, context.input.file);
+                    script.methods = transformJsSelector(script.methods, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
                 }
 
                 // 脚本中用到的类，检查样式库是否存在，检查类名是否存在
@@ -8212,117 +8257,125 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         }
                     }
                 }
-
-                function transformJsSelector(code, srcFile) {
-                    let ast, changed;
-                    try {
-                        ast = acorn.parse(code, { ecmaVersion: 10, sourceType: "module", locations: false });
-                    } catch (e) {
-                        throw new Err("syntax error", e); // 通常是代码有语法错误
-                    }
-
-                    walk.simple(ast, {
-                        CallExpression(node) {
-                            // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
-
-                            // 第一参数不是字符串时，无可修改，忽略
-                            if (!node.arguments || !node.arguments[0] || node.arguments[0].type !== "Literal") {
-                                return;
-                            }
-
-                            let fnName, classname;
-                            if (node.callee.type === "Identifier") {
-                                // 直接函数调用
-                                fnName = node.callee.name;
-                                if (fnName === "$$" || fnName === "$") {
-                                    node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile); // $$('div > .foo'), $('div > .bar')
-                                } else {
-                                    return;
-                                }
-                            } else if (node.callee.type === "MemberExpression") {
-                                // 对象成员函数调用
-                                fnName = node.callee.property.name;
-                                if (fnName === "getElementsByClassName" || fnName === "toggleClass") {
-                                    // document.getElementsByClassName('foo'), $$el.toggleClass('foo')
-                                    classname = getClassPkg(node.arguments[0].value);
-                                    node.arguments[0].value = bus.at("哈希样式类名", srcFile, classname);
-                                    classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                                } else if (fnName === "querySelector" || fnName === "querySelectorAll") {
-                                    // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
-                                    node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile);
-                                } else if (fnName === "addClass" || fnName === "removeClass") {
-                                    // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
-                                    let rs = [],
-                                        classname,
-                                        ary = node.arguments[0].value.trim().split(/\s+/);
-                                    ary.forEach(cls => {
-                                        classname = getClassPkg(cls);
-                                        rs.push(bus.at("哈希样式类名", srcFile, classname));
-                                        classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                                    });
-                                    node.arguments[0].value = rs.join(" ");
-                                } else if (fnName === "add" || fnName === "remove") {
-                                    // el.classList.add('foo'), el.classList.remove('bar')
-                                    if (node.callee.object.type === "MemberExpression" && node.callee.object.property.name === "classList") {
-                                        classname = getClassPkg(node.arguments[0].value);
-                                        node.arguments[0].value = bus.at("哈希样式类名", srcFile, classname);
-                                        classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                                    } else {
-                                        return;
-                                    }
-                                } else {
-                                    return;
-                                }
-                            } else {
-                                return;
-                            }
-
-                            node.arguments[0].raw = `'${node.arguments[0].value}'`; // 输出字符串
-                            changed = true;
-                        }
-                    });
-
-                    return changed ? astring.generate(ast) : code;
-                }
-
-                function transformSelector(selector, srcFile) {
-                    selector = selector.replace(/@/g, "鬱");
-                    let ast = tokenizer.parse(selector);
-                    let classname,
-                        nodes = ast.nodes || [];
-                    nodes.forEach(node => {
-                        if (node.type === "selector") {
-                            (node.nodes || []).forEach(nd => {
-                                if (nd.type === "class") {
-                                    classname = getClassPkg(nd.name);
-                                    nd.name = bus.at("哈希样式类名", srcFile, classname);
-                                    classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                                }
-                            });
-                        }
-                    });
-
-                    let rs = tokenizer.stringify(ast);
-                    return rs.replace(/鬱/g, "@");
-                }
-
-                // 替换js代码中的样式库别名为实际库名，检查样式库是否存在
-                function getClassPkg(cls) {
-                    let ary = cls.trim().split(/鬱|@/);
-                    if (ary.length > 1) {
-                        let asname = ary[1];
-                        let pkg = oAtCsslibPkgs[asname] || oCsslibPkgs[asname] || oPrjCsslibPkgs[asname]; // 找出别名对应的实际库名
-                        if (!pkg) {
-                            throw new Error("csslib not found: " + ary[0] + "@" + ary[1] + "\nfile: " + context.input.file); // js代码中类选择器指定的csslib未定义导致找不到 TODO 友好定位提示
-                        }
-                        return ary[0] + "@" + pkg; // 最终按实际别名对应的实际库名进行哈希
-                    }
-
-                    return ary[0];
-                }
             });
         })()
     );
+
+    function transformJsSelector(code, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs) {
+        let ast, changed;
+        try {
+            ast = acorn.parse(code, { ecmaVersion: 10, sourceType: "module", locations: false }); // TODO 自动紧跟新标准版本
+        } catch (e) {
+            throw new Err("syntax error", e); // 通常是代码有语法错误
+        }
+
+        walk.simple(ast, {
+            CallExpression(node) {
+                // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
+
+                // 第一参数不是字符串时，无可修改，忽略
+                if (!node.arguments || !node.arguments[0] || node.arguments[0].type !== "Literal") {
+                    return;
+                }
+
+                let fnName, classname, pkgcls;
+                if (node.callee.type === "Identifier") {
+                    // 直接函数调用
+                    fnName = node.callee.name;
+                    if (fnName === "$$" || fnName === "$") {
+                        node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs); // $$('div > .foo'), $('div > .bar')
+                    } else {
+                        return;
+                    }
+                } else if (node.callee.type === "MemberExpression") {
+                    // 对象成员函数调用
+                    fnName = node.callee.property.name;
+                    if (fnName === "getElementsByClassName" || fnName === "toggleClass") {
+                        // document.getElementsByClassName('foo'), $$el.toggleClass('foo')
+                        classname = node.arguments[0].value;
+                        pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                        node.arguments[0].value = bus.at("哈希样式类名", srcFile, pkgcls);
+                        classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
+                    } else if (fnName === "querySelector" || fnName === "querySelectorAll") {
+                        // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
+                        node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                    } else if (fnName === "addClass" || fnName === "removeClass") {
+                        // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
+                        let rs = [],
+                            ary = node.arguments[0].value.trim().split(/\s+/);
+                        ary.forEach(cls => {
+                            pkgcls = getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                            rs.push(bus.at("哈希样式类名", srcFile, pkgcls));
+                            classnames.push(cls); // 脚本中用到的类，存起来查样式库使用
+                        });
+                        node.arguments[0].value = rs.join(" ");
+                    } else if (fnName === "add" || fnName === "remove") {
+                        // el.classList.add('foo'), el.classList.remove('bar')
+                        if (node.callee.object.type === "MemberExpression" && node.callee.object.property.name === "classList") {
+                            classname = node.arguments[0].value;
+                            pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                            node.arguments[0].value = bus.at("哈希样式类名", srcFile, pkgcls);
+                            classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
+                        } else {
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+                } else {
+                    return;
+                }
+
+                node.arguments[0].raw = `'${node.arguments[0].value}'`; // 输出字符串
+                changed = true;
+            }
+        });
+
+        return changed ? astring.generate(ast) : code;
+    }
+
+    function transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs) {
+        selector = selector.replace(/@/g, "鬱");
+        let ast = tokenizer.parse(selector);
+        let classname,
+            pkgcls,
+            nodes = ast.nodes || [];
+        nodes.forEach(node => {
+            if (node.type === "selector") {
+                (node.nodes || []).forEach(nd => {
+                    if (nd.type === "class") {
+                        classname = nd.name;
+                        pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                        nd.name = bus.at("哈希样式类名", srcFile, pkgcls);
+                        classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
+                    }
+                });
+            }
+        });
+
+        let rs = tokenizer.stringify(ast);
+        return rs.replace(/鬱/g, "@");
+    }
+
+    // 替换js代码中的样式库别名为实际库名，检查样式库是否存在
+    function getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs) {
+        let ary = cls.trim().split(/鬱|@/);
+        if (ary.length > 1) {
+            let asname = ary[1];
+            let csslib = oAtCsslibs[asname] || oCsslibs[asname] || oPrjCsslibs[asname]; // 找出别名对应的实际库名
+            if (!csslib) {
+                throw new Error("csslib not found: " + ary[0] + "@" + ary[1] + "\nfile: " + srcFile); // js代码中类选择器指定的csslib未定义导致找不到 TODO 友好定位提示
+            }
+            return ary[0] + "@" + csslib.pkg; // 最终按实际别名对应的实际库名进行哈希
+        } else {
+            let nonameCsslib = oAtCsslibs["*"] || oCsslibs["*"] || oPrjCsslibs["*"];
+            if (nonameCsslib && nonameCsslib.has("." + ary[0])) {
+                return ary[0] + "@" + nonameCsslib.pkg; // 无名库，也按实际别名对应的实际库名进行哈希
+            }
+        }
+
+        return ary[0];
+    }
 
     // ------- s35p-component-script-selector-rename end
 })();
@@ -9223,8 +9276,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
             //
             // 非release模式
             // foo          => foo___xxxxx
-            // foo@pkg      => pkg---foo
-            // pkg---foo    => pkg---foo（视为已改名不再修改）
+            // foo@pkg      => foo---pkg
+            // foo---pkg    => foo---pkg（视为已改名不再修改）
             // foo___xxxxx  => foo___xxxxx（视为已改名不再修改）
             // -------------------------------------------------------
             return function renameCssClassName(srcFile, clsName) {
@@ -9240,10 +9293,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     let ary = clsName.split("@");
                     !ary[1] && (ary[1] = "UNKNOW");
 
-                    name = `${ary[1]}---${ary[0]}`; // 引用样式库时，使用命名空间前缀，如 pkgname---the-class
-
-                    //            let tag = bus.at('标签全名', srcFile);
-                    //            name = `${ary[1]}---${ary[0]}___${hash(tag)}`;                  // 引用样式库时，使用命名空间前缀，如 pkgname---the-class___xxxxx (不足：类名过多)
+                    name = `${ary[0]}---${ary[1]}`; // 引用样式库时，使用命名空间后缀，如 the-class---pkgname
                 } else {
                     if (name.indexOf("---") > 0 || name.indexOf("___") > 0) {
                         // 已经改过名

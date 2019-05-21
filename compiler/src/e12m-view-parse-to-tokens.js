@@ -8,10 +8,10 @@ const SELF_CLOSE_TAGS = 'br,hr,input,img,meta,link,area,base,basefont,bgsound,co
 
 // \{ = '\ufff0\ufff1', \} = '\ufffe\uffff'
 function escape(str){
-    return str == null ? null : str.replace(/\\{/g, '\ufff0\ufff1').replace(/\\}/g, '\ufffe\uffff');
+    return str == null ? null : str.replace(/\\\\/g, '\ufff2\ufff2').replace(/\\{/g, '\ufff0\ufff1').replace(/\\}/g, '\ufffe\uffff');
 }
 function unescape(str){
-    return str == null ? null : str.replace(/\ufff0\ufff1/g, '{').replace(/\ufffe\uffff/g, '}');
+    return str == null ? null : str.replace(/\ufff2\ufff2/g, '\\\\').replace(/\ufff0\ufff1/g, '{').replace(/\ufffe\uffff/g, '}');
 }
 
 function offsetPos(oPos, PosOffset){
@@ -201,9 +201,13 @@ function TokenParser(file, fileText, viewText, PosOffset){
                 // 值由双引号包围
                 reader.skip(1);    // 跳过左双引号
                 oPos.start = reader.getPos();
-                while ( !reader.eof() && reader.getCurrentChar() !== '"' ) {
+                while ( !reader.eof() && (reader.getCurrentChar() !== '"' || reader.getPrevChar() === '\\') ) {
                     let ch = reader.readChar();
-                    val += ch;                                                  // 其他只要不是【"】就算属性值
+                    if ( reader.getPrevString(2) === '\\"' ) {
+                        val = val.substring(0, val.length-1) + ch;                  // 双引号转义
+                    }else{
+                        val += ch;                                                  // 其他只要不是【"】就算属性值
+                    }
 
                     if ( (ch === '=' || ch === '>') && (val.indexOf('\n') > 0) && (val.indexOf('{') < 0) ) {
                         // 遇到等号或标签结束符，且当前的属性值不可能是表达式，且属性值已含换行，基本上是错了
@@ -219,15 +223,20 @@ function TokenParser(file, fileText, viewText, PosOffset){
                 oPos.end = reader.getPos();
                 reader.skip(1);    // 跳过右双引号
 
+                val = val.replace(/\ufff2\ufff2/g, '\\');                           // 俩反斜杠属于转义，转换为单个反斜杠
                 token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) };    // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                 tokens.push(token);
             }else if ( reader.getCurrentChar() === "'" ) {
                 // 值由单引号包围
                 reader.skip(1);    // 跳过左单引号
                 oPos.start = reader.getPos();
-                while ( !reader.eof() && reader.getCurrentChar() !== "'" ) {
+                while ( !reader.eof() && (reader.getCurrentChar() !== "'" || reader.getPrevChar() === '\\') ) {
                     let ch = reader.readChar();
-                    val += ch;                                                  // 其他只要不是【'】就算属性值
+                    if ( reader.getPrevString(2) === "\\'" ) {
+                        val = val.substring(0, val.length-1) + ch;                  // 单引号转义
+                    }else{
+                        val += ch;                                                  // 其他只要不是【'】就算属性值
+                    }
 
                     if ( (ch === '=' || ch === '>') && (val.indexOf('\n') > 0) && (val.indexOf('{') < 0) ) {
                         // 遇到等号或标签结束符，且当前的属性值不可能是表达式，且属性值已含换行，基本上是错了
@@ -243,6 +252,7 @@ function TokenParser(file, fileText, viewText, PosOffset){
                 oPos.end = reader.getPos();
                 reader.skip(1);    // 跳过右单引号
 
+                val = val.replace(/\ufff2\ufff2/g, '\\');                           // 俩反斜杠属于转义，转换为单个反斜杠
                 token = { type: options.TypeAttributeValue, value: unescape(val), pos: offsetPos(oPos, PosOffset) };    // Token: 属性值(属性值中包含表达式组合的情况，在syntax-ast-gen中处理)
                 tokens.push(token);
             }else if ( reader.getCurrentChar() === "{" ) {
@@ -397,7 +407,7 @@ function TokenParser(file, fileText, viewText, PosOffset){
             tokens.push(token);
             token = { type: options.TypeEqual, value: '=', pos: offsetPos({start, end}, PosOffset) };
             tokens.push(token);
-            token = { type: options.TypeAttributeValue, value: lang, pos: offsetPos({start, end}, PosOffset) };
+            token = { type: options.TypeAttributeValue, value: unescape(lang), pos: offsetPos({start, end}, PosOffset) };
             tokens.push(token);
         }
 
@@ -430,7 +440,7 @@ function TokenParser(file, fileText, viewText, PosOffset){
             tokens.push(token);
             token = { type: options.TypeEqual, value: '=', pos: offsetPos({start, end}, PosOffset) };
             tokens.push(token);
-            token = { type: options.TypeAttributeValue, value: ref, pos: offsetPos({start, end}, PosOffset) };
+            token = { type: options.TypeAttributeValue, value: unescape(ref), pos: offsetPos({start, end}, PosOffset) };
             tokens.push(token);
         }
 

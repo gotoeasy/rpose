@@ -15,12 +15,14 @@ bus.on('样式库', function(){
 
         let pkg = oCsslib.pkg;                                                              // 样式库包名
         if ( pkg.startsWith('~') ) {
-            pkg = 'dir-' + hash(oCsslib.dir);                                               // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
+            pkg = hash(oCsslib.dir);                                                        // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
         }
 
         let csslib = csslibify(pkg, oCsslib.alias, libid);
         !csslib._imported.length && cssfiles.forEach( cssfile => csslib.imp(cssfile) );     // 未曾导入时，做导入
-        
+
+        csslib.isEmpty = !cssfiles.length;                                                  // 保存标志便于判断
+
         return csslib;
     }
 
