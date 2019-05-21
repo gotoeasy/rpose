@@ -12,7 +12,7 @@
 
 
 <br>
-[Documents][https://gotoeasy.github.io]
+[Documents](https://gotoeasy.github.io "Documents")
 
 <br>
 <br>
