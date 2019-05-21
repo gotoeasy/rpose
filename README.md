@@ -12,7 +12,7 @@
 
 
 <br>
-文档例子在此 https://gotoeasy.github.io
+[Documents](https://gotoeasy.github.io)
 
 <br>
 <br>
