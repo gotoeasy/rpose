@@ -56,6 +56,7 @@ bus.on('页面样式后处理', function(){
         let rs = postcss(plugins).process(css, {from, to}).sync().root.toResult();
 
         pageCss = env.release ? rs.css : csjs.formatCss(rs.css);                        // 非release时格式化
+
         return oCache.set(cacheKey, pageCss);
     }
 

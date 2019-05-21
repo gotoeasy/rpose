@@ -13,7 +13,7 @@ console.time('build');
             bus.at('编译环境', opts);
             bus.at('clean');
 
-            await Promise.all( bus.at('全部编译') )
+            await bus.at('全部编译');
         }catch(e){
             console.error(Err.cat('build failed', e).toString());
         }

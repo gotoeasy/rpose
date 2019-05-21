@@ -813,13 +813,12 @@ console.time("load");
     bus.on(
         "全部编译",
         (function() {
-            return function() {
+            return async function() {
                 let oFiles = bus.at("源文件对象清单");
                 let env = bus.at("编译环境");
 
                 bus.at("项目配置处理", env.path.root + "rpose.config.btf");
 
-                let promises = [];
                 let errSet = new Set();
                 let stime, time;
                 for (let file in oFiles) {
@@ -827,12 +826,13 @@ console.time("load");
                         stime = new Date().getTime();
 
                         let context = bus.at("编译组件", oFiles[file]);
-                        context.result.browserifyJs && promises.push(context.result.browserifyJs);
 
                         time = new Date().getTime() - stime;
                         if (time > 100) {
                             console.info("[compile] " + time + "ms -", file.replace(env.path.src + "/", ""));
                         }
+
+                        await context.result.browserifyJs;
                     } catch (e) {
                         bus.at("组件编译缓存", file, false); // 出错时确保删除缓存（可能组件编译过程成功，页面编译过程失败）
                         errSet.add(Err.cat(e).toString());
@@ -841,8 +841,6 @@ console.time("load");
 
                 // 输出汇总的错误信息
                 errSet.size && console.error([...errSet].join("\n\n"));
-
-                return promises;
             };
         })()
     );
@@ -917,20 +915,18 @@ console.time("load");
                     }
                 }
 
-                let promises = [];
                 for (let key in oFiles) {
                     time1 = new Date().getTime();
 
                     let context = bus.at("编译组件", oFiles[key]);
-                    context.result.browserifyJs && promises.push(context.result.browserifyJs);
 
                     time = new Date().getTime() - time1;
                     if (time > 100) {
                         console.info("[compile] " + time + "ms -", key.replace(env.path.src + "/", ""));
                     }
-                }
 
-                await Promise.all(promises);
+                    await context.result.browserifyJs;
+                }
 
                 time = new Date().getTime() - stime;
                 console.info("[build] " + time + "ms");
@@ -959,20 +955,18 @@ console.time("load");
                 bus.at("项目配置处理", env.path.root + "rpose.config.btf", true); // 重新解析项目配置处理
                 let oFiles = bus.at("源文件对象清单", true); // 源文件清单重新设定
 
-                let promises = [];
                 for (let key in oFiles) {
                     time1 = new Date().getTime();
 
                     let context = bus.at("编译组件", oFiles[key]);
-                    context.result.browserifyJs && promises.push(context.result.browserifyJs);
 
                     time = new Date().getTime() - time1;
                     if (time > 100) {
                         console.info("[compile] " + time + "ms -", key.replace(env.path.src + "/", ""));
                     }
-                }
 
-                await Promise.all(promises);
+                    await context.result.browserifyJs;
+                }
 
                 time = new Date().getTime() - stime;
                 console.info("[build] " + time + "ms");
@@ -8826,6 +8820,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     .root.toResult();
 
                 pageCss = env.release ? rs.css : csjs.formatCss(rs.css); // 非release时格式化
+
                 return oCache.set(cacheKey, pageCss);
             };
         })()
@@ -9164,39 +9159,46 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 if (!context.result.isPage) return false; // 仅针对页面
                 let env = bus.at("编译环境");
 
-                let stime = new Date().getTime(),
-                    time;
-                context.result.browserifyJs
-                    .then(browserifyJs => {
-                        let fileHtml = bus.at("页面目标HTML文件名", context.input.file);
-                        let fileCss = bus.at("页面目标CSS文件名", context.input.file);
-                        let fileJs = bus.at("页面目标JS文件名", context.input.file);
-                        let svgSymbolHashcode = "";
-                        if (bus.at("页面是否引用外部SVG-SYMBOL文件", context.input.file)) {
-                            let oSvgSymbol = bus.at("生成项目SVG-SYMBOL文件");
-                            svgSymbolHashcode = oSvgSymbol.hashcode;
-                        }
-
-                        let html = context.result.html;
-                        let css = context.result.pageCss;
-                        let js = browserifyJs;
-                        context.result.js = js;
-
-                        css ? File.write(fileCss, css) : File.remove(fileCss);
-                        File.write(fileJs, js);
-                        File.write(fileHtml, html);
-
-                        env.watch && (context.result.hashcode = hash(html + css + js) + "-" + svgSymbolHashcode); // 计算页面编译结果的哈希码，供浏览器同步判断使用
-
-                        time = new Date().getTime() - stime;
-                        console.info("[pack]", time + "ms -", fileHtml.substring(env.path.build_dist.length + 1));
-                    })
-                    .catch(e => {
-                        console.error("[pack]", e);
-                    });
+                browserifyJs(env, context);
             });
         })()
     );
+
+    function browserifyJs(env, context) {
+        let stime = new Date().getTime(),
+            time;
+        context.result.browserifyJs
+            .then(browserifyJs => {
+                let fileHtml = bus.at("页面目标HTML文件名", context.input.file);
+                let fileCss = bus.at("页面目标CSS文件名", context.input.file);
+                let fileJs = bus.at("页面目标JS文件名", context.input.file);
+                let svgSymbolHashcode = "";
+                if (bus.at("页面是否引用外部SVG-SYMBOL文件", context.input.file)) {
+                    let oSvgSymbol = bus.at("生成项目SVG-SYMBOL文件");
+                    svgSymbolHashcode = oSvgSymbol.hashcode;
+                }
+
+                let html = context.result.html;
+                let css = context.result.pageCss;
+                let js = browserifyJs;
+                context.result.js = js;
+
+                css ? File.write(fileCss, css) : File.remove(fileCss);
+                File.write(fileJs, js);
+                File.write(fileHtml, html);
+
+                env.watch && (context.result.hashcode = hash(html + css + js) + "-" + svgSymbolHashcode); // 计算页面编译结果的哈希码，供浏览器同步判断使用
+
+                delete context.result.babelJs;
+                delete context.result.browserifyJs;
+
+                time = new Date().getTime() - stime;
+                console.info("[pack]", time + "ms -", fileHtml.substring(env.path.build_dist.length + 1));
+            })
+            .catch(e => {
+                console.error("[pack]", e);
+            });
+    }
 
     // 外部SVG-SYMBOL文件内容变化时，重新计算页面哈希码，以便热刷新
     bus.on(
@@ -9991,7 +9993,7 @@ async function build(opts) {
         bus.at("编译环境", opts);
         bus.at("clean");
 
-        await Promise.all(bus.at("全部编译"));
+        await bus.at("全部编译");
     } catch (e) {
         console.error(Err.cat("build failed", e).toString());
     }
