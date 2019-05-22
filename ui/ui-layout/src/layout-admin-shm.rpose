@@ -27,12 +27,12 @@ statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
     </aside>
     <div class="layout side-page">
         <a class="layout menubar-icon-pc" href="#" onclick="pcToggle">
-            <svgicon src="circle-right" class="layout menubar-icon-right" fill="#e74c3c" height="20" />
-            <svgicon src="circle-left" class="layout menubar-icon-left" fill="#e74c3c" height="20" />
+            <svgicon name="circle-right" class="layout menubar-icon-right" fill="#e74c3c" height="20" />
+            <svgicon name="circle-left" class="layout menubar-icon-left" fill="#e74c3c" height="20" />
         </a>
         <header class="layout-header" @class="display-flex">
             <a class="layout menubar-icon-mobile" href="#" onclick="mobileToggle">
-                <svgicon src="system-menu" height="25" />
+                <svgicon name="system-menu" height="25" />
             </a>
             <slot name="header"/>
         </header>

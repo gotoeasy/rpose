@@ -24,82 +24,94 @@ bus.on('编译插件', function(){
                 }
             }
 
-            let nodeSrc, nodeType, iconName, iconType, oAttrs = {};
+            let nodeName, nodeType, iconName, iconType, oAttrs = {};
             attrsNode && attrsNode.nodes.forEach(nd => {
                 let name = nd.object.name;
-                if ( /^src$/i.test(name) ) {
-                    // src属性是svgicon专用属性，用于指定svg文件
-                    nodeSrc = nd;                                                   // 属性节点src
-                }else if ( /^type$/i.test(name) ) {
+                if ( /^type$/i.test(name) ) {
                     // type属性是svgicon专用属性，用于指定使用图标展示方式
-                    iconType = (nd.object.value+'').trim();                         // 属性节点type
+                    iconType = (nd.object.value+'').trim();                                                     // 属性节点type
                     nodeType = nd;
                 }else if ( /^name$/i.test(name) ) {
-                    // name属性是svgicon专用属性，用于symbol(外部引用svg symbol)方式时指定图标名
-                    iconName = nd.object.value.trim();                              // 属性节点name
+                    // name属性是svgicon专用属性，用于指定图标名
+                    nodeName = nd;
+                    iconName = nd.object.value.trim();                                                          // 属性节点name
                 }else{
                     // 其他属性全部作为svg标签用属性看待，效果上等同内联svg标签中直接写属性，但viewBox属性除外，viewBox不支持修改以免影响svg大小
                     !/^viewBox$/i.test(name) && (oAttrs[nd.object.name] = nd.object);
                 }
             });
-            
 
-            if ( nodeSrc && iconName ) {
-                // 不能同时有src、name属性
-                throw new Err('unsupport both src and name attribute on svgicon (src only or name only)',
-                    { ...context.input, ...object.pos });
-            }
-            if ( !nodeSrc && !iconName ) {
-                // 不能都没有src、name属性
-                throw new Err('missing src or name attribute of svgicon',
-                    { ...context.input, ...object.pos });
+            !iconType && (iconType = 'inline');                                                                 // 缺省为 inline，直接显示svg
+            if ( !nodeName ) {
+                throw new Err('missing name attribute on tag svgicon', { ...context.input, ...object.pos });    // 不能没有name属性
             }
 
-            if ( nodeSrc ) {
-                // 使用src属性时，支持inline、inline-symbol类型，缺省为inline
-                if ( nodeType && !/^inline$/i.test(iconType) && !/^inline-symbol$/i.test(iconType) ) {
-                    throw new Err('support type "inline" or "inline-symbol" only when use src attribute',
-                        { ...context.input, ...nodeType.object.pos });
-                }
-
-                !iconType && (iconType = 'inline');             // 写了src 时type缺省为 inline
-            }else{
-                // 使用name属性时，支持symbol、web-font类型，缺省为symbol
-                if ( nodeType && !/^symbol$/i.test(iconType) && !/^web[-]?font[s]?$/i.test(iconType) ) {
-                    throw new Err('support type "symbol" or "web-font" only when use name attribute',
-                        { ...context.input, ...nodeType.object.pos });
-                }
-                !nodeType && (iconType = 'symbol');             // 写了name 时type缺省为 symbol
+            let errInfoName = { ...context.input, ...nodeName.object.Value.pos };
+            if ( !iconName ) {
+                throw new Err('invalid value of name attribute', errInfoName);                                  // 不能没有name属性值
             }
 
             // inline(内联svg)/inline-symbol(内联svg symbol)/symbol(外部引用svg symbol)/web-font(引用字体)
-            if ( /^inline-symbol$/i.test(iconType) ) {
+            if ( /^inline$/i.test(iconType) ) {
+                // -------------------------------
+                // inline(内联svg)
+                // 【特点】可灵活引用svg图标
+                // -------------------------------
+                if ( bus.at('是否表达式', iconName) ) {
+                    throw new Err('unsupport expression when type is inline', errInfoName);                     // inline模式时name属性不支持表达式
+                }
+                
+                iconName = iconName.replace(/\\/g, '/');
+                !/\.svg$/i.test(iconName) && (iconName += '.svg');                                              // 后缀可以省略，如果没写则补足
+
+                let svgfile, ary = iconName.split(':');
+                if ( ary.length > 2 ) {
+                    throw new Err('invalid format of name attribute, etc. pkg:svgfilter', errInfoName);         // 格式有误，多个冒号
+                }else if ( ary.length > 1 ) {
+                    svgfile = findSvgByPkgFilter(ary, iconName, errInfoName, context.input.file);               // 从npm包中查找
+                }else{
+                    svgfile = findSvgInProjectAndBuildinPkg(iconName, errInfoName, context.input.file);         // 从工程内和内置包中查找
+
+                    if ( !svgfile.startsWith(resolvepkg('@rpose/buildin')) ) {
+                        let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];        // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
+                        !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                            // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
+                    }
+                }
+
+                let nodeSvgTag;
+                try{
+                    nodeSvgTag = bus.at('SVG图标文件解析', svgfile, oAttrs, object.pos);
+                }catch(e){
+                    throw new Err( e.message, e, { ...context.input, ...nodeName.object.pos });
+                }
+               
+                // 替换为内联svg标签节点
+                nodeSvgTag && node.replaceWith(nodeSvgTag);
+
+            }else if ( /^inline-symbol$/i.test(iconType) ) {
                 // -------------------------------
                 // inline-symbol(内联svg symbol)
                 // 【特点】以页面为单位，按需内联引用
                 // -------------------------------
-                let errLocInfo = { ...context.input, ...nodeSrc.object.pos };    // 定位src处
-                let propSrc = (nodeSrc.object.value+'').trim();
-                if ( !propSrc ) {
-                    throw new Err('invalid value of attribute src', errLocInfo);                                // 必须指定图标
-                }
-                if ( bus.at('是否表达式', propSrc) ) {
-                    throw new Err('unsupport expression on src attribute of svgicon', errLocInfo);              // src属性不支持表达式
+                if ( bus.at('是否表达式', iconName) ) {
+                    throw new Err('unsupport expression when type is inline-symbol', errInfoName);              // inline-symbol模式时name属性不支持表达式
                 }
                 
-                propSrc = propSrc.replace(/\\/g, '/');
-                !/\.svg$/i.test(propSrc) && (propSrc += '.svg');                                                // 后缀可以省略，如果没写则补足
+                iconName = iconName.replace(/\\/g, '/');
+                !/\.svg$/i.test(iconName) && (iconName += '.svg');                                              // 后缀可以省略，如果没写则补足
 
-                let svgfile, ary = propSrc.split(':');
+                let svgfile, ary = iconName.split(':');
                 if ( ary.length > 2 ) {
-                    throw new Err('invalid format of src attribute, etc. name:filefilter', errLocInfo);         // 格式有误，多个冒号
+                    throw new Err('invalid format of name attribute, etc. pkg:svgfilter', errInfoName);         // 格式有误，多个冒号
                 }else if ( ary.length > 1 ) {
-                    svgfile = findSvgByPkgFilter(ary, propSrc, errLocInfo);                                     // 从npm包中查找
+                    svgfile = findSvgByPkgFilter(ary, iconName, errInfoName, context.input.file);               // 从npm包中查找
                 }else{
-                    svgfile = findSvgInProject(propSrc, errLocInfo, context);                                   // 从项目中查找
+                    svgfile = findSvgInProjectAndBuildinPkg(iconName, errInfoName, context.input.file);         // 从工程内和内置包中查找
 
-                    let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
-                    !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                                // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
+                    if ( !svgfile.startsWith(resolvepkg('@rpose/buildin')) ) {
+                        let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];        // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
+                        !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                            // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
+                    }
                 }
 
                 let inlinesymbols = context.result.inlinesymbols = context.result.inlinesymbols || [];          // symbol内联关联的svg文件
@@ -134,51 +146,10 @@ bus.on('编译插件', function(){
                 // web-font(引用字体)
                 // 【特点】兼容低版本浏览器
                 // -------------------------------
-                throw new Err('TODO icon type: ' + iconType);   // 尚未对应
-
-            }else if ( /^inline$/i.test(iconType) ) {
-                // -------------------------------
-                // inline-svg(内联svg)
-                // 【特点】可灵活引用svg图标
-                // -------------------------------
-                let errLocInfo = { ...context.input, ...nodeSrc.object.pos };    // 定位src处
-                let propSrc = (nodeSrc.object.value+'').trim();
-                if ( !propSrc ) {
-                    throw new Err('invalid value of attribute src', errLocInfo);                                // 必须指定图标
-                }
-                if ( bus.at('是否表达式', propSrc) ) {
-                    throw new Err('unsupport expression on src attribute of svgicon', errLocInfo);              // src属性不支持表达式
-                }
-                
-                propSrc = propSrc.replace(/\\/g, '/');
-                !/\.svg$/i.test(propSrc) && (propSrc += '.svg');                                                // 后缀可以省略，如果没写则补足
-
-                let svgfile, ary = propSrc.split(':');
-                if ( ary.length > 2 ) {
-                    throw new Err('invalid format of src attribute, etc. name:filefilter', errLocInfo);         // 格式有误，多个冒号
-                }else if ( ary.length > 1 ) {
-                    svgfile = findSvgByPkgFilter(ary, propSrc, errLocInfo);                                     // 从npm包中查找
-                }else{
-                    svgfile = findSvgInProject(propSrc, errLocInfo, context);                                   // 从项目中查找
-
-                    if ( !svgfile ) {
-                        svgfile = findSvgInBuildInPackage(propSrc, errLocInfo, context);                        // 从内置npm包中查找
-                    }
-
-                    let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系编译修改时重新编译
-                    !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                                // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                }
-
-                let nodeSvgTag;
-                try{
-                    nodeSvgTag = bus.at('SVG图标文件解析', svgfile, oAttrs, object.pos);
-                }catch(e){
-                    throw new Err( e.message, e, { ...context.input, ...nodeSrc.object.pos });
-                }
-               
-                // 替换为内联svg标签节点
-                nodeSvgTag && node.replaceWith(nodeSvgTag);
-
+                throw new Err('TODO icon type: ' + iconType);   // TODO 尚未对应
+            }else{
+                // 错误类型，提示修改
+                throw new Err(`support type (${iconType}), etc. inline|inline-symbol|symbol`, { ...context.input, ...nodeType.object.Value.pos });
             }
 
         });
@@ -187,33 +158,32 @@ bus.on('编译插件', function(){
 
 }());
 
-function findSvgByPkgFilter(ary, propSrc, errLocInfo){
+// 在npm包中查找
+function findSvgByPkgFilter(ary, nameProp, errInfo, fromFile){
 
     // 简单排除window环境下书写绝对路径的情况
-    if ( File.existsFile(propSrc) ) {
-        throw new Err('unsupport absolute file path', errLocInfo);                              // 不支持使用绝对路径，避免换机器环境引起混乱
+    if ( File.existsFile(nameProp) ) {
+        throw new Err('unsupport absolute file path', errInfo);                                             // 不支持使用绝对路径，避免换机器环境引起混乱
     }
 
     // 指定NPM包中文件的形式，npm包视为稳定，支持使用通配符提高灵活性
     let pkg = ary[0].trim();
     let filter = ary[1].trim();
     if ( !pkg ) {
-        throw new Err('missing npm package name, etc. name:svgfilefilter', errLocInfo);         // 输入有误，漏包名
+        throw new Err('missing npm package name, etc. pkg:svgfilter', errInfo);                             // 输入有误，漏包名
     }
     if ( !filter ) {
-        throw new Err('missing svf icon file filter, etc. name:svgfilefilter', errLocInfo);     // 输入有误，漏文件名
+        throw new Err('missing svf file filter, etc. pkg:svgfilter', errInfo);                              // 输入有误，漏文件名
     }
 
-    let ok = bus.at('自动安装', pkg);
-    if ( !ok ) {
-        throw new Err('npm package install failed: ' + pkg, errLocInfo);                        // 指定包安装失败
+    if ( !bus.at('自动安装', pkg) ) {
+        throw new Err('npm package install failed: ' + pkg, errInfo);                                       // 指定包安装失败
     }
-
 
     // 检查缓存
     let env = bus.at('编译环境');
     let oCache = bus.at('缓存');
-    let cacheKey = JSON.stringify(['search-svgicon-by-pkg-filter', env.path.root, pkg, filter]);
+    let cacheKey = JSON.stringify(['按包名：过滤器查找SVG图标文件', File.path(fromFile), pkg, filter]);
     if ( !env.nocache ) {
         let cacheValue = oCache.get(cacheKey);
         if ( cacheValue ) return cacheValue;
@@ -221,67 +191,93 @@ function findSvgByPkgFilter(ary, propSrc, errLocInfo){
 
     let oPkg = bus.at('模块组件信息', pkg);
     let files = File.files(oPkg.path, filter);
-    if ( !files.length && !filter.startsWith("**/") ) {
-        // 默认找不到时，任意上级目录下下再找一遍
-        filter = ("**/" + filter).replace(/\/\//g, '/');
-        files = File.files(oPkg.path, filter);
-
-        // 找到唯一一个就算对，否则按没找到处理
+    if ( !files.length ) {
+        // 默认找不到时，添加任意目录条件再找一遍，如果能找到唯一一个也算成功
+        let filter2 = ("**/" + filter).replace(/\/\//g, '/');
+        files = File.files(oPkg.path, filter2);
         if ( files.length != 1 ) {
-            throw new Err('svf icon file not found in package: ' + pkg, errLocInfo);            // npm包安装目录内找不到指定的图标文件
+            // 找不到唯一一个，则按没找到处理
+            throw new Err('svf file not found in package: ' + pkg, errInfo);                                // npm包安装目录内找不到指定的图标文件
         }
     }
 
-    if ( !files.length ) {
-        throw new Err('svf icon file not found in package: ' + pkg, errLocInfo);                // npm包安装目录内找不到指定的图标文件
-    }
     if ( files.length > 1 ) {
-        throw new Err('multi svf icon file found in package: ' + pkg + '\n' + files.join('\n'), errLocInfo);       // npm包安装目录内找到多个图标文件 （通配符匹配到多个导致，应修改）
+        // 找到多个时，按错误处理
+        throw new Err('multi svf file found in package: ' + pkg + '\n' + files.join('\n'), errInfo);        // npm包安装目录内找到多个图标文件 （通配符匹配到多个导致，应修改）
     }
 
-    return oCache.set(cacheKey, files[0]);                                                      // 正常找到唯一的一个文件
+    return oCache.set(cacheKey, files[0]);                                                                  // 正常找到唯一的一个文件
 }
 
-function findSvgInProject(propSrc, errLocInfo, context){
+// 在工程内和内置包中查找
+function findSvgInProjectAndBuildinPkg(filter, errInfo, fromFile){
 
-    // 项目目录范围内指定文件的形式，优先按源文件相对目录查找，其次在项目配置指定目录中查找
-    let filter = propSrc;
-
-    let oPjtContext = bus.at("项目配置处理", context.input.file);
-    let svgfile = File.resolve(context.input.file, filter);                                     // 相对于源文件所在目录，按相对路径查找svg文件
+    // --------------------------------------------
+    // 优先按源文件相对目录，直接拼接路径查找文件
+    let oPjtContext = bus.at("项目配置处理", fromFile);
+    let svgfile = File.resolve(fromFile, filter);                                                           // 相对于源文件所在目录，按相对路径查找svg文件
     if ( File.existsFile(svgfile) ) {
-        // 优先按源文件相对目录查找，如果找到的svg不在该文件所在项目范围，报错
         if ( !svgfile.startsWith(oPjtContext.path.root + '/') ) {
-            throw new Err('file should not out of project\nsrc: ' + context.input.file + '\nsvg: ' + svgfile, errLocInfo);      // 不支持引用项目外文件，避免版本混乱
+            throw new Err('file should not out of project\nsrc: ' + fromFile
+                + '\nsvg: ' + svgfile, errInfo);                                                            // 不支持引用项目外文件，避免版本混乱
         }
-    }else {
-        // 其次在文件所在的项目配置指定目录中查找
-        if ( !/^[./\\]+/.test(filter) ) {
-            svgfile = oPjtContext.path.svgicons + '/' + filter.replace(/\\/g, '/');
-            if ( !File.existsFile(svgfile) ) {
-                return false;
+        return svgfile;                                                                                     // 按源文件相对目录找到
+    }
+
+    // --------------------------------------------
+    // 其次以文件所在的项目配置指定目录，按过滤条件查找
+    let dir = oPjtContext.path.svgicons;
+    let files = File.files(dir, filter);
+    if ( files.length == 1 ) {
+        if ( files[0] === filter ) {
+            throw new Err('unsupport absolute file path', errInfo);                                         // 不支持使用绝对路径，避免换机器环境引起混乱
+        }
+        return files[0];                                                                                    // 项目配置指定目录中找到
+    }
+
+    // 默认找不到时，添加任意目录条件再找一遍，如果能找到唯一一个也算成功
+    let filter2, files2;
+    if ( files.length < 1 ) {
+        filter2 = ("**/" + filter).replace(/\/\//g, '/');
+        files2 = File.files(dir, filter2);
+        if ( files2.length == 1 ) {
+            if ( files2[0] === filter ) {
+                throw new Err('unsupport absolute file path', errInfo);                                     // 不支持使用绝对路径，避免换机器环境引起混乱
             }
-        }else{
-            return false;
+            return files2[0];                                                                               // 项目配置指定目录中二次找到
         }
     }
 
-    if ( svgfile === filter ) {
-        throw new Err('unsupport absolute file path', errLocInfo);                              // 不支持使用绝对路径，避免换机器环境引起混乱
+    // --------------------------------------------
+    // 在内置npm包中查找
+    let buildindir = resolvepkg('@rpose/buildin') + '/svgicons';
+    let buildinfiles = File.files(buildindir, filter);
+    if ( buildinfiles.length == 1 ) {
+        return buildinfiles[0];                                                                             // 内置npm包中找到
     }
 
-    return svgfile;
-}
-
-function findSvgInBuildInPackage(propSrc, errLocInfo){
-    let dir = resolvepkg('@rpose/buildin') + '/svgicons';
-    let files = File.files(dir, propSrc);
-    if ( !files.length ) {
-        throw new Err('svf icon file not found', errLocInfo);                                   // 内置包中找不到指定的图标文件
+    // 默认找不到时，添加任意目录条件再找一遍，如果能找到唯一一个也算成功
+    let buildinfilter2, buildinfiles2;
+    if ( buildinfiles.length < 1 ) {
+        buildinfilter2 = ("**/" + filter).replace(/\/\//g, '/');
+        buildinfiles2 = File.files(buildindir, buildinfilter2);
+        if ( buildinfiles2.length == 1 ) {
+            if ( buildinfiles2[0] === filter ) {
+                throw new Err('unsupport absolute file path', errInfo);                                     // 不支持使用绝对路径，避免换机器环境引起混乱
+            }
+            return buildinfiles2[0];                                                                        // 内置npm包中二次找到
+        }
     }
-    if ( files.length > 1 ) {
-        throw new Err('multi svf icon file found in package [@rpose/buildin]\n' + files.join('\n'), errLocInfo);     // 内置包中找到多个图标文件
-    }
 
-    return files[0];
+
+    // 报错
+    if ( files.length > 1 || files2.length > 1 ) {
+        throw new Err('multi svf file found in folder: ' + dir + '\n'
+            + [...files, ...files2].join('\n'), errInfo);                                                   // 报错，项目配置指定目录中找到多个
+    }
+    if ( buildinfiles.length > 1 || buildinfiles2.length > 1 ) {
+        throw new Err('multi svf file found in package [@rpose/buildin]\n'
+            + [...buildinfiles, ...buildinfiles2].join('\n'), errInfo);                                     // 报错，内置npm包中找到多个
+    }
+    throw new Err('svf file not found', errInfo);                                                           // 找不到
 }
