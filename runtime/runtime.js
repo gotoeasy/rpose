@@ -274,7 +274,11 @@
             }
             let oStyle = parseStyleToObject(val);
             for (let key in oStyle) {
-                el.style[key] = oStyle[key];
+                if (key.startsWith("--")) {
+                    el.style.setProperty(key, oStyle[key]);
+                } else {
+                    el.style[key] = oStyle[key];
+                }
             }
         });
         return {
@@ -288,10 +292,14 @@
         let rs = {};
         let ary = style.split(";").filter(v => v.trim() != "");
         ary.forEach(v => {
-            let kv = v.split(":").filter(v => v.trim() != ""), key;
+            let kv = v.split(":").map(v => v.trim()).filter(v => !!v), key;
             if (kv.length == 2) {
-                key = toLowerCase(kv[0]).split("-").filter(v => v.trim() != "").map((v, i) => i ? v.charAt(0).toUpperCase() + v.substring(1) : v).join("");
-                rs[key] = kv[1].trim();
+                if (kv[0].startsWith("-")) {
+                    rs[kv[0]] = kv[1];
+                } else {
+                    key = toLowerCase(kv[0]).split("-").filter(v => v.trim() != "").map((v, i) => i ? v.charAt(0).toUpperCase() + v.substring(1) : v).join("");
+                    rs[key] = kv[1];
+                }
             }
         });
         return rs;

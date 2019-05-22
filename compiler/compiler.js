@@ -290,7 +290,7 @@ console.time("load");
             return oFiles;
         });
 
-        bus.on("源文件添加", function(oFile) {
+        bus.on("源文件添加", async function(oFile) {
             let tag = getTagOfSrcFile(oFile.file);
             if (!tag) {
                 return console.error("[src-file-manager]", "invalid source file name ..........", oFile.file); // 无效文件出警告
@@ -306,10 +306,10 @@ console.time("load");
             }
 
             oFiles[oFile.file] = getSrcFileObject(oFile.file, tag); // 第一个有效
-            return bus.at("全部编译");
+            return await bus.at("全部编译");
         });
 
-        bus.on("SVG文件添加", function(svgfile) {
+        bus.on("SVG文件添加", async function(svgfile) {
             let env = bus.at("编译环境");
             if (svgfile.startsWith(env.path.svgicons + "/")) {
                 bus.at("生成项目SVG-SYMBOL文件", true);
@@ -344,26 +344,26 @@ console.time("load");
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
                     removeHtmlCssJsFile(pageFile);
                 });
-                return bus.at("全部编译");
+                return await bus.at("全部编译");
             }
 
             return [];
         });
 
-        bus.on("图片文件添加", function() {
+        bus.on("图片文件添加", async function() {
             // 图片文件添加时，重新编译未编译成功的组件
             let oFiles = bus.at("源文件对象清单");
             for (let file in oFiles) {
                 let context = bus.at("组件编译缓存", file);
                 if (!context) {
-                    return bus.at("全部编译");
+                    return await bus.at("全部编译");
                 }
             }
 
             return [];
         });
 
-        bus.on("源文件修改", function(oFileIn) {
+        bus.on("源文件修改", async function(oFileIn) {
             let tag = getTagOfSrcFile(oFileIn.file);
             let refFiles = getRefPages(tag); // 关联页面文件
             let oFile = oFiles[oFileIn.file];
@@ -382,10 +382,10 @@ console.time("load");
             });
             bus.at("组件编译缓存", oFile.file, false); // 删除当前文件的编译缓存
             removeHtmlCssJsFile(oFile.file);
-            return bus.at("全部编译");
+            return await bus.at("全部编译");
         });
 
-        bus.on("SVG文件修改", function(svgfile) {
+        bus.on("SVG文件修改", async function(svgfile) {
             let env = bus.at("编译环境");
             if (svgfile.startsWith(env.path.svgicons + "/")) {
                 bus.at("生成项目SVG-SYMBOL文件", true);
@@ -422,13 +422,13 @@ console.time("load");
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
                     removeHtmlCssJsFile(pageFile);
                 });
-                return bus.at("全部编译");
+                return await bus.at("全部编译");
             }
 
             return [];
         });
 
-        bus.on("图片文件修改", function(imgfile) {
+        bus.on("图片文件修改", async function(imgfile) {
             // 图片文件修改时，找出使用该图片文件的组件，以及使用该组件的页面，都清除缓存后重新编译
             let oFiles = bus.at("源文件对象清单");
             let refFiles = [];
@@ -450,13 +450,13 @@ console.time("load");
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
                     removeHtmlCssJsFile(pageFile);
                 });
-                return bus.at("全部编译");
+                return await bus.at("全部编译");
             }
 
             return [];
         });
 
-        bus.on("源文件删除", function(file) {
+        bus.on("源文件删除", async function(file) {
             let tag = getTagOfSrcFile(file);
             let refFiles = getRefPages(tag); // 关联页面文件
             let oFile = oFiles[file];
@@ -489,10 +489,10 @@ console.time("load");
             bus.at("组件编译缓存", oFile.file, false); // 删除当前文件的编译缓存
             removeHtmlCssJsFile(oFile.file);
 
-            return bus.at("全部编译");
+            return await bus.at("全部编译");
         });
 
-        bus.on("SVG文件删除", function(svgfile) {
+        bus.on("SVG文件删除", async function(svgfile) {
             let env = bus.at("编译环境");
             if (svgfile.startsWith(env.path.svgicons + "/")) {
                 bus.at("生成项目SVG-SYMBOL文件", true);
@@ -526,15 +526,15 @@ console.time("load");
                     bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
                     removeHtmlCssJsFile(pageFile);
                 });
-                return bus.at("全部编译");
+                return await bus.at("全部编译");
             }
 
             return [];
         });
 
-        bus.on("图片文件删除", function(imgfile) {
+        bus.on("图片文件删除", async function(imgfile) {
             // 图片文件删除时，处理等同图片文件修改
-            return bus.at("图片文件修改", imgfile);
+            return await bus.at("图片文件修改", imgfile);
         });
     })();
 
@@ -656,6 +656,12 @@ console.time("load");
                                 let hashcode = hash({ file });
                                 oOthHash[file] = hashcode;
                                 await busAt("图片文件添加"); // 只是把没编译成功的都再编译一遍，不需要传文件名
+                            } else if (isValidCssFile(file)) {
+                                // CSS文件添加（可能影响本地样式库）
+                                console.info("add css ......", file);
+                                let hashcode = hash({ file });
+                                oOthHash[file] = hashcode;
+                                await busAt("CSS文件添加", file);
                             }
                         }
                     })
@@ -710,6 +716,14 @@ console.time("load");
                                     oOthHash[file] = hashcode;
                                     await busAt("图片文件修改", file);
                                 }
+                            } else if (isValidCssFile(file)) {
+                                // CSS文件修改（可能影响本地样式库）
+                                let hashcode = hash({ file });
+                                if (oOthHash[file] !== hashcode) {
+                                    console.info("change css ......", file);
+                                    oOthHash[file] = hashcode;
+                                    await busAt("CSS文件修改", file);
+                                }
                             }
                         }
                     })
@@ -748,6 +762,11 @@ console.time("load");
                                 console.info("del img ......", file);
                                 delete oOthHash[file];
                                 await busAt("图片文件删除", file);
+                            } else if (isValidCssFile(file)) {
+                                // CSS文件删除
+                                console.info("del css ......", file);
+                                delete oOthHash[file];
+                                await busAt("CSS文件删除", file);
                             }
                         }
                     })
@@ -760,8 +779,9 @@ console.time("load");
 
     async function busAt(name, ofile) {
         console.time("build");
-        let promises = bus.at(name, ofile);
+        let promises = await bus.at(name, ofile);
         if (promises) {
+            // 此逻辑多数已无用，暂且放着
             for (let i = 0, p; (p = promises[i++]); ) {
                 try {
                     await p;
@@ -799,6 +819,15 @@ console.time("load");
         return (
             /\.(jpg|png|gif|bmp|jpeg)$/i.test(file) && !file.startsWith(buildPath) && !file.startsWith(node_modulesPath) && !file.startsWith(dotPath)
         );
+    }
+
+    function isValidCssFile(file) {
+        let env = bus.at("编译环境");
+        let buildPath = env.path.build + "/";
+        let node_modulesPath = env.path.root + "/node_modules/";
+        let dotPath = env.path.root + "/.";
+
+        return /\.css$/i.test(file) && !file.startsWith(buildPath) && !file.startsWith(node_modulesPath) && !file.startsWith(dotPath);
     }
 
     // ------- a22m-file-watcher end
@@ -1431,30 +1460,145 @@ console.time("load");
     const hash = require("@gotoeasy/hash");
     const csslibify = require("csslibify");
 
-    bus.on(
-        "样式库",
-        (function() {
-            // 参数oCsslib为样式库定义信息对象
-            // 返回样式库对象
-            return function(oCsslib) {
-                // 导入处理
-                let cssfiles = File.files(oCsslib.dir, ...oCsslib.filters); // 待导入的css文件数组
-                let libid = hash(JSON.stringify(["样式库缓存用ID", oCsslib.pkg, cssfiles])); // 样式库缓存用ID【实际包名：文件列表】
+    (function(mapFileCsslibs = new Map()) {
+        // 参数oCsslib为样式库定义信息对象
+        // 返回样式库对象
+        bus.on("样式库", function(oCsslib, fromFile) {
+            // 导入处理
+            let cssfiles = []; // 待导入的css文件数组
+            oCsslib.filters.forEach(filter => {
+                cssfiles.push(...File.files(oCsslib.dir, filter)); // 逐个过滤筛选，确保按过滤器顺序读取文件
+            });
 
-                let pkg = oCsslib.pkg; // 样式库包名
-                if (pkg.startsWith("~")) {
-                    pkg = hash(oCsslib.dir); // 本地目录样式库时，用目标目录的绝对路径进行哈希生成包名(用相对路径可能导致重名)
+            let text = [];
+            cssfiles.forEach(cssfile => text.push(File.read(cssfile)));
+            let textid = hash(text.join("\n")); // 文件内容哈希ID
+
+            let pkg = oCsslib.pkg; // 样式库包名
+            if (pkg.startsWith("~")) {
+                pkg = "dir_" + textid; // 本地目录样式库时，添加文件内容哈希ID后缀作为包名(用以支持导入不同文件或修改文件内容而不产生冲突)
+
+                let env = bus.at("编译环境");
+                if (env.watch) {
+                    let ary = mapFileCsslibs.get(fromFile) || [];
+                    mapFileCsslibs.set(fromFile, ary);
+                    oCsslib.cssfiles = cssfiles; // 文件存起来方便比较
+                    ary.push(oCsslib); // 如果是文件监视模式，把本地样式库的配置都存起来，便于样式文件修改时判断做重新编译
                 }
+            } else {
+                pkg += "_" + textid; // npm包时，添加文件内容哈希ID后缀作为包名(用以支持导入不同文件或更改版本而不产生冲突)
+            }
 
-                let csslib = csslibify(pkg, oCsslib.alias, libid);
-                !csslib._imported.length && cssfiles.forEach(cssfile => csslib.imp(cssfile)); // 未曾导入时，做导入
+            let csslib = csslibify(pkg, oCsslib.alias, textid); // 用文件内容作为样式库的缓存ID（会浅复制更新包名和别名）
 
-                csslib.isEmpty = !cssfiles.length; // 保存标志便于判断
+            if (!csslib._imported.length) {
+                for (let i = 0; i < text.length; i++) {
+                    csslib.imp(text[i++]); // 未曾导入时，做导入，直接使用已读内容
+                }
+            }
 
-                return csslib;
-            };
-        })()
-    );
+            csslib.isEmpty = !cssfiles.length; // 保存标志便于判断
+
+            return csslib;
+        });
+
+        bus.on("CSS文件添加", async function() {
+            let configFile,
+                srcFiles = [];
+
+            // 全部样式库都按过滤器重新筛选检查，看样式文件列表是否一致
+            mapFileCsslibs.forEach((ary, fromFile) => {
+                for (let i = 0, oCsslib, files; (oCsslib = ary[i++]); ) {
+                    files = [];
+                    oCsslib.filters.forEach(filter => {
+                        files.push(...File.files(oCsslib.dir, filter)); // 重新逐个过滤筛选
+                    });
+                    if (files.join("") !== oCsslib.cssfiles.join("")) {
+                        // 不一样了，该fromFile关联组件要重新编译
+                        if (fromFile.endsWith("/rpose.config.btf")) {
+                            configFile = fromFile;
+                        } else {
+                            srcFiles.push(fromFile);
+                        }
+                        break;
+                    }
+                }
+            });
+
+            if (configFile) {
+                // 影响到了项目配置文件的[csslib]样式库配置，全部重新编译吧
+                mapFileCsslibs.clear();
+                await bus.at("全部重新编译");
+                return;
+            } else {
+                // 影响到了相关组件文件的[csslib]或@csslib样式库配置，关联组件都重新编译
+                await rebuildAllReferances(...srcFiles);
+            }
+        });
+
+        bus.on("CSS文件修改", async function(cssFile) {
+            let configFile,
+                srcFiles = [];
+
+            // 全部样式库逐个检查文件列表是否包含被变更的css文件
+            mapFileCsslibs.forEach((ary, fromFile) => {
+                for (let i = 0, oCsslib; (oCsslib = ary[i++]); ) {
+                    if (oCsslib.cssfiles.includes(cssFile)) {
+                        if (fromFile.endsWith("/rpose.config.btf")) {
+                            configFile = fromFile;
+                        } else {
+                            srcFiles.push(fromFile);
+                        }
+                        break;
+                    }
+                }
+            });
+
+            if (configFile) {
+                // 影响到了项目配置文件的[csslib]样式库配置，全部重新编译吧
+                mapFileCsslibs.clear();
+                await bus.at("全部重新编译");
+                return;
+            } else {
+                // 影响到了相关组件文件的[csslib]或@csslib样式库配置，关联组件都重新编译
+                await rebuildAllReferances(...srcFiles);
+            }
+        });
+
+        bus.on("CSS文件删除", async function() {
+            // 和CSS文件添加是一样的处理逻辑
+            await bus.at("CSS文件添加");
+        });
+    })();
+
+    // 相关组件页面全部重新编译
+    async function rebuildAllReferances(...srcFiles) {
+        if (!srcFiles.length) return;
+
+        let pageFiles = bus.at("组件相关页面源文件", ...srcFiles);
+
+        // 清除页面组件编译缓存，删除已编译的html等文件
+        pageFiles.forEach(file => {
+            bus.at("组件编译缓存", file, false);
+            removeHtmlCssJsFile(file);
+        });
+
+        // 清除组件编译缓存
+        srcFiles.forEach(file => bus.at("组件编译缓存", file, false));
+
+        await bus.at("全部编译");
+    }
+
+    // 文件改变时，先删除生成的最终html等文件
+    function removeHtmlCssJsFile(file) {
+        let fileHtml = bus.at("页面目标HTML文件名", file);
+        let fileCss = bus.at("页面目标CSS文件名", file);
+        let fileJs = bus.at("页面目标JS文件名", file);
+
+        File.remove(fileHtml);
+        File.remove(fileCss);
+        File.remove(fileJs);
+    }
 
     // ------- b20m-csslibify end
 })();
@@ -2003,7 +2147,7 @@ console.time("load");
                 if (csslibs) {
                     let oCsslib;
                     for (let alias in csslibs) {
-                        oCsslib = bus.at("样式库", csslibs[alias]); // 转换为样式库对象
+                        oCsslib = bus.at("样式库", csslibs[alias], context.input.file); // 转换为样式库对象
                         if (oCsslib.isEmpty) {
                             throw new Err("css file not found", {
                                 file: context.input.file,
@@ -2930,7 +3074,7 @@ console.time("load");
                             });
                         }
 
-                        oCsslib = bus.at("样式库", csslib); // 转换为样式库对象
+                        oCsslib = bus.at("样式库", csslib, context.input.file); // 转换为样式库对象
                         if (oCsslib.isEmpty) {
                             throw new Err("css file not found", {
                                 file: context.input.file,
@@ -6925,7 +7069,7 @@ console.time("load");
 
                         // ---------------------------------
                         // 创建@csslib样式库
-                        let atcsslib = bus.at("样式库", csslib);
+                        let atcsslib = bus.at("样式库", csslib, context.input.file);
                         if (atcsslib.isEmpty) {
                             throw new Err("css file not found", {
                                 file: context.input.file,
@@ -9261,63 +9405,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- z10m-browserslist end
 })();
 
-/* ------- z20m-rename-css-classname ------- */
+/* ------- z20m-util-get-tagpkg-fullname-of-src-file ------- */
 (() => {
-    // ------- z20m-rename-css-classname start
-    const bus = require("@gotoeasy/bus");
-    const hash = require("@gotoeasy/hash");
-
-    bus.on(
-        "哈希样式类名",
-        (function() {
-            // -------------------------------------------------------
-            // release模式
-            // foo          => _xxxxx
-            // foo@pkg      => _xxxxx
-            // _xxxxx       => _xxxxx（视为已改名不再修改）
-            //
-            // 非release模式
-            // foo          => foo___xxxxx
-            // foo@pkg      => foo---pkg
-            // foo---pkg    => foo---pkg（视为已改名不再修改）
-            // foo___xxxxx  => foo___xxxxx（视为已改名不再修改）
-            // -------------------------------------------------------
-            return function renameCssClassName(srcFile, clsName) {
-                let name = clsName;
-
-                // 特殊名称不哈希（已哈希的是下划线开头）
-                if (name.startsWith("_")) {
-                    return name;
-                }
-
-                const env = bus.at("编译环境");
-                if (clsName.indexOf("@") > 0) {
-                    let ary = clsName.split("@");
-                    !ary[1] && (ary[1] = "UNKNOW");
-
-                    name = `${ary[0]}---${ary[1]}`; // 引用样式库时，使用命名空间后缀，如 the-class---pkgname
-                } else {
-                    if (name.indexOf("---") > 0 || name.indexOf("___") > 0) {
-                        // 已经改过名
-                    } else {
-                        let tag = bus.at("标签全名", srcFile);
-                        name = `${clsName}___${hash(tag)}`; // 当前项目组件时，标签全名哈希作为后缀，如 my-class___xxxxx
-                    }
-                }
-
-                name = name.replace(/[^a-zA-z0-9\-_]/g, "-"); // 包名中【字母数字横杠下划线】以外的字符都替换为下划线，便于在非release模式下查看
-                if (!env.release) return name; // 非release模式时不哈希
-                return "_" + hash(name); // 名称已有命名空间前缀，转换为小写后哈希便于复用
-            };
-        })()
-    );
-
-    // ------- z20m-rename-css-classname end
-})();
-
-/* ------- z30m-util-get-tagpkg-fullname-of-src-file ------- */
-(() => {
-    // ------- z30m-util-get-tagpkg-fullname-of-src-file start
+    // ------- z20m-util-get-tagpkg-fullname-of-src-file start
     const File = require("@gotoeasy/file");
     const bus = require("@gotoeasy/bus");
 
@@ -9351,12 +9441,12 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    // ------- z30m-util-get-tagpkg-fullname-of-src-file end
+    // ------- z20m-util-get-tagpkg-fullname-of-src-file end
 })();
 
-/* ------- z32m-util-get-src-file-of-tag ------- */
+/* ------- z22m-util-get-src-file-of-tag ------- */
 (() => {
-    // ------- z32m-util-get-src-file-of-tag start
+    // ------- z22m-util-get-src-file-of-tag start
     const bus = require("@gotoeasy/bus");
 
     bus.on(
@@ -9413,7 +9503,50 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    // ------- z32m-util-get-src-file-of-tag end
+    // ------- z22m-util-get-src-file-of-tag end
+})();
+
+/* ------- z24m-util-get-tag-reference-page-files ------- */
+(() => {
+    // ------- z24m-util-get-tag-reference-page-files start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "组件相关页面源文件",
+        (function() {
+            return (...srcFiles) => {
+                let pageFiles = [];
+                srcFiles.forEach(file => {
+                    let context = bus.at("组件编译缓存", file);
+                    if (context && context.result && context.result.isPage) {
+                        pageFiles.push(file);
+                    }
+
+                    pageFiles.push(...getRefPages(file));
+                });
+                return [...new Set(pageFiles)];
+            };
+        })()
+    );
+
+    // 项目范围内，取组件相关的页面源文件
+    function getRefPages(srcFile) {
+        let refFiles = [];
+        let tag = bus.at("标签全名", srcFile);
+        if (tag) {
+            let oFiles = bus.at("源文件对象清单");
+            for (let file in oFiles) {
+                let context = bus.at("组件编译缓存", file);
+                if (context && context.result && context.result.isPage) {
+                    let allreferences = context.result.allreferences || [];
+                    allreferences.includes(tag) && refFiles.push(file);
+                }
+            }
+        }
+        return refFiles;
+    }
+
+    // ------- z24m-util-get-tag-reference-page-files end
 })();
 
 /* ------- z34m-util-get-jsclass-name-of-src-file ------- */
@@ -9950,6 +10083,60 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     // ------- z82m-auto-install-npm-package end
+})();
+
+/* ------- z90m-rename-css-classname ------- */
+(() => {
+    // ------- z90m-rename-css-classname start
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+
+    bus.on(
+        "哈希样式类名",
+        (function() {
+            // -------------------------------------------------------
+            // release模式
+            // foo          => _xxxxx
+            // foo@pkg      => _xxxxx
+            // _xxxxx       => _xxxxx（视为已改名不再修改）
+            //
+            // 非release模式
+            // foo          => foo___xxxxx
+            // foo@pkg      => foo---pkg
+            // foo---pkg    => foo---pkg（视为已改名不再修改）
+            // foo___xxxxx  => foo___xxxxx（视为已改名不再修改）
+            // -------------------------------------------------------
+            return function renameCssClassName(srcFile, clsName) {
+                let name = clsName;
+
+                // 特殊名称不哈希（已哈希的是下划线开头）
+                if (name.startsWith("_")) {
+                    return name;
+                }
+
+                const env = bus.at("编译环境");
+                if (clsName.indexOf("@") > 0) {
+                    let ary = clsName.split("@");
+                    !ary[1] && (ary[1] = "UNKNOW");
+
+                    name = `${ary[0]}---${ary[1]}`; // 引用样式库时，使用命名空间后缀，如 the-class---pkgname
+                } else {
+                    if (name.indexOf("---") > 0 || name.indexOf("___") > 0) {
+                        // 已经改过名
+                    } else {
+                        let tag = bus.at("标签全名", srcFile);
+                        name = `${clsName}___${hash(tag)}`; // 当前项目组件时，标签全名哈希作为后缀，如 my-class___xxxxx
+                    }
+                }
+
+                name = name.replace(/[^a-zA-z0-9\-_]/g, "-"); // 包名中【字母数字横杠下划线】以外的字符都替换为下划线，便于在非release模式下查看
+                if (!env.release) return name; // 非release模式时不哈希
+                return "_" + hash(name); // 名称已有命名空间前缀，转换为小写后哈希便于复用
+            };
+        })()
+    );
+
+    // ------- z90m-rename-css-classname end
 })();
 
 /* ------- z99p-log ------- */

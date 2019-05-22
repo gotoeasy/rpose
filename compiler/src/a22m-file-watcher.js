@@ -60,6 +60,12 @@ bus.on('文件监视', function (oSrcHash={}, oOthHash={}, hashBrowserslistrc, h
                     let hashcode = hash({file});
                     oOthHash[file] = hashcode;
                     await busAt('图片文件添加');                                     // 只是把没编译成功的都再编译一遍，不需要传文件名
+                }else if ( isValidCssFile(file) ) {
+                    // CSS文件添加（可能影响本地样式库）
+                    console.info('add css ......', file);
+                    let hashcode = hash({file});
+                    oOthHash[file] = hashcode;
+                    await busAt('CSS文件添加', file);
                 }
 
             }
@@ -117,6 +123,14 @@ bus.on('文件监视', function (oSrcHash={}, oOthHash={}, hashBrowserslistrc, h
                         oOthHash[file] = hashcode;
                         await busAt('图片文件修改', file);
                     }
+                }else if ( isValidCssFile(file) ) {
+                    // CSS文件修改（可能影响本地样式库）
+                    let hashcode = hash({file});
+                    if ( oOthHash[file] !== hashcode ) {
+                        console.info('change css ......', file);
+                        oOthHash[file] = hashcode;
+                        await busAt('CSS文件修改', file);
+                    }
                 }
 
             }
@@ -158,6 +172,11 @@ bus.on('文件监视', function (oSrcHash={}, oOthHash={}, hashBrowserslistrc, h
                     console.info('del img ......', file);
                     delete oOthHash[file];
                     await busAt('图片文件删除', file);
+                }else if ( isValidCssFile(file) ) {
+                    // CSS文件删除
+                    console.info('del css ......', file);
+                    delete oOthHash[file];
+                    await busAt('CSS文件删除', file);
                 }
 
             }
@@ -174,8 +193,9 @@ bus.on('文件监视', function (oSrcHash={}, oOthHash={}, hashBrowserslistrc, h
 
 async function busAt(name, ofile){
     console.time('build');
-    let promises = bus.at(name, ofile);
+    let promises = await bus.at(name, ofile);
     if ( promises ) {
+        // 此逻辑多数已无用，暂且放着
         for ( let i=0,p; p=promises[i++]; ) {
             try{
                 await p;
@@ -214,6 +234,18 @@ function isValidImageFile(file){
     let dotPath = env.path.root + '/.';
 
     return /\.(jpg|png|gif|bmp|jpeg)$/i.test(file) 
+        && !file.startsWith(buildPath)
+        && !file.startsWith(node_modulesPath)
+        && !file.startsWith(dotPath);
+}
+
+function isValidCssFile(file){
+    let env = bus.at('编译环境');
+    let buildPath = env.path.build + '/';
+    let node_modulesPath = env.path.root + '/node_modules/';
+    let dotPath = env.path.root + '/.';
+
+    return /\.css$/i.test(file) 
         && !file.startsWith(buildPath)
         && !file.startsWith(node_modulesPath)
         && !file.startsWith(dotPath);

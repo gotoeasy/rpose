@@ -96,7 +96,7 @@ bus.on('编译插件', function(){
 
                 // ---------------------------------
                 // 创建@csslib样式库
-                let atcsslib = bus.at('样式库', csslib);
+                let atcsslib = bus.at('样式库', csslib, context.input.file);
                 if ( atcsslib.isEmpty ) {
                     throw new Err('css file not found', { file: context.input.file, text: context.input.text, start: csslib.pos.start, end: csslib.pos.end });
                 }

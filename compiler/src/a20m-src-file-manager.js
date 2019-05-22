@@ -75,7 +75,7 @@ const File = require('@gotoeasy/file');
         return oFiles;
     });
 
-    bus.on('源文件添加', function(oFile){
+    bus.on('源文件添加', async function(oFile){
 
         let tag = getTagOfSrcFile(oFile.file);
         if ( !tag ) {
@@ -92,11 +92,11 @@ const File = require('@gotoeasy/file');
         }
 
         oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);             // 第一个有效
-        return bus.at('全部编译');
+        return await bus.at('全部编译');
 
     });
 
-    bus.on('SVG文件添加', function(svgfile){
+    bus.on('SVG文件添加', async function(svgfile){
 
         let env = bus.at('编译环境');
         if ( svgfile.startsWith(env.path.svgicons + '/') ) {
@@ -129,27 +129,27 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return bus.at('全部编译');
+            return await bus.at('全部编译');
         }
 
         return [];
     });
 
-    bus.on('图片文件添加', function(){
+    bus.on('图片文件添加', async function(){
 
         // 图片文件添加时，重新编译未编译成功的组件
         let oFiles = bus.at('源文件对象清单');
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file);
             if ( !context ) {
-                return bus.at('全部编译');
+                return await bus.at('全部编译');
             }
         }
 
         return [];
     });
 
-    bus.on('源文件修改', function(oFileIn){
+    bus.on('源文件修改', async function(oFileIn){
 
         let tag = getTagOfSrcFile(oFileIn.file);
         let refFiles = getRefPages(tag);                                    // 关联页面文件
@@ -169,10 +169,10 @@ const File = require('@gotoeasy/file');
         });
         bus.at('组件编译缓存', oFile.file, false);                          // 删除当前文件的编译缓存
         removeHtmlCssJsFile(oFile.file);
-        return bus.at('全部编译');
+        return await bus.at('全部编译');
     });
 
-    bus.on('SVG文件修改', function(svgfile){
+    bus.on('SVG文件修改', async function(svgfile){
 
         let env = bus.at('编译环境');
         if ( svgfile.startsWith(env.path.svgicons + '/') ) {
@@ -208,13 +208,13 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return bus.at('全部编译');
+            return await bus.at('全部编译');
         }
 
         return [];
     });
 
-    bus.on('图片文件修改', function(imgfile){
+    bus.on('图片文件修改', async function(imgfile){
 
         // 图片文件修改时，找出使用该图片文件的组件，以及使用该组件的页面，都清除缓存后重新编译
         let oFiles = bus.at('源文件对象清单');
@@ -236,14 +236,14 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return bus.at('全部编译');
+            return await bus.at('全部编译');
         }
 
         return [];
     });
 
 
-    bus.on('源文件删除', function(file){
+    bus.on('源文件删除', async function(file){
 
         let tag = getTagOfSrcFile(file);
         let refFiles = getRefPages(tag);                                    // 关联页面文件
@@ -277,11 +277,11 @@ const File = require('@gotoeasy/file');
         bus.at('组件编译缓存', oFile.file, false);                           // 删除当前文件的编译缓存
         removeHtmlCssJsFile(oFile.file);
 
-        return bus.at('全部编译');
+        return await bus.at('全部编译');
     });
 
 
-    bus.on('SVG文件删除', function(svgfile){
+    bus.on('SVG文件删除', async function(svgfile){
 
         let env = bus.at('编译环境');
         if ( svgfile.startsWith(env.path.svgicons + '/') ) {
@@ -314,16 +314,16 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return bus.at('全部编译');
+            return await bus.at('全部编译');
         }
 
         return [];
     });
 
-    bus.on('图片文件删除', function(imgfile){
+    bus.on('图片文件删除', async function(imgfile){
 
         // 图片文件删除时，处理等同图片文件修改
-        return bus.at('图片文件修改', imgfile);
+        return await bus.at('图片文件修改', imgfile);
     });
 
 

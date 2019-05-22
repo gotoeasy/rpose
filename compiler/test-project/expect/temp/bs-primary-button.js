@@ -51,10 +51,10 @@ BsPrimaryButton.prototype.nodeTemplate = function nodeTemplate($state, $options,
             disabled: disabled,
             style: style,
             class: {
-                "bootstrap---btn-primary": /primary/i.test(type),
-                "bootstrap---btn": 1,
-                "bootstrap---btn-lg": 1,
-                "bootstrap---dropdown-toggle": 1
+                "btn-primary---bootstrap_1fmiufj": /primary/i.test(type),
+                "btn---bootstrap_1fmiufj": 1,
+                "btn-lg---bootstrap_1fmiufj": 1,
+                "dropdown-toggle---bootstrap_1fmiufj": 1
             }
         },
         e: {
