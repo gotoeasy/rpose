@@ -209,7 +209,8 @@ html,body{
     .menubar-icon-mobile {
         display: flex;                                                                      /* 显示小屏菜单图标 */
         align-items: center;
-        margin-left: 10px;
+        padding-left: 20px;
+        box-sizing: border-box;
     }
     .side-page {
         width: 100%;                                                                        /* 主内容栏宽度占满 */

@@ -12,7 +12,7 @@ bus.on('生成内联SVG-SYMBOL代码', function (){
         let allreferences = context.result.allreferences;
 
         // 取出页面使用到的内联svg，去除重复，排序后生成svg-symbol方式的字符串
-        let files = [ ...(context.result.inlinesymbols||[]) ];                      // 本页面，加了再说，避免遗漏
+        let files = [ ...(context.result.inlinesymbols||[]) ];                                          // 本页面，加了再说，避免遗漏
         allreferences.forEach(tagpkg => {
             let ctx = bus.at('组件编译缓存', bus.at('标签源文件', tagpkg, context.result.oTaglibs));
             ctx.result.inlinesymbols && files.push(...ctx.result.inlinesymbols);
@@ -25,7 +25,13 @@ bus.on('生成内联SVG-SYMBOL代码', function (){
         files.sort();
 
         let rs = ['<svg style="display:none;">'];
-        files.forEach(file => rs.push(svgToSymbol(file)) );                         // 需要适当的转换处理
+        let text, symbolId, oSetIds = new Set();
+        files.forEach(file => {
+            text = File.read(file);
+            symbolId = hash(text);
+            !oSetIds.has(symbolId) && rs.push(svgToSymbol(text, symbolId));                             // 需要适当的转换处理，使用文件内容哈希码作为id
+            oSetIds.add(symbolId);
+        });
         rs.push( '</svg>' );
 
         return rs.join('\n');
@@ -40,15 +46,23 @@ bus.on('生成项目SVG-SYMBOL文件', function (filename, fileshashcode, hashco
 
         let env  = bus.at('编译环境');
         let files = File.files(env.path.svgicons, '*.svg');
-        files.push(...bus.at('外部SVG-SYMBOL使用的第三方包中的图标文件'));
+//        files.push(...bus.at('外部SVG-SYMBOL使用的第三方包中的图标文件'));
+        files.push(...bus.at('项目全体页面及关联组件中svgicon硬编码用到的图标文件'));
         files = [...new Set(files)];
         files.sort();
         let hashcd = hash(JSON.stringify(files));
 
+        // TODO 文件名冲突
         if ( nocache || (hashcd !== fileshashcode) ) {
             fileshashcode = hashcd;
             let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
-            files.forEach(file => rs.push(svgToSymbol(file)) );                         // 需要适当的转换处理
+            let text, symbolId, oSetIds = new Set();
+            files.forEach(file => {
+                text = File.read(file);
+                symbolId = File.name(file);
+                !oSetIds.has(symbolId) && rs.push(svgToSymbol(text, symbolId));                         // 需要适当的转换处理，使用文件名作为id
+                oSetIds.add(symbolId);
+            });
             rs.push( '</svg>' );
 
             let svg = rs.join('');
@@ -65,15 +79,18 @@ bus.on('生成项目SVG-SYMBOL文件', function (filename, fileshashcode, hashco
 
 bus.on('生成外部引用SVG-USE', function (){
 
-    return function(id, props={}){
+    return function(exprOrFile, props={}){
         let attrs = [];
         for ( let key in props ) {
             attrs.push(`${key}="${props[key]}"`);
         }
-        let href = `%svgsymbolfile%#${id}`;
-        if ( bus.at('是否表达式', id) ) {
-            let expr = id.substring(1, id.length-1);
-            href = `{'%svgsymbolfile%#' + (${expr}) }`
+        let href;
+        if ( bus.at('是否表达式', exprOrFile) ) {
+            let expr = exprOrFile.substring(1, exprOrFile.length-1);
+            href = `{'%svgsymbolfile%#' + (${expr}) }`;
+        }else{
+            let name = File.name(exprOrFile);                                                           // 使用文件名作为id （TODO 冲突）
+            href = `%svgsymbolfile%#${name}`;
         }
         return `<svg ${attrs.join(' ')}><use xlink:href="${href}"></use></svg>`;
     }
@@ -92,10 +109,9 @@ bus.on('生成内部引用SVG-USE', function (){
 
 }());
 
+// text: 图标文件内容
 // <svg viewBox="...">...</svg>    =>   <symbol id="..." viewBox="...">...</symbol>
-function svgToSymbol(file){
-
-    let text = File.read(file), id = File.name(file);
+function svgToSymbol(text, symbolId){
 
     let svg, match;
     match = text.match(/<svg\s+[\s\S]*<\/svg>/);                                    // 从文件内容中提取出svg内容 （<svg>...</svg>）
@@ -128,8 +144,41 @@ function svgToSymbol(file){
     !viewBox && width && height && (viewBox = `0 0 ${width} ${height}`);            // 无 viewBox 且有 width、height 时，生成 viewBox
 
     // 设定 id、viewBox 属性，svg 替换为 symbol
-    return `<symbol id="${id}" viewBox="${viewBox}" ${svgstart.substring(4)} ${svg.substring(0, svg.length-6)}</symbol>`;
+    return `<symbol id="${symbolId}" viewBox="${viewBox}" ${svgstart.substring(4)} ${svg.substring(0, svg.length-6)}</symbol>`;
 }
+
+bus.on('项目全体页面及关联组件中svgicon硬编码用到的图标文件', function (){
+
+    return function(){
+
+        let oSetSvgFile = new Set();
+        let oSetSrcFile = new Set();
+        let oFiles = bus.at('源文件对象清单');
+        for ( let file in oFiles ) {                                                                // 遍历项目中的全体组件
+            let context = bus.at('组件编译缓存', file );
+            if ( context && context.result && context.result.isPage) {
+
+                (context.result.allrefsvgicons || []).forEach(f => oSetSvgFile.add(f));             // 当前页面组件中用到的存起来
+
+                let allreferences = context.result.allreferences || [];
+                for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
+                    if ( tagpkg.indexOf(':') > 0 ) {
+                        srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
+                        ctx = bus.at('组件编译缓存', srcFile );
+                        if ( ctx ) {
+                            if ( oSetSrcFile.has(srcFile) ) continue;                               // 避免重复添加，提高点性能
+                            oSetSrcFile.add(srcFile);
+                            (ctx.result.allrefsvgicons || []).forEach(f => oSetSvgFile.add(f));     // 页面关联组件中用到的存起来
+                        }
+                    }
+                }
+            }
+        }
+
+        return oSetSvgFile;
+    }
+
+}());
 
 bus.on('外部SVG-SYMBOL使用的第三方包中的图标文件', function (){
 

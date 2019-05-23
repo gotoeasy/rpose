@@ -37,7 +37,7 @@ bus.on('SVG图标文件解析插件', function(){
             let text = File.read(object.file);
 
             // 不支持大于50K的svg图标文件
-            if ( text.length > 100 * 1024 ) {
+            if ( text.length > 50 * 1024 ) {
                 throw new Error(`unsupport svg icon file (size>100K) [${file}]`);
             }
             // 不支持图标字体文件
@@ -80,7 +80,11 @@ bus.on('SVG图标文件解析插件', function(){
             if ( eqNode && eqNode.type === OPTS.TypeEqual ) {
                 // 键=值的三个节点
                 let valNode = eqNode.after();
-                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: false, pos: context.input.pos};
+                let Name = {pos: object.pos};
+                let Value = {pos: valNode.object.pos};
+                let pos = {start: object.pos.start, end: valNode.object.pos.end };
+
+                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, Name, Value, isExpression: false, pos};
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
                 eqNode.remove();

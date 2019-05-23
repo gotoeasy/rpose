@@ -2,6 +2,7 @@ const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
+const hash = require('@gotoeasy/hash');
 const resolvepkg = require('resolve-pkg');
 
 bus.on('编译插件', function(){
@@ -41,7 +42,7 @@ bus.on('编译插件', function(){
                 }
             });
 
-            !iconType && (iconType = 'inline');                                                                 // 缺省为 inline，直接显示svg
+            !iconType && (iconType = 'svg');                                                                    // 缺省为 svg，直接显示svg
             if ( !nodeName ) {
                 throw new Err('missing name attribute on tag svgicon', { ...context.input, ...object.pos });    // 不能没有name属性
             }
@@ -51,14 +52,14 @@ bus.on('编译插件', function(){
                 throw new Err('invalid value of name attribute', errInfoName);                                  // 不能没有name属性值
             }
 
-            // inline(内联svg)/inline-symbol(内联svg symbol)/symbol(外部引用svg symbol)/web-font(引用字体)
-            if ( /^inline$/i.test(iconType) ) {
+            // svg(内联svg)/inline-symbol(内联symbol定义)/link-symbol(外部symbol定义)
+            if ( /^svg$/i.test(iconType) ) {
                 // -------------------------------
-                // inline(内联svg)
+                // svg(内联svg)
                 // 【特点】可灵活引用svg图标
                 // -------------------------------
                 if ( bus.at('是否表达式', iconName) ) {
-                    throw new Err('unsupport expression when type is inline', errInfoName);                     // inline模式时name属性不支持表达式
+                    throw new Err('unsupport expression when type is "svg"', errInfoName);                      // inline模式时name属性不支持表达式
                 }
                 
                 iconName = iconName.replace(/\\/g, '/');
@@ -77,6 +78,9 @@ bus.on('编译插件', function(){
                         !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                            // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
                     }
                 }
+
+                let allrefsvgicons = context.result.allrefsvgicons = context.result.allrefsvgicons || [];       // 硬编码用到的全部图标文件
+                !allrefsvgicons.includes(svgfile) && allrefsvgicons.push(svgfile);
 
                 let nodeSvgTag;
                 try{
@@ -90,11 +94,11 @@ bus.on('编译插件', function(){
 
             }else if ( /^inline-symbol$/i.test(iconType) ) {
                 // -------------------------------
-                // inline-symbol(内联svg symbol)
+                // inline-symbol(内联symbol定义)
                 // 【特点】以页面为单位，按需内联引用
                 // -------------------------------
                 if ( bus.at('是否表达式', iconName) ) {
-                    throw new Err('unsupport expression when type is inline-symbol', errInfoName);              // inline-symbol模式时name属性不支持表达式
+                    throw new Err('unsupport expression when type is "inline-symbol"', errInfoName);            // inline-symbol模式时name属性不支持表达式
                 }
                 
                 iconName = iconName.replace(/\\/g, '/');
@@ -114,42 +118,68 @@ bus.on('编译插件', function(){
                     }
                 }
 
+                let allrefsvgicons = context.result.allrefsvgicons = context.result.allrefsvgicons || [];       // 硬编码用到的全部图标文件
+                !allrefsvgicons.includes(svgfile) && allrefsvgicons.push(svgfile);
+
                 let inlinesymbols = context.result.inlinesymbols = context.result.inlinesymbols || [];          // symbol内联关联的svg文件
                 !inlinesymbols.includes(svgfile) && inlinesymbols.push(svgfile);
 
-                let id = File.name(svgfile);
+                let id = hash(File.read(svgfile));                                                              // 珍惜id资源，用文件内容哈希作为id以避免冲突 （不支持表达式，编译决定，基本没影响）
                 let props = {};
                 for ( let k in oAttrs ) {
                     props[k] = oAttrs[k].value;
                 }
-                let strSvgUse = bus.at('生成内部引用SVG-USE', id, props);
-                let nodeSvgUse = bus.at('解析生成AST节点', strSvgUse);
+                let strSvgUse = bus.at('生成内部引用SVG-USE', id, props);                                        // 生成标签字符串，类似 <svg ...><use ...></use></svg>
+                let nodeSvgUse = bus.at('解析生成AST节点', strSvgUse);                                           // 转成AST节点
                 node.replaceWith(nodeSvgUse);
 
-            }else if ( /^symbol$/i.test(iconType) ) {
+            }else if ( /^link-symbol$/i.test(iconType) ) {
                 // -------------------------------
-                // symbol(外部引用svg symbol)
+                // link-symbol(外部symbol定义)
                 // 【特点】工程单位范围内可动态生成
                 // -------------------------------
                 let props = {};
                 for ( let k in oAttrs ) {
                     props[k] = oAttrs[k].value;
                 }
-                let strSvgUse = bus.at('生成外部引用SVG-USE', iconName, props);
-                let nodeSvgUse = bus.at('解析生成AST节点', strSvgUse);
-                node.replaceWith(nodeSvgUse);
 
-                context.result.hasRefSvgSymbol = true;
+                context.result.hasRefSvgSymbol = true;                                                              // 有无外部symbol定义的标记
 
-            }else if ( /^web[-]?font[s]?$/i.test(iconType) ) {
-                // -------------------------------
-                // web-font(引用字体)
-                // 【特点】兼容低版本浏览器
-                // -------------------------------
-                throw new Err('TODO icon type: ' + iconType);   // TODO 尚未对应
+                // 如果是硬编码，把找到的文件存起来，以支持添加工程外图标
+                if ( !bus.at('是否表达式', iconName) ) {
+                    iconName = iconName.replace(/\\/g, '/');
+                    !/\.svg$/i.test(iconName) && (iconName += '.svg');                                              // 后缀可以省略，如果没写则补足
+
+                    let svgfile, ary = iconName.split(':');
+                    if ( ary.length > 2 ) {
+                        throw new Err('invalid format of name attribute, etc. pkg:svgfilter', errInfoName);         // 格式有误，多个冒号
+                    }else if ( ary.length > 1 ) {
+                        svgfile = findSvgByPkgFilter(ary, iconName, errInfoName, context.input.file);               // 从npm包中查找
+                    }else{
+                        svgfile = findSvgInProjectAndBuildinPkg(iconName, errInfoName, context.input.file);         // 从工程内和内置包中查找
+
+                        if ( !svgfile.startsWith(resolvepkg('@rpose/buildin')) ) {
+                            let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];        // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
+                            !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile);                            // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
+                        }
+                    }
+
+                    let allrefsvgicons = context.result.allrefsvgicons = context.result.allrefsvgicons || [];       // 硬编码用到的全部图标文件
+                    !allrefsvgicons.includes(svgfile) && allrefsvgicons.push(svgfile);
+
+                    let strSvgUse = bus.at('生成外部引用SVG-USE', svgfile, props);                                   // 生成标签字符串，类似 <svg ...><use ...></use></svg>
+                    let nodeSvgUse = bus.at('解析生成AST节点', strSvgUse);                                           // 转成AST节点
+                    node.replaceWith(nodeSvgUse);
+
+                }else{
+                    let strSvgUse = bus.at('生成外部引用SVG-USE', iconName, props);                                  // 生成标签字符串，类似 <svg ...><use ...></use></svg>
+                    let nodeSvgUse = bus.at('解析生成AST节点', strSvgUse);                                           // 转成AST节点
+                    node.replaceWith(nodeSvgUse);
+                }
+
             }else{
                 // 错误类型，提示修改
-                throw new Err(`support type (${iconType}), etc. inline|inline-symbol|symbol`, { ...context.input, ...nodeType.object.Value.pos });
+                throw new Err(`support type (${iconType}), etc. svg | inline-symbol | link-symbol`, { ...context.input, ...nodeType.object.Value.pos });
             }
 
         });

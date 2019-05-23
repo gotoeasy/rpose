@@ -57,7 +57,11 @@ bus.on('解析生成AST节点插件', function(){
             if ( eqNode && eqNode.type === OPTS.TypeEqual ) {
                 // 键=值的三个节点
                 let valNode = eqNode.after();
-                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, isExpression: bus.at('是否表达式', valNode.object.value), pos: context.input.pos};
+                let Name = {pos: object.pos};
+                let Value = {pos: valNode.object.pos};
+                let pos = {start: object.pos.start, end: valNode.object.pos.end };
+
+                let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, Name, Value, isExpression: bus.at('是否表达式', valNode.object.value), pos};
                 let attrNode = this.createNode(oAttr);
                 node.replaceWith(attrNode);
                 eqNode.remove();
