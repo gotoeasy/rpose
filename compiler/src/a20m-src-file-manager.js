@@ -92,7 +92,7 @@ const File = require('@gotoeasy/file');
         }
 
         oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);             // 第一个有效
-        return await bus.at('全部编译');
+        await bus.at('全部编译');
 
     });
 
@@ -129,10 +129,9 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return await bus.at('全部编译');
+            await bus.at('全部编译');
         }
 
-        return [];
     });
 
     bus.on('图片文件添加', async function(){
@@ -145,8 +144,6 @@ const File = require('@gotoeasy/file');
                 return await bus.at('全部编译');
             }
         }
-
-        return [];
     });
 
     bus.on('源文件修改', async function(oFileIn){
@@ -169,7 +166,7 @@ const File = require('@gotoeasy/file');
         });
         bus.at('组件编译缓存', oFile.file, false);                          // 删除当前文件的编译缓存
         removeHtmlCssJsFile(oFile.file);
-        return await bus.at('全部编译');
+        await bus.at('全部编译');
     });
 
     bus.on('SVG文件修改', async function(svgfile){
@@ -208,10 +205,9 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return await bus.at('全部编译');
+            await bus.at('全部编译');
         }
 
-        return [];
     });
 
     bus.on('图片文件修改', async function(imgfile){
@@ -236,10 +232,9 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return await bus.at('全部编译');
+            await bus.at('全部编译');
         }
 
-        return [];
     });
 
 
@@ -277,7 +272,7 @@ const File = require('@gotoeasy/file');
         bus.at('组件编译缓存', oFile.file, false);                           // 删除当前文件的编译缓存
         removeHtmlCssJsFile(oFile.file);
 
-        return await bus.at('全部编译');
+        await bus.at('全部编译');
     });
 
 
@@ -314,16 +309,14 @@ const File = require('@gotoeasy/file');
                 bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
                 removeHtmlCssJsFile(pageFile);
             })
-            return await bus.at('全部编译');
+            await bus.at('全部编译');
         }
-
-        return [];
     });
 
     bus.on('图片文件删除', async function(imgfile){
 
         // 图片文件删除时，处理等同图片文件修改
-        return await bus.at('图片文件修改', imgfile);
+        await bus.at('图片文件修改', imgfile);
     });
 
 
@@ -362,14 +355,14 @@ bus.on('使用外部SVG-SYMBOL的页面文件', function (){
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file );
             if ( context && context.result && context.result.isPage) {
-                if ( context.result.hasRefSvgSymbol ) {
+                if ( context.result.hasSvgLinkSymbol ) {
                     files.push(file);                                                   // 页面使用了外部SVG-SYMBOL图标
                 }else{
                     let allreferences = context.result.allreferences;
                     for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
                         srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
                         ctx = bus.at('组件编译缓存', srcFile );
-                        if ( ctx && ctx.result && ctx.result.hasRefSvgSymbol ) {
+                        if ( ctx && ctx.result && ctx.result.hasSvgLinkSymbol ) {
                             files.push(file);                                           // 页面关联的组件使用了外部SVG-SYMBOL图标
                             break;
                         }

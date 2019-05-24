@@ -6,10 +6,10 @@ const File = require('@gotoeasy/file');
 
 bus.on('SVG图标文件解析', function(){
 
-    return function(file, attrs, pos){
+    return function(file, text, attrs, pos){
         // TODO 缓存
         let plugins = bus.on('SVG图标文件解析插件');
-        let rs = postobject(plugins).process({file, attrs, pos});
+        let rs = postobject(plugins).process({file, text, attrs, pos});
 
         return rs.result;
     };
@@ -34,7 +34,7 @@ bus.on('SVG图标文件解析插件', function(){
             let file = object.file;
             let attrs = object.attrs;           // 自定义的svg属性
             let pos = object.pos;
-            let text = File.read(object.file);
+            let text = object.text || File.read(object.file);
 
             // 不支持大于50K的svg图标文件
             if ( text.length > 50 * 1024 ) {
@@ -224,13 +224,20 @@ bus.on('SVG图标文件解析插件', function(){
 
 bus.on('SVG图标文件解析插件', function(){
     
-    // 仅保留顶部svg标签
+    // 删除<svg>同级的其他非代码块节点 （注释、文本等）
     return postobject.plugin('svgicon-plugin-11', function(root){
-        root.walk( (node, object) => {
-            if ( node.parent === root && ( node.type !== 'Tag' || !/^svg$/i.test(object.value) ) ) {
-                node.remove();      // 在顶部的，非<svg>标签全删除 （注释、文本等）
-            }
+
+        root.walk( 'Tag', (node, object) => {
+            if ( !/^svg$/i.test(object.value) ) return;
+
+            let nodes = [...node.parent.nodes];
+            nodes.forEach(n => {
+                if ( n.type !== 'TypeCodeBlock' && !(n.type === 'Tag' && /^svg$/i.test(n.object.value)) ) {
+                    n.remove();
+                }
+            });
         });
+
     });
 
 }());
@@ -241,7 +248,7 @@ bus.on('SVG图标文件解析插件', function(){
     // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了，设定的单位不是px也不管了）
     return postobject.plugin('svgicon-plugin-12', function(root){
         root.walk( 'Attributes', (node) => {
-            if ( !node.parent || node.parent.parent !== root ) return;
+            if ( !node.parent || node.parent.type !== 'Tag' || node.parent.object.value !== 'svg' ) return;
 
             // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了）
             let ndWidth, ndHeight, ndViewBox;
@@ -269,10 +276,10 @@ bus.on('SVG图标文件解析插件', function(){
     // 删除svg标签中一些要忽略的属性，同时用svgicon标签中的自定义属性覆盖(viewBox不覆盖)，达到像直接写svg属性一样的效果
     return postobject.plugin('svgicon-plugin-13', function(root, context){
 
-        let svgAttrs = context.svgAttrs = {};   // 保存svg属性
         root.walk( 'Attributes', (node) => {
-            if ( !node.parent || node.parent.parent !== root ) return;
+            if ( !node.parent || node.parent.type !== 'Tag' || node.parent.object.value !== 'svg' ) return;
 
+            let svgAttrs = {};   // 保存svg属性
             // 过滤svg属性保存后删除
             node.walk( (nd, obj) => {
                 if ( !/^(id|class|xmlns|version|xmlns:xlink|xml:space|x|y|width|height)$/i.test(obj.name) ) {   // 列出的属性都忽略，width、height又是特殊过滤
@@ -280,6 +287,18 @@ bus.on('SVG图标文件解析插件', function(){
                 }
                 nd.remove();
             });
+
+            // 用svgicon属性覆盖svg属性
+            let oAttrs = Object.assign(svgAttrs, context.input.attrs);
+            if ( !context.input.attrs.width && !context.input.attrs.height ) {
+                oAttrs['height'] = {type: "Attribute", name: 'height', value: '16'};                // 在<svgicon>中没有指定高宽时，默认指定为16px高度，宽度不设定让它自动调整，相当于指定默认图标大小为16px
+            }
+
+            // 插入更新后的属性节点
+            for ( let name in oAttrs ) {
+                oAttrs[name].value !== '' && node.addChild( this.createNode(oAttrs[name]) );        // 忽略空白属性 <svgicon style=""> 等同删除style属性
+            }
+
         });
 
 
@@ -287,23 +306,6 @@ bus.on('SVG图标文件解析插件', function(){
         root.walk( (node, object) => {
             object.pos = context.input.pos;
         }, {readonly: true});
-
-        // 用svgicon属性覆盖svg属性
-        let oAttrs = Object.assign(svgAttrs, context.input.attrs);
-        if ( !context.input.attrs.width && !context.input.attrs.height ) {
-            oAttrs['height'] = {type: "Attribute", name: 'height', value: '16'};                // 在<svgicon>中没有指定高宽时，默认指定为16px高度，宽度不设定让它自动调整，相当于指定默认图标大小为16px
-        }
-
-        // 新属性插入节点树
-        root.walk( 'Attributes', (node) => {
-            if ( !node.parent || node.parent.parent !== root ) return;
-
-            for ( let name in oAttrs ) {
-                oAttrs[name].value !== '' && node.addChild( this.createNode(oAttrs[name]) );    // 忽略空白属性 <svgicon style=""> 等同删除style属性
-            }
-            
-            return false;
-        });
 
     });
 
@@ -314,7 +316,7 @@ bus.on('SVG图标文件解析插件', function(){
     
     // 最后一步，保存解析结果
     return postobject.plugin('svgicon-plugin-99', function(root, context){
-        context.result = root.nodes[0];
+        context.result = root.nodes;
     });
 
 }());

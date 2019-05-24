@@ -1,6 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const File = require('@gotoeasy/file');
-const Err = require('@gotoeasy/err');
 const hash = require('@gotoeasy/hash');
 const chokidar = require('chokidar');
 
@@ -192,19 +191,12 @@ bus.on('文件监视', function (oSrcHash={}, oOthHash={}, hashBrowserslistrc, h
 
 
 async function busAt(name, ofile){
-    console.time('build');
-    let promises = await bus.at(name, ofile);
-    if ( promises ) {
-        // 此逻辑多数已无用，暂且放着
-        for ( let i=0,p; p=promises[i++]; ) {
-            try{
-                await p;
-            }catch(e){
-                console.error(Err.cat('build failed', e).toString());
-            }
-        }
-    }
-    console.timeEnd('build');
+    let stime = new Date().getTime();
+
+    await bus.at(name, ofile);
+
+    let time = new Date().getTime() - stime;
+    console.info('build ' + time + 'ms');       // 异步原因，不能用timeEnd计算用时
 }
 
 function isValidRposeFile(file){

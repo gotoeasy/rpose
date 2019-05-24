@@ -192,7 +192,6 @@ bus.on('解析生成AST节点插件', function(){
             node.replaceWith(tagNode);
         });
 
-        context.result = root.nodes[0];
 
     });
 

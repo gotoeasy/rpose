@@ -15,9 +15,25 @@ bus.on('编译插件', function(){
         let type = context.doc.api.prerender;
         let nocss = !context.result.pageCss
         
-        let inlinesymbols = bus.at('生成内联SVG-SYMBOL代码', context.input.file);
+        let inlinesymbols = hasSvgInlineSymbols(context) ? bus.at('生成SVG内联SYMBOL定义代码', file) : '';
 
         context.result.html = require(env.prerender)({srcPath, file, name, type, nocss, inlinesymbols});
     });
 
 }());
+
+function hasSvgInlineSymbols(context){
+
+    if ( context.result.hasSvgInlineSymbol ) return true;
+
+    let allreferences = context.result.allreferences;
+    for ( let i=0,tagpkg,ctx; tagpkg=allreferences[i++]; ) {
+        let tagSrcFile = bus.at('标签源文件', tagpkg);
+        ctx = bus.at('组件编译缓存', tagSrcFile);
+        if ( ctx && ctx.result.hasSvgInlineSymbol ){
+            return true;
+        }
+    }
+
+    return false;
+}

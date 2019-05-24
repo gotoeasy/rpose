@@ -34,8 +34,8 @@ bus.on('编译插件', function(){
         if ( srcComponents.indexOf('%svgsymbolfile%') > 0 ) {
             // 替换图标相对路径，图标不存在则复制
             let imgPath = bus.at('页面图片相对路径', context.input.file);
-            let oSvgSymbol = bus.at('生成项目SVG-SYMBOL文件');
-            srcComponents = srcComponents.replace(/%svgsymbolfile%/g, imgPath + oSvgSymbol.filename);
+            let filename = bus.at('生成外部SYMBOL定义文件', context.input.file);                                 // 有缓存，仅生成一次，返回不带路径的文件名(在images目录)
+            srcComponents = srcComponents.replace(/%svgsymbolfile%/g, imgPath + filename);
         }
 
         let tagpkg = context.result.tagpkg;
