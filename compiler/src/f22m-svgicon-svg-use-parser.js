@@ -4,10 +4,10 @@ const Err = require('@gotoeasy/err');
 
 
 // 前提： 字符串格式正确，且为单一根节点
-bus.on('SVG图标引用解析为AST节点', function(){
+bus.on('解析生成AST节点', function(){
 
     return function(text){
-        let plugins = bus.on('解析SVG图标引用为AST节点插件');
+        let plugins = bus.on('解析生成AST节点插件');
         let rs = postobject(plugins).process({text});
 
         return rs.result;
@@ -17,12 +17,12 @@ bus.on('SVG图标引用解析为AST节点', function(){
 
 
 // ------------------------------------------------------
-// 解析svg-use图标引用的源码内容，转换为节点
+// 字符串解析生成AST节点
 // 
 // 以下插件顺序相关，不可轻易变动
 // 
 // ------------------------------------------------------
-bus.on('解析SVG图标引用为AST节点插件', function(){
+bus.on('解析生成AST节点插件', function(){
     
     return postobject.plugin('gennode-plugin-01', function(root, context){
 
@@ -44,7 +44,7 @@ bus.on('解析SVG图标引用为AST节点插件', function(){
     });
 }());
 
-bus.on('解析SVG图标引用为AST节点插件', function(){
+bus.on('解析生成AST节点插件', function(){
     
     return postobject.plugin('gennode-plugin-02', function(root, context){
 
@@ -78,7 +78,7 @@ bus.on('解析SVG图标引用为AST节点插件', function(){
     });
 }());
 
-bus.on('解析SVG图标引用为AST节点插件', function(){
+bus.on('解析生成AST节点插件', function(){
     
     return postobject.plugin('gennode-plugin-03', function(root){
 
@@ -105,7 +105,7 @@ bus.on('解析SVG图标引用为AST节点插件', function(){
     });
 }());
 
-bus.on('解析SVG图标引用为AST节点插件', function(){
+bus.on('解析生成AST节点插件', function(){
     
     // 自关闭标签统一转换为Tag类型节点
     return postobject.plugin('gennode-plugin-04', function(root, context){
@@ -133,7 +133,7 @@ bus.on('解析SVG图标引用为AST节点插件', function(){
 
 }());
 
-bus.on('解析SVG图标引用为AST节点插件', function(){
+bus.on('解析生成AST节点插件', function(){
     
     // 开闭标签统一转换为Tag类型节点
     return postobject.plugin('gennode-plugin-05', function(root, context){
@@ -199,7 +199,7 @@ bus.on('解析SVG图标引用为AST节点插件', function(){
 
 
 
-bus.on('解析SVG图标引用为AST节点插件', function(){
+bus.on('解析生成AST节点插件', function(){
     
     // 最后一步，保存解析结果
     return postobject.plugin('gennode-plugin-99', function(root, context){

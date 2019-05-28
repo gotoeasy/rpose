@@ -17,6 +17,8 @@ bus.on('编译插件', function(){
         
         let inlinesymbols = hasSvgInlineSymbols(context) ? bus.at('生成SVG内联SYMBOL定义代码', file) : '';
 
+        bus.at('生成各关联包的外部SYMBOL定义文件', context);
+
         context.result.html = require(env.prerender)({srcPath, file, name, type, nocss, inlinesymbols});
     });
 
@@ -37,3 +39,4 @@ function hasSvgInlineSymbols(context){
 
     return false;
 }
+

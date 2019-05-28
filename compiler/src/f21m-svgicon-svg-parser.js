@@ -4,11 +4,11 @@ const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
 
 
-bus.on('SVG图标文件解析', function(){
+bus.on('SVG图标内容解析为AST节点数组', function(){
 
     return function(file, text, attrs, pos){
         // TODO 缓存
-        let plugins = bus.on('SVG图标文件解析插件');
+        let plugins = bus.on('SVG图标内容解析插件');
         let rs = postobject(plugins).process({file, text, attrs, pos});
 
         return rs.result;
@@ -18,13 +18,12 @@ bus.on('SVG图标文件解析', function(){
 
 
 // ------------------------------------------------------
-// 读取指定的svg图标文件，解析为view兼容的语法树结构
-// svg图标文件来源为npm包时，自动判断安装
+// 解析svg图标源码内容，转换为节点数组
 // 
 // 以下插件顺序相关，不可轻易变动
 // 
 // ------------------------------------------------------
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     return postobject.plugin('svgicon-plugin-01', function(root, context){
 
@@ -67,7 +66,7 @@ bus.on('SVG图标文件解析插件', function(){
     });
 }());
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     return postobject.plugin('svgicon-plugin-02', function(root, context){
 
@@ -101,7 +100,7 @@ bus.on('SVG图标文件解析插件', function(){
     });
 }());
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     return postobject.plugin('svgicon-plugin-03', function(root){
 
@@ -128,7 +127,7 @@ bus.on('SVG图标文件解析插件', function(){
     });
 }());
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     // 自关闭标签统一转换为Tag类型节点
     return postobject.plugin('svgicon-plugin-04', function(root, context){
@@ -156,7 +155,7 @@ bus.on('SVG图标文件解析插件', function(){
 
 }());
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     // 开闭标签统一转换为Tag类型节点
     return postobject.plugin('svgicon-plugin-05', function(root, context){
@@ -222,7 +221,7 @@ bus.on('SVG图标文件解析插件', function(){
 }());
 
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     // 删除<svg>同级的其他非代码块节点 （注释、文本等）
     return postobject.plugin('svgicon-plugin-11', function(root){
@@ -232,7 +231,8 @@ bus.on('SVG图标文件解析插件', function(){
 
             let nodes = [...node.parent.nodes];
             nodes.forEach(n => {
-                if ( n.type !== 'TypeCodeBlock' && !(n.type === 'Tag' && /^svg$/i.test(n.object.value)) ) {
+                if ( (n.type === 'Tag' && !/^(svg|if|for|router|router-link)$/i.test(n.object.value))
+                    || n.type === 'HtmlComment' || n.type === 'Text' ) {
                     n.remove();
                 }
             });
@@ -243,7 +243,7 @@ bus.on('SVG图标文件解析插件', function(){
 }());
 
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了，设定的单位不是px也不管了）
     return postobject.plugin('svgicon-plugin-12', function(root){
@@ -271,7 +271,7 @@ bus.on('SVG图标文件解析插件', function(){
 }());
 
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     // 删除svg标签中一些要忽略的属性，同时用svgicon标签中的自定义属性覆盖(viewBox不覆盖)，达到像直接写svg属性一样的效果
     return postobject.plugin('svgicon-plugin-13', function(root, context){
@@ -312,7 +312,7 @@ bus.on('SVG图标文件解析插件', function(){
 }());
 
 
-bus.on('SVG图标文件解析插件', function(){
+bus.on('SVG图标内容解析插件', function(){
     
     // 最后一步，保存解析结果
     return postobject.plugin('svgicon-plugin-99', function(root, context){

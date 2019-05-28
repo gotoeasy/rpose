@@ -310,42 +310,7 @@ console.time("load");
         });
 
         bus.on("SVG文件添加", async function(svgfile) {
-            let env = bus.at("编译环境");
-            if (svgfile.startsWith(env.path.svgicons + "/")) {
-                bus.at("生成项目SVG-SYMBOL文件", true);
-                bus.at("重新计算页面哈希码");
-            }
-
-            // SVG图标文件添加时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
-            let oFiles = bus.at("源文件对象清单"),
-                name = File.name(svgfile);
-            let needBuild,
-                refFiles = [];
-            for (let file in oFiles) {
-                let context = bus.at("组件编译缓存", file);
-                if (context) {
-                    let refsvgicons = context.result.refsvgicons || [];
-                    for (let i = 0, f; (f = refsvgicons[i++]); ) {
-                        if (File.name(f) === name) {
-                            // 比较的是不含扩展名的单纯svg文件名，通常直接表达图标名
-                            let tag = getTagOfSrcFile(file); // 直接关联的组件标签名
-                            refFiles.push(file); // 待重新编译的组件
-                            refFiles.push(...getRefPages(tag)); // 待重新编译的页面
-                        }
-                    }
-                } else {
-                    // 添加的svg文件被作为图片用途时，此处理分支也满足
-                    needBuild = true; // 存在未编译成功的组件，保险起见同样重新编译
-                }
-            }
-
-            if (needBuild || refFiles.length) {
-                new Set(refFiles).forEach(pageFile => {
-                    bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
-                    removeHtmlCssJsFile(pageFile);
-                });
-                await bus.at("全部编译");
-            }
+            await bus.at("重新编译和该SVG可能相关的组件和页面", svgfile);
         });
 
         bus.on("图片文件添加", async function() {
@@ -382,44 +347,7 @@ console.time("load");
         });
 
         bus.on("SVG文件修改", async function(svgfile) {
-            let env = bus.at("编译环境");
-            if (svgfile.startsWith(env.path.svgicons + "/")) {
-                bus.at("生成项目SVG-SYMBOL文件", true);
-                bus.at("重新计算页面哈希码");
-            }
-
-            // SVG图标文件修改时，找出使用该svg文件的组件，以及使用该组件的页面，都清除缓存后重新编译
-            let oFiles = bus.at("源文件对象清单");
-            let refFiles = [];
-            for (let file in oFiles) {
-                let context = bus.at("组件编译缓存", file);
-                if (context) {
-                    let refsvgicons = context.result.refsvgicons || [];
-                    if (refsvgicons.includes(svgfile)) {
-                        // 比较的是全路径文件名
-                        let tag = getTagOfSrcFile(file); // 直接关联的组件标签名
-                        refFiles.push(file); // 待重新编译的组件
-                        refFiles.push(...getRefPages(tag)); // 待重新编译的页面
-                    }
-
-                    // 添加的svg文件被作为图片用途时的处理
-                    let refimages = context.result.refimages || [];
-                    if (refimages.includes(svgfile)) {
-                        // 比较的是全路径文件名
-                        let tag = getTagOfSrcFile(file); // 直接关联的组件标签名
-                        refFiles.push(file); // 待重新编译的组件
-                        refFiles.push(...getRefPages(tag)); // 待重新编译的页面
-                    }
-                }
-            }
-
-            if (refFiles.length) {
-                new Set(refFiles).forEach(pageFile => {
-                    bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
-                    removeHtmlCssJsFile(pageFile);
-                });
-                await bus.at("全部编译");
-            }
+            await bus.at("重新编译和该SVG可能相关的组件和页面", svgfile);
         });
 
         bus.on("图片文件修改", async function(imgfile) {
@@ -485,46 +413,55 @@ console.time("load");
         });
 
         bus.on("SVG文件删除", async function(svgfile) {
-            let env = bus.at("编译环境");
-            if (svgfile.startsWith(env.path.svgicons + "/")) {
-                bus.at("生成项目SVG-SYMBOL文件", true);
-                bus.at("重新计算页面哈希码");
-            }
-
-            // SVG图标文件删除时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
-            let oFiles = bus.at("源文件对象清单"),
-                name = File.name(svgfile);
-            let refFiles = [];
-            let needBuild;
-            for (let file in oFiles) {
-                let context = bus.at("组件编译缓存", file);
-                if (context) {
-                    let refsvgicons = context.result.refsvgicons || [];
-                    for (let i = 0, f; (f = refsvgicons[i++]); ) {
-                        if (File.name(f) === name) {
-                            // 比较的是不含扩展名的单纯svg文件名，通常直接表达图标名
-                            let tag = getTagOfSrcFile(file); // 直接关联的组件标签名
-                            refFiles.push(file); // 待重新编译的组件
-                            refFiles.push(...getRefPages(tag)); // 待重新编译的页面
-                        }
-                    }
-                } else {
-                    needBuild = true; // 存在未编译成功的组件，保险起见同样重新编译
-                }
-            }
-
-            if (needBuild || refFiles.length) {
-                new Set(refFiles).forEach(pageFile => {
-                    bus.at("组件编译缓存", pageFile, false); // 清除编译缓存
-                    removeHtmlCssJsFile(pageFile);
-                });
-                await bus.at("全部编译");
-            }
+            await bus.at("重新编译和该SVG可能相关的组件和页面", svgfile);
         });
 
         bus.on("图片文件删除", async function(imgfile) {
             // 图片文件删除时，处理等同图片文件修改
             await bus.at("图片文件修改", imgfile);
+        });
+
+        bus.on("重新编译和该SVG可能相关的组件和页面", async function(svgfile) {
+            // 如果是图表目录中的文件，简化的，但凡用到图标的组件和页面，统统重新编译
+            let env = bus.at("编译环境");
+
+            let oSetFiles = new Set(),
+                oSetPages = new Set();
+            let oFiles = bus.at("源文件对象清单");
+            let pages;
+            for (let file in oFiles) {
+                let context = bus.at("组件编译缓存", file);
+                if (context) {
+                    // 可能是图标用途的svg文件
+                    if (svgfile.startsWith(env.path.svgicons + "/")) {
+                        if (context.result.hasSvgIcon) {
+                            oSetFiles.add(file); // 直接使用图标的组件
+                            pages = getRefPages(getTagOfSrcFile(file));
+                            pages.forEach(f => oSetPages.add(f)); // 使用本组件的页面
+
+                            continue;
+                        }
+                    }
+
+                    // 可能是图片用途的svg文件
+                    let refimages = context.result.refimages || [];
+                    if (refimages.includes(svgfile)) {
+                        oSetFiles.add(file); // 使用该svg作为图片用途的组件
+                        pages = getRefPages(getTagOfSrcFile(file));
+                        pages.forEach(f => oSetPages.add(f)); // 使用本组件的页面
+                    }
+                }
+            }
+
+            oSetPages.forEach(file => {
+                bus.at("组件编译缓存", file, false); // 清除编译缓存
+                removeHtmlCssJsFile(file);
+            });
+            oSetFiles.forEach(file => {
+                bus.at("组件编译缓存", file, false); // 清除编译缓存
+            });
+
+            await bus.at("全部编译");
         });
     })();
 
@@ -557,14 +494,14 @@ console.time("load");
                 for (let file in oFiles) {
                     let context = bus.at("组件编译缓存", file);
                     if (context && context.result && context.result.isPage) {
-                        if (context.result.hasSvgLinkSymbol) {
+                        if (context.result.hasDinamicSvg) {
                             files.push(file); // 页面使用了外部SVG-SYMBOL图标
                         } else {
                             let allreferences = context.result.allreferences;
                             for (let i = 0, tagpkg, srcFile, ctx; (tagpkg = allreferences[i++]); ) {
                                 srcFile = bus.at("标签源文件", tagpkg, context.result.oTaglibs);
                                 ctx = bus.at("组件编译缓存", srcFile);
-                                if (ctx && ctx.result && ctx.result.hasSvgLinkSymbol) {
+                                if (ctx && ctx.result && ctx.result.hasDinamicSvg) {
                                     files.push(file); // 页面关联的组件使用了外部SVG-SYMBOL图标
                                     break;
                                 }
@@ -986,27 +923,6 @@ console.time("load");
     );
 
     // ------- a36m-rebuild-all end
-})();
-
-/* ------- a40m-svg-icon-files-of-project ------- */
-(() => {
-    // ------- a40m-svg-icon-files-of-project start
-    const bus = require("@gotoeasy/bus");
-    const File = require("@gotoeasy/file");
-
-    (function(svgFiles) {
-        bus.on("项目SVG图标文件列表", function(file) {
-            if (!svgFiles) {
-                let dir = bus.at("项目配置处理", file).path.svgicons;
-                svgFiles = File.files(dir, "**.svg");
-                svgFiles.sort();
-            }
-
-            return svgFiles;
-        });
-    })();
-
-    // ------- a40m-svg-icon-files-of-project end
 })();
 
 /* ------- a82m-dev-server-reload ------- */
@@ -1980,6 +1896,138 @@ console.time("load");
     // ------- b34m-taglibify-parser-taglib end
 })();
 
+/* ------- b40m-svgiconify-parser-[svgicon] ------- */
+(() => {
+    // ------- b40m-svgiconify-parser-[svgicon] start
+    const bus = require("@gotoeasy/bus");
+    const Err = require("@gotoeasy/err");
+    const File = require("@gotoeasy/file");
+    const resolvepkg = require("resolve-pkg");
+
+    bus.on(
+        "解析[svgicon]",
+        (function() {
+            // 解析、安装、检查重名
+            return function(obj, prjCtx) {
+                let rs = {};
+
+                // -------------------------------------------
+                // 无定义则跳过
+                let svgiconBlockText = obj.value || "";
+                if (!svgiconBlockText.trim()) {
+                    return rs;
+                }
+
+                // -------------------------------------------
+                // 解析、安装、查询文件、起别名、检查重名
+                let lines = svgiconBlockText.split("\n");
+                for (let i = 0, svgicon, oSvgicon; i < lines.length; i++) {
+                    svgicon = lines[i].split("//")[0].trim(); // 去除注释内容
+                    if (!svgicon) continue; // 跳过空白行
+
+                    oSvgicon = bus.at("解析svgicon", svgicon);
+                    let pos = getStartPos(lines, i, obj.pos.start); // taglib位置
+
+                    // 无效的svgicon格式
+                    if (!oSvgicon) {
+                        throw new Err("invalid svgicon define (" + svgicon + ")", { ...prjCtx.input, ...pos });
+                    }
+
+                    oSvgicon.pos = pos; // 顺便保存位置，备用
+
+                    // 自动安装
+                    if (!bus.at("自动安装", oSvgicon.pkg)) {
+                        throw new Err("package install failed: " + oSvgicon.pkg, { ...prjCtx.input, ...pos });
+                    }
+
+                    let svgFilter = /\.svg$/i.test(oSvgicon.filter) ? oSvgicon.filter : oSvgicon.filter + ".svg"; // 仅查找svg文件
+                    svgFilter = svgFilter.replace(/\\/g, "/");
+
+                    let files = File.files(resolvepkg(oSvgicon.pkg), svgFilter);
+                    if (files.length > 1) {
+                        throw new Err("mulit svg file found\n  " + files.join("\n  "), { ...prjCtx.input, ...pos });
+                    }
+                    if (!files.length) {
+                        // 任意目录下再找一遍
+                        svgFilter = ("**/" + svgFilter).replace(/\/\//g, "/");
+                        files = File.files(resolvepkg(oSvgicon.pkg), svgFilter);
+                        if (files.length > 1) {
+                            throw new Err("mulit svg file found\n  " + files.join("\n  "), { ...prjCtx.input, ...pos });
+                        }
+                        if (!files.length) {
+                            throw new Err("svg file not found", { ...prjCtx.input, ...pos });
+                        }
+                    }
+
+                    oSvgicon.file = files[0];
+                    let alias = oSvgicon.alias === "*" ? File.name(oSvgicon.file).toLowerCase() : oSvgicon.alias.toLowerCase();
+
+                    // 项目配置本身的图标别名不能重复，无重复则通过，以便尽快成功解析配置文件
+                    if (rs[alias]) {
+                        throw new Err(`duplicate icon name (${alias})`, { ...prjCtx.input, start: pos.start, end: pos.endAlias });
+                    }
+                    rs[alias] = oSvgicon;
+                }
+
+                return rs;
+            };
+        })()
+    );
+
+    function getStartPos(lines, lineNo, offset) {
+        let start = offset;
+        for (let i = 0; i < lineNo; i++) {
+            start += lines[i].length + 1; // 行长度=行内容长+换行符
+        }
+
+        let line = lines[lineNo].split("//")[0]; // 不含注释
+        let match = line.match(/^\s+/);
+        match && (start += match[0].length); // 加上别名前的空白长度
+
+        let end = start + line.trim().length; // 结束位置不含注释
+
+        let endAlias = end,
+            idx = line.indexOf("=");
+        if (idx > 0) {
+            endAlias = start + line.substring(0, idx).trim().length; // 有等号时的别名长度
+        }
+
+        return { start, end, endAlias };
+    }
+
+    // ------- b40m-svgiconify-parser-[svgicon] end
+})();
+
+/* ------- b42m-svgiconify-parser-svgicon ------- */
+(() => {
+    // ------- b42m-svgiconify-parser-svgicon start
+    const bus = require("@gotoeasy/bus");
+
+    // 解析单个svgicon定义，转换为对象形式方便读取
+    bus.on(
+        "解析svgicon",
+        (function() {
+            // file用于记录svgicon所在文件，便于错误提示
+            return function(svgicon) {
+                let alias, pkg, filter, match;
+                if ((match = svgicon.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/))) {
+                    // alias=pkg:filter
+                    alias = match[1]; // alias=pkg:filter => alias
+                    pkg = match[2]; // alias=pkg:filter => pkg
+                    filter = match[3]; // alias=pkg:filter => filter
+                } else {
+                    // 无效的svgicon格式
+                    return null;
+                }
+
+                return { alias, pkg, filter, svgicon: alias + "=" + pkg + ":" + filter };
+            };
+        })()
+    );
+
+    // ------- b42m-svgiconify-parser-svgicon end
+})();
+
 /* ------- b95p-parse-project-config ------- */
 (() => {
     // ------- b95p-parse-project-config start
@@ -2012,7 +2060,7 @@ console.time("load");
                     path.build_dist_images = "images";
                     path.svgicons = root + "/resources/svgicons";
 
-                    let result = { oTaglibs: {}, oCsslibs: {}, oCsslibPkgs: {} };
+                    let result = { oTaglibs: {}, oCsslibs: {}, oCsslibPkgs: {}, oSvgicons: {} };
                     return { path, result };
                 }
 
@@ -2192,6 +2240,22 @@ console.time("load");
                 });
 
                 context.result.oTaglibs = oTaglibs || {}; // 保存[taglib]解析结果
+            });
+        })()
+    );
+
+    // 保存引入的svg图标
+    bus.on(
+        "项目配置处理插件",
+        (function() {
+            return postobject.plugin("process-project-config-140", function(root, context) {
+                let oSvgicons;
+                root.walk("svgicon", (node, object) => {
+                    oSvgicons = bus.at("解析[svgicon]", object, context); // 含格式检查、别名重复检查
+                    node.remove();
+                });
+
+                context.result.oSvgicons = oSvgicons || {}; // 保存[svgicon]解析结果
             });
         })()
     );
@@ -4345,9 +4409,9 @@ console.time("load");
     // ------- f12m-highlight-$code-of-``` end
 })();
 
-/* ------- f15p-astedit-transform-tag-``` ------- */
+/* ------- f15p-highlight-astedit-transform-tag-``` ------- */
 (() => {
-    // ------- f15p-astedit-transform-tag-``` start
+    // ------- f15p-highlight-astedit-transform-tag-``` start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
@@ -4355,7 +4419,7 @@ console.time("load");
         "编译插件",
         (function() {
             // 给```节点添加@taglib指令
-            return postobject.plugin("f15p-astedit-transform-tag-```", function(root) {
+            return postobject.plugin("f15p-highlight-astedit-transform-tag-```", function(root) {
                 root.walk("Tag", (node, object) => {
                     if (object.value !== "```") return;
 
@@ -4393,23 +4457,76 @@ console.time("load");
         })()
     );
 
-    // ------- f15p-astedit-transform-tag-``` end
+    // ------- f15p-highlight-astedit-transform-tag-``` end
 })();
 
-/* ------- f20m-svgicon-parser ------- */
+/* ------- f20m-svgicon-project-svg-icon-files ------- */
 (() => {
-    // ------- f20m-svgicon-parser start
+    // ------- f20m-svgicon-project-svg-icon-files start
+    const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+
+    (function() {
+        bus.on("项目SVG图标文件列表", function(file) {
+            let files = [];
+
+            let prjCtx = bus.at("项目配置处理", file);
+            let svgfiles = File.files(prjCtx.path.svgicons, "**.svg");
+
+            // 图标目录
+            let map = new Map();
+            for (let i = 0, file, name, oFile; (file = svgfiles[i++]); ) {
+                name = File.name(file).toLowerCase();
+                if (map.has(name)) {
+                    // 图标文件名重复（会导致不能按文件名显示确定的图标，应避免）
+                    throw new Error(`duplicate svg icon name (${name})\n  ${map.get(name).file}\n  ${file}`);
+                }
+
+                oFile = { name, file };
+                map.set(name, oFile);
+                files.push(oFile);
+            }
+
+            // 图标配置
+            let names = Object.keys(prjCtx.result.oSvgicons); // names本身没有重复名称，项目配置解析时已经检查
+            for (let i = 0, name, oSvgicon, oFile; (name = names[i++]); ) {
+                oSvgicon = prjCtx.result.oSvgicons[name];
+                if (map.has(name)) {
+                    // 图标名重复（会导致不能按图标名显示确定的图标，应避免）
+                    throw new Error(`duplicate svg icon name (${name})\n  ${map.get(name).file}\n  ${oSvgicon.svgicon}`, {
+                        ...prjCtx.input,
+                        start: oSvgicon.pos.start,
+                        end: oSvgicon.pos.endAlias
+                    });
+                }
+
+                oFile = { name, file: oSvgicon.file };
+                map.set(name, oFile);
+                files.push(oFile);
+            }
+
+            // 结果
+            return { files, pkg: bus.at("文件所在模块", file) };
+        });
+    })();
+
+    // ------- f20m-svgicon-project-svg-icon-files end
+})();
+
+/* ------- f21m-svgicon-svg-parser ------- */
+(() => {
+    // ------- f21m-svgicon-svg-parser start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
     const File = require("@gotoeasy/file");
 
     bus.on(
-        "SVG图标文件解析",
+        "SVG图标内容解析为AST节点数组",
         (function() {
             return function(file, text, attrs, pos) {
                 // TODO 缓存
-                let plugins = bus.on("SVG图标文件解析插件");
+                let plugins = bus.on("SVG图标内容解析插件");
                 let rs = postobject(plugins).process({ file, text, attrs, pos });
 
                 return rs.result;
@@ -4418,14 +4535,13 @@ console.time("load");
     );
 
     // ------------------------------------------------------
-    // 读取指定的svg图标文件，解析为view兼容的语法树结构
-    // svg图标文件来源为npm包时，自动判断安装
+    // 解析svg图标源码内容，转换为节点数组
     //
     // 以下插件顺序相关，不可轻易变动
     //
     // ------------------------------------------------------
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             return postobject.plugin("svgicon-plugin-01", function(root, context) {
                 // 读取解析svg内容转换为Token节点树
@@ -4467,7 +4583,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             return postobject.plugin("svgicon-plugin-02", function(root, context) {
                 // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
@@ -4500,7 +4616,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             return postobject.plugin("svgicon-plugin-03", function(root) {
                 // 多个属性节点合并为一个标签属性节点
@@ -4526,7 +4642,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             // 自关闭标签统一转换为Tag类型节点
             return postobject.plugin("svgicon-plugin-04", function(root, context) {
@@ -4553,7 +4669,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             // 开闭标签统一转换为Tag类型节点
             return postobject.plugin("svgicon-plugin-05", function(root, context) {
@@ -4616,7 +4732,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             // 删除<svg>同级的其他非代码块节点 （注释、文本等）
             return postobject.plugin("svgicon-plugin-11", function(root) {
@@ -4625,7 +4741,11 @@ console.time("load");
 
                     let nodes = [...node.parent.nodes];
                     nodes.forEach(n => {
-                        if (n.type !== "TypeCodeBlock" && !(n.type === "Tag" && /^svg$/i.test(n.object.value))) {
+                        if (
+                            (n.type === "Tag" && !/^(svg|if|for|router|router-link)$/i.test(n.object.value)) ||
+                            n.type === "HtmlComment" ||
+                            n.type === "Text"
+                        ) {
                             n.remove();
                         }
                     });
@@ -4635,7 +4755,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             // 没有viewBox时，按width、height计算后插入viewBox属性 （如果width或height也没设定，那就不管了，设定的单位不是px也不管了）
             return postobject.plugin("svgicon-plugin-12", function(root) {
@@ -4662,7 +4782,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             // 删除svg标签中一些要忽略的属性，同时用svgicon标签中的自定义属性覆盖(viewBox不覆盖)，达到像直接写svg属性一样的效果
             return postobject.plugin("svgicon-plugin-13", function(root, context) {
@@ -4703,7 +4823,7 @@ console.time("load");
     );
 
     bus.on(
-        "SVG图标文件解析插件",
+        "SVG图标内容解析插件",
         (function() {
             // 最后一步，保存解析结果
             return postobject.plugin("svgicon-plugin-99", function(root, context) {
@@ -4712,65 +4832,298 @@ console.time("load");
         })()
     );
 
-    // ------- f20m-svgicon-parser end
+    // ------- f21m-svgicon-svg-parser end
 })();
 
-/* ------- f22m-svgicon-svg-dynamic ------- */
+/* ------- f22m-svgicon-svg-use-parser ------- */
 (() => {
-    // ------- f22m-svgicon-svg-dynamic start
+    // ------- f22m-svgicon-svg-use-parser start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+
+    // 前提： 字符串格式正确，且为单一根节点
+    bus.on(
+        "解析生成AST节点",
+        (function() {
+            return function(text) {
+                let plugins = bus.on("解析生成AST节点插件");
+                let rs = postobject(plugins).process({ text });
+
+                return rs.result;
+            };
+        })()
+    );
+
+    // ------------------------------------------------------
+    // 字符串解析生成AST节点
+    //
+    // 以下插件顺序相关，不可轻易变动
+    //
+    // ------------------------------------------------------
+    bus.on(
+        "解析生成AST节点插件",
+        (function() {
+            return postobject.plugin("gennode-plugin-01", function(root, context) {
+                root.walk((node, object) => {
+                    let text = object.text;
+                    context.input = { text };
+
+                    // 像[view]一样解析为Token
+                    let tokenParser = bus.at("视图TOKEN解析器", text, text, text, 0);
+                    let type = "Node";
+                    let nodes = tokenParser.parse();
+                    let objToken = { type, nodes };
+                    let newNode = this.createNode(objToken);
+
+                    node.replaceWith(...newNode.nodes); // 转换为Token节点树
+                });
+            });
+        })()
+    );
+
+    bus.on(
+        "解析生成AST节点插件",
+        (function() {
+            return postobject.plugin("gennode-plugin-02", function(root, context) {
+                // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
+                const OPTS = bus.at("视图编译选项");
+                root.walk(OPTS.TypeAttributeName, (node, object) => {
+                    if (!node.parent) return;
+
+                    let eqNode = node.after();
+                    if (eqNode && eqNode.type === OPTS.TypeEqual) {
+                        // 键=值的三个节点
+                        let valNode = eqNode.after();
+                        let Name = { pos: object.pos };
+                        let Value = { pos: valNode.object.pos };
+                        let pos = { start: object.pos.start, end: valNode.object.pos.end };
+
+                        let oAttr = {
+                            type: "Attribute",
+                            name: object.value,
+                            value: valNode.object.value,
+                            Name,
+                            Value,
+                            isExpression: bus.at("是否表达式", valNode.object.value),
+                            pos
+                        };
+                        let attrNode = this.createNode(oAttr);
+                        node.replaceWith(attrNode);
+                        eqNode.remove();
+                        valNode.remove();
+                    } else {
+                        // 单一键节点（应该没有...）
+                        let oAttr = { type: "Attribute", name: object.value, value: true, isExpression: false, pos: context.input.pos };
+                        let attrNode = this.createNode(oAttr);
+                        node.replaceWith(attrNode);
+                    }
+                });
+            });
+        })()
+    );
+
+    bus.on(
+        "解析生成AST节点插件",
+        (function() {
+            return postobject.plugin("gennode-plugin-03", function(root) {
+                // 多个属性节点合并为一个标签属性节点
+                root.walk("Attribute", node => {
+                    if (!node.parent) return;
+
+                    let ary = [node];
+                    let nextNode = node.after();
+                    while (nextNode && nextNode.type === "Attribute") {
+                        ary.push(nextNode);
+                        nextNode = nextNode.after();
+                    }
+
+                    let attrsNode = this.createNode({ type: "Attributes" });
+                    node.before(attrsNode);
+                    ary.forEach(n => {
+                        attrsNode.addChild(n.clone());
+                        n.remove();
+                    });
+                });
+            });
+        })()
+    );
+
+    bus.on(
+        "解析生成AST节点插件",
+        (function() {
+            // 自关闭标签统一转换为Tag类型节点
+            return postobject.plugin("gennode-plugin-04", function(root, context) {
+                const OPTS = bus.at("视图编译选项");
+
+                root.walk(OPTS.TypeTagSelfClose, (node, object) => {
+                    if (!node.parent) return;
+
+                    let type = "Tag";
+                    let value = object.value;
+                    let pos = context.input.pos;
+                    let tagNode = this.createNode({ type, value, pos });
+
+                    let tagAttrsNode = node.after();
+                    if (tagAttrsNode && tagAttrsNode.type === "Attributes") {
+                        tagNode.addChild(tagAttrsNode.clone());
+                        tagAttrsNode.remove();
+                    }
+
+                    node.replaceWith(tagNode);
+                });
+            });
+        })()
+    );
+
+    bus.on(
+        "解析生成AST节点插件",
+        (function() {
+            // 开闭标签统一转换为Tag类型节点
+            return postobject.plugin("gennode-plugin-05", function(root, context) {
+                const OPTS = bus.at("视图编译选项");
+
+                let normolizeTagNode = (tagNode, nodeTagOpen) => {
+                    let nextNode = nodeTagOpen.after();
+                    while (nextNode && nextNode.type !== OPTS.TypeTagClose) {
+                        if (nextNode.type === OPTS.TypeTagOpen) {
+                            let type = "Tag";
+                            let value = nextNode.object.value;
+                            let pos = nextNode.object.pos;
+                            let subTagNode = this.createNode({ type, value, pos });
+                            normolizeTagNode(subTagNode, nextNode);
+
+                            tagNode.addChild(subTagNode);
+                        } else {
+                            tagNode.addChild(nextNode.clone());
+                        }
+
+                        nextNode.remove();
+                        nextNode = nodeTagOpen.after();
+                    }
+
+                    if (!nextNode) {
+                        throw new Err("missing close tag", { text: context.input.text, start: tagNode.object.pos.start });
+                    }
+
+                    if (nextNode.type === OPTS.TypeTagClose) {
+                        if (nodeTagOpen.object.value !== nextNode.object.value) {
+                            throw new Err(`unmatch close tag: ${nodeTagOpen.object.value}/${nextNode.object.value}`, {
+                                text: context.input.text,
+                                ...tagNode.object.pos
+                            });
+                        }
+                        tagNode.object.pos.end = nextNode.object.pos.end;
+                        nextNode.remove();
+                        return tagNode;
+                    }
+
+                    // 漏考虑的特殊情况
+                    throw new Error("todo unhandle type");
+                };
+
+                root.walk(OPTS.TypeTagOpen, (node, object) => {
+                    if (!node.parent) return;
+
+                    let type = "Tag";
+                    let value = object.value;
+                    let pos = object.pos;
+                    let tagNode = this.createNode({ type, value, pos });
+                    normolizeTagNode(tagNode, node);
+
+                    node.replaceWith(tagNode);
+                });
+            });
+        })()
+    );
+
+    bus.on(
+        "解析生成AST节点插件",
+        (function() {
+            // 最后一步，保存解析结果
+            return postobject.plugin("gennode-plugin-99", function(root, context) {
+                context.result = root.nodes[0];
+            });
+        })()
+    );
+
+    // ------- f22m-svgicon-svg-use-parser end
+})();
+
+/* ------- f23m-svgicon-type-svg ------- */
+(() => {
+    // ------- f23m-svgicon-type-svg start
     const bus = require("@gotoeasy/bus");
     const File = require("@gotoeasy/file");
 
+    // --------------------------------------------
+    // 多个svg图标，一个个if/else判断是否显示
+    // 使用正则判断，并处理正则特殊字符
+    // --------------------------------------------
     bus.on(
         "动态判断显示SVG标签",
         (function() {
             return function(expr, srcFile) {
-                let files = bus.at("项目SVG图标文件列表", srcFile);
-                if (!files.length) {
-                    let env = bus.at("编译环境");
-                    throw new Error(`no svg icon file in folder (${env.path.svgicons})`);
+                let oFiles = bus.at("项目SVG图标文件列表", srcFile);
+                if (!oFiles.files.length) {
+                    // 没有找到图标文件
+                    throw new Error(`svg icon file not found`);
                 }
 
-                let texts = [],
-                    svg;
-                files.forEach(file => {
-                    svg = File.read(file);
-                    expr = expr.replace(/^\s*{/, "(").replace(/}\s*$/, ")");
-                    svg = svg.replace("<svg ", `<svg @if={${expr} === '${File.name(file)}'} `);
-                    // svg = `<if @if={${expr} === '${File.name(file)}'}>${svg}</if>`;
-                    // svg = `{% if( ${expr} === '${File.name(file)}' ){ %} ${svg} {% } %}`;
-                    texts.push(svg);
-                });
+                expr = expr.replace(/^\s*{/, "(").replace(/}\s*$/, ")");
+                let texts = [];
+                for (let i = 0, oFile, regstr; (oFile = oFiles.files[i++]); ) {
+                    regstr = `${oFile.name.replace(/[{}()[\]^$+.-]/g, "\\$&")}(.svg)?`; // 正则相关文件名中的特殊字符替换（通常不该有特殊字符，以防万一避免出错，处理一下）
+
+                    if (i > 1) {
+                        texts.push(`{% else if ( /^${regstr}$/i.test(${expr}) ){ %}`);
+                    } else {
+                        texts.push(`{% if ( /^${regstr}$/i.test(${expr}) ){ %}`);
+                    }
+                    texts.push(File.read(oFile.file));
+                    texts.push(`{% } %}`);
+                }
 
                 return texts.join("\n");
             };
         })()
     );
 
-    // ------- f22m-svgicon-svg-dynamic end
+    // ------- f23m-svgicon-type-svg end
 })();
 
-/* ------- f24m-svgicon-inline-symbol ------- */
+/* ------- f24m-svgicon-type-inline-symbol ------- */
 (() => {
-    // ------- f24m-svgicon-inline-symbol start
+    // ------- f24m-svgicon-type-inline-symbol start
     const bus = require("@gotoeasy/bus");
     const File = require("@gotoeasy/file");
+    const hash = require("@gotoeasy/hash");
 
     bus.on(
         "生成SVG内联SYMBOL定义代码",
         (function() {
             return function(srcFile) {
-                let files = bus.at("项目SVG图标文件列表", srcFile);
+                // 汇总用到的全部图标文件，有重名时将报错
+                let oInlineSymbolSvgs = getInlineSymbolSvgFiles(srcFile);
 
+                // 排序收集图标文件信息
+                let pkgs = Object.keys(oInlineSymbolSvgs);
+                pkgs.sort();
+                let oFiles = [];
+                pkgs.forEach(pkg => {
+                    let oSvgFiles = oInlineSymbolSvgs[pkg];
+                    let keys = Object.keys(oSvgFiles);
+                    keys.sort();
+                    keys.forEach(key => oFiles.push(oSvgFiles[key]));
+                });
+
+                // 输出
                 let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
-                let text,
-                    symbolId,
-                    oSetIds = new Set();
-                files.forEach(file => {
-                    text = File.read(file);
-                    symbolId = File.name(file);
-                    !oSetIds.has(symbolId) && rs.push(bus.at("SVG转SYMBOL定义", text, symbolId));
-                    oSetIds.add(symbolId);
+                let text, symbolId;
+                oFiles.forEach(oFile => {
+                    text = File.read(oFile.file);
+                    symbolId = hash(oFile.pkg) + "_" + oFile.name; // 用包名哈希码为前缀作id
+                    rs.push(bus.at("SVG转SYMBOL定义", text, symbolId));
                 });
                 rs.push("</svg>");
 
@@ -4782,48 +5135,130 @@ console.time("load");
     bus.on(
         "生成SVG引用内联SYMBOL",
         (function() {
-            return function(fileOrExpr, props = {}) {
+            return function(fileOrExpr, srcFile, props = {}) {
                 let attrs = [];
                 for (let key in props) {
                     attrs.push(`${key}="${props[key]}"`);
                 }
 
+                let pkg = bus.at("文件所在模块", srcFile);
+                let hashcode = hash(pkg);
+
                 let href;
                 if (bus.at("是否表达式", fileOrExpr)) {
                     let expr = fileOrExpr.substring(1, fileOrExpr.length - 1);
-                    href = `{'#' + (${expr}) }`;
+                    href = `{'#${hashcode}_' + (${expr}) }`;
+
+                    !props.height && attrs.push(`height="${props.width || 16}"`);
+                    !attrs.width && attrs.push(`width="${props.height || 16}"`);
                 } else {
-                    let symbolId = File.name(fileOrExpr); // 使用文件名作为id （TODO 冲突）
-                    href = `{'#${symbolId}'}`;
+                    let name = File.name(fileOrExpr); // 使用文件名作为id （TODO 冲突）
+                    href = `{'#${hashcode}_${name}'}`;
+
+                    // TODO 自动按比例调整宽度
+                    !props.height && attrs.push(`height="${props.width || 16}"`);
+                    !attrs.width && attrs.push(`width="${props.height || 16}"`);
                 }
+
                 return `<svg ${attrs.join(" ")}><use xlink:href=${href}></use></svg>`;
             };
         })()
     );
 
-    // ------- f24m-svgicon-inline-symbol end
+    function getInlineSymbolSvgFiles(srcFile) {
+        let oPkgSvgFiles = {};
+        let oSetPkg = new Set();
+
+        inlineSymbolSvgFiles(oPkgSvgFiles, oSetPkg, srcFile);
+
+        let context = bus.at("组件编译缓存", srcFile);
+        let allreferences = context.result.allreferences;
+        for (let i = 0, tagpkg; (tagpkg = allreferences[i++]); ) {
+            let tagSrcFile = bus.at("标签源文件", tagpkg);
+            inlineSymbolSvgFiles(oPkgSvgFiles, oSetPkg, tagSrcFile);
+        }
+
+        return oPkgSvgFiles;
+    }
+
+    // 汇总 srcFile 所在包的图标文件（配置目录+配置导入）
+    // oPkgSvgFiles: {pkg: {file: {位置信息}} }
+    function inlineSymbolSvgFiles(oPkgSvgFiles, oSetPkg, srcFile) {
+        let context = bus.at("组件编译缓存", srcFile);
+        if (!context) return;
+
+        let pkg = bus.at("文件所在模块", srcFile);
+        if (!oSetPkg.has(pkg)) {
+            // 汇总图标
+            if (context.result.hasDinamicSvg) {
+                let oFiles = bus.at("项目SVG图标文件列表", context.input.file); // {files, pkg}
+
+                let oSvgFiles = (oPkgSvgFiles[pkg] = oPkgSvgFiles[pkg] || {}); // {name: oFile}
+                for (let i = 0, oFile; (oFile = oFiles.files[i++]); ) {
+                    oSvgFiles[oFile.name] = { ...oFile, pkg }; // 保存包名信息
+                }
+                oSetPkg.add(pkg); // 此包已处理
+            }
+        }
+    }
+
+    // ------- f24m-svgicon-type-inline-symbol end
 })();
 
-/* ------- f26m-svgicon-link-symbol ------- */
+/* ------- f25m-svgicon-type-link-symbol ------- */
 (() => {
-    // ------- f26m-svgicon-link-symbol start
+    // ------- f25m-svgicon-type-link-symbol start
     const bus = require("@gotoeasy/bus");
     const File = require("@gotoeasy/file");
     const hash = require("@gotoeasy/hash");
 
-    (function(oFiles = {}) {
+    (function(oFiles = {}, hashLinkSymbol) {
+        bus.on("生成各关联包的外部SYMBOL定义文件", function(context) {
+            let pkg,
+                oPkgFile = {};
+            if (context.result.hasSvgLinkSymbol) {
+                pkg = bus.at("文件所在模块", context.input.file);
+                oPkgFile[pkg] = context.input.file;
+            }
+
+            let allreferences = context.result.allreferences;
+            for (let i = 0, tagpkg, ctx; (tagpkg = allreferences[i++]); ) {
+                let tagSrcFile = bus.at("标签源文件", tagpkg);
+                ctx = bus.at("组件编译缓存", tagSrcFile);
+                if (ctx && ctx.result.hasSvgLinkSymbol) {
+                    pkg = bus.at("文件所在模块", tagSrcFile);
+                    oPkgFile[pkg] = tagSrcFile;
+                }
+            }
+
+            for (let pkg in oPkgFile) {
+                bus.at("生成外部SYMBOL定义文件", oPkgFile[pkg]);
+            }
+        });
+
         bus.on("生成外部SYMBOL定义文件", function(srcFile) {
+            // 模块名（当前工程时为‘/’）
+            let pkg = bus.at("文件所在模块", srcFile);
             let filename = bus.at("外部SYMBOL文件名", srcFile);
 
             if (!oFiles[filename]) {
                 let env = bus.at("编译环境");
                 let file = (env.path.build_dist + "/" + env.path.build_dist_images + "/" + filename).replace(/\/\//g, "/");
                 let text = bus.at("外部SYMBOL文件内容", srcFile);
-                File.write(file, text);
-                oFiles[filename] = true;
-            }
 
-            return filename;
+                if (pkg === "/") {
+                    // 当前工程时，如果内容相同，不重复写文件
+                    let hashcode = hash(text);
+                    if (hashLinkSymbol !== hashcode) {
+                        File.write(file, text);
+                        hashLinkSymbol = hashcode;
+                    }
+                } else {
+                    // npm包的话，写一次就够了
+                    File.write(file, text);
+                    oFiles[filename] = true;
+                }
+            }
         });
 
         bus.on("生成SVG引用外部SYMBOL", function(fileOrExpr, srcFile, props) {
@@ -4832,29 +5267,37 @@ console.time("load");
                 attrs.push(`${key}="${props[key]}"`);
             }
 
+            let symbolFile = bus.at("外部SYMBOL文件名", srcFile);
+
             let href;
             if (bus.at("是否表达式", fileOrExpr)) {
                 let expr = fileOrExpr.substring(1, fileOrExpr.length - 1);
-                href = `{'%svgsymbolfile%#' + (${expr}) }`;
+                href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`;
+
+                !props.height && attrs.push(`height="${props.width || 16}"`);
+                !attrs.width && attrs.push(`width="${props.height || 16}"`);
             } else {
                 let symbolId = File.name(fileOrExpr); // 使用文件名作为id （TODO 冲突）
-                href = `{'%svgsymbolfile%#${symbolId}'}`;
+                href = `{'%svgsymbolpath%${symbolFile}#${symbolId}'}`;
+
+                // TODO 自动按比例调整宽度
+                !props.height && attrs.push(`height="${props.width || 16}"`);
+                !attrs.width && attrs.push(`width="${props.height || 16}"`);
             }
+
             return `<svg ${attrs.join(" ")}><use xlink:href=${href}></use></svg>`;
         });
 
         bus.on("外部SYMBOL文件内容", function(srcFile) {
-            let files = bus.at("项目SVG图标文件列表", srcFile);
+            let oFiles = bus.at("项目SVG图标文件列表", srcFile);
+            oFiles.files.sort((f1, f2) => f1.file > f2.file);
 
             let rs = ['<svg style="display:none;" xmlns="http://www.w3.org/2000/svg">'];
-            let text,
-                symbolId,
-                oSetIds = new Set();
-            files.forEach(file => {
-                text = File.read(file);
-                symbolId = File.name(file);
-                !oSetIds.has(symbolId) && rs.push(bus.at("SVG转SYMBOL定义", text, symbolId)); // 需要适当的转换处理，使用文件内容哈希码作为id
-                oSetIds.add(symbolId);
+            let text, symbolId;
+            oFiles.files.forEach(oFile => {
+                text = File.read(oFile.file);
+                symbolId = oFile.name;
+                rs.push(bus.at("SVG转SYMBOL定义", text, symbolId)); // 需要适当的转换处理，使用文件内容哈希码作为id
             });
             rs.push("</svg>");
 
@@ -4864,16 +5307,16 @@ console.time("load");
         bus.on("外部SYMBOL文件名", function(srcFile) {
             // 模块名（当前工程时为‘/’）
             let pkg = bus.at("文件所在模块", srcFile);
-            return "symbols-" + hash(pkg) + ".svg";
+            return "symbols-" + hash(pkg) + ".svg"; // 外部SYMBOL文件名
         });
     })();
 
-    // ------- f26m-svgicon-link-symbol end
+    // ------- f25m-svgicon-type-link-symbol end
 })();
 
-/* ------- f28m-svgicon-svg-to-symbol ------- */
+/* ------- f26m-svgicon-convert-to-symbol ------- */
 (() => {
-    // ------- f28m-svgicon-svg-to-symbol start
+    // ------- f26m-svgicon-convert-to-symbol start
     const bus = require("@gotoeasy/bus");
 
     bus.on(
@@ -4925,26 +5368,32 @@ console.time("load");
         })()
     );
 
-    // ------- f28m-svgicon-svg-to-symbol end
+    // ------- f26m-svgicon-convert-to-symbol end
 })();
 
-/* ------- f29p-astedit-transform-tag-svgicon-to-svg ------- */
+/* ------- f35p-svgicon-astedit-transform-to-svg ------- */
 (() => {
-    // ------- f29p-astedit-transform-tag-svgicon-to-svg start
+    // ------- f35p-svgicon-astedit-transform-to-svg start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
-    const File = require("@gotoeasy/file");
-    const resolvepkg = require("resolve-pkg");
 
     bus.on(
         "编译插件",
         (function() {
             // 内置标签<svgicon>转换处理
             // 解析替换为<svg>标签
-            return postobject.plugin("f29p-astedit-transform-tag-svgicon-to-svg", function(root, context) {
+            return postobject.plugin("f35p-svgicon-astedit-transform-to-svg", function(root, context) {
+                context.result.hasSvgInlineSymbol = false; // 有无内联Symbol
+                context.result.hasSvgLinkSymbol = false; // 有无外部Symbol
+                context.result.hasDinamicSvg = false; // 有无动态svg影响（svg表达式、内联Symbol、外联Symbol）
+                context.result.hasSvgIcon = false; // 有无使用图标
+                let svgiconsPath = bus.at("项目配置处理", context.input.file).path.svgicons;
+
                 root.walk("Tag", (node, object) => {
                     if (!/^svgicon$/i.test(object.value)) return;
+
+                    context.result.hasSvgIcon = true; // 有无使用图标
 
                     // 查找Attributes
                     let attrsNode;
@@ -5000,45 +5449,25 @@ console.time("load");
                             let nodeSvgTags;
                             try {
                                 let text = bus.at("动态判断显示SVG标签", iconName, context.input.file);
-                                nodeSvgTags = bus.at("SVG图标文件解析", null, text, oAttrs, object.pos);
+                                nodeSvgTags = bus.at("SVG图标内容解析为AST节点数组", null, text, oAttrs, object.pos);
                             } catch (e) {
                                 throw new Err(e.message, e, { ...context.input, ...nodeName.object.pos });
                             }
 
                             // 替换为内联svg标签节点
                             nodeSvgTags && node.replaceWith(...nodeSvgTags);
+                            context.result.hasDinamicSvg = true;
                         } else {
                             // 硬编码时，直接显示相应图标
-                            iconName = iconName.replace(/\\/g, "/");
-                            !/\.svg$/i.test(iconName) && (iconName += ".svg"); // 后缀可以省略，如果没写则补足
+                            let oFile = findSvgFileInProject(iconName, errInfoName, context.input.file); // 从工程中查找唯一的图标文件，找不到则报错
 
-                            let svgfile,
-                                ary = iconName.split(":");
-                            if (ary.length > 2) {
-                                throw new Err("invalid format of name attribute, etc. pkg:svgfilter", errInfoName); // 格式有误，多个冒号
-                            } else if (ary.length > 1) {
-                                svgfile = findSvgByPkgFilter(ary, iconName, errInfoName, context.input.file); // 从npm包中查找
-                            } else {
-                                svgfile = findSvgInProjectAndBuildinPkg(iconName, errInfoName, context.input.file); // 从工程内和内置包中查找
-
-                                if (!svgfile.startsWith(resolvepkg("@rpose/buildin"))) {
-                                    let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
-                                    !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                                }
+                            if (oFile.file.startsWith(svgiconsPath)) {
+                                let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
+                                !refsvgicons.includes(oFile.file) && refsvgicons.push(oFile.file); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
                             }
 
-                            //                    let allrefsvgicons = context.result.allrefsvgicons = context.result.allrefsvgicons || [];       // 硬编码用到的全部图标文件
-                            //                    !allrefsvgicons.includes(svgfile) && allrefsvgicons.push(svgfile);
-
-                            let nodeSvgTags;
-                            try {
-                                nodeSvgTags = bus.at("SVG图标文件解析", svgfile, null, oAttrs, object.pos);
-                            } catch (e) {
-                                throw new Err(e.message, e, { ...context.input, ...nodeName.object.pos });
-                            }
-
-                            // 替换为内联svg标签节点
-                            nodeSvgTags && node.replaceWith(...nodeSvgTags);
+                            let nodeSvgTags = bus.at("SVG图标内容解析为AST节点数组", oFile.file, null, oAttrs, object.pos);
+                            nodeSvgTags && node.replaceWith(...nodeSvgTags); // 替换为内联svg标签节点
                         }
                     } else if (/^inline-symbol$/i.test(iconType)) {
                         // -------------------------------
@@ -5051,37 +5480,25 @@ console.time("load");
                         }
 
                         context.result.hasSvgInlineSymbol = true;
+                        context.result.hasDinamicSvg = true;
 
                         let symbolId;
-
                         if (bus.at("是否表达式", iconName)) {
                             // 使用表达式，在运行期确定symbolId相应的图标
                             symbolId = iconName;
                         } else {
-                            // 硬编码图标名（通常是文件名），在编译期确定图标文件，检查文件是否存在
-                            iconName = iconName.replace(/\\/g, "/");
-                            !/\.svg$/i.test(iconName) && (iconName += ".svg"); // 后缀可以省略，如果没写则补足
+                            // 硬编码时，检查文件是否存在
+                            let oFile = findSvgFileInProject(iconName, errInfoName, context.input.file); // 从工程中查找唯一的图标文件，找不到则报错
+                            symbolId = oFile.file;
 
-                            let svgfile,
-                                ary = iconName.split(":");
-                            if (ary.length > 2) {
-                                throw new Err("invalid format of name attribute, etc. pkg:svgfilter", errInfoName); // 格式有误，多个冒号
-                            } else if (ary.length > 1) {
-                                svgfile = findSvgByPkgFilter(ary, iconName, errInfoName, context.input.file); // 从npm包中查找
-                            } else {
-                                svgfile = findSvgInProjectAndBuildinPkg(iconName, errInfoName, context.input.file); // 从工程内和内置包中查找
-
-                                if (!svgfile.startsWith(resolvepkg("@rpose/buildin"))) {
-                                    let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
-                                    !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                                }
+                            if (oFile.file.startsWith(svgiconsPath)) {
+                                let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
+                                !refsvgicons.includes(oFile.file) && refsvgicons.push(oFile.file); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
                             }
-
-                            symbolId = svgfile;
                         }
 
-                        let strSvgUse = bus.at("生成SVG引用内联SYMBOL", symbolId, props); // 生成标签字符串，类似 <svg ...><use ...></use></svg>
-                        let nodeSvgUse = bus.at("解析生成AST节点", strSvgUse); // 转成AST节点
+                        let strSvgUse = bus.at("生成SVG引用内联SYMBOL", symbolId, context.input.file, props); // 生成标签字符串，类似 <svg ...><use ...></use></svg>
+                        let nodeSvgUse = bus.at("SVG图标引用解析为AST节点", strSvgUse); // 转成AST节点
                         node.replaceWith(nodeSvgUse);
                     } else if (/^link-symbol$/i.test(iconType)) {
                         // -------------------------------
@@ -5093,39 +5510,27 @@ console.time("load");
                             props[k] = oAttrs[k].value;
                         }
 
-                        context.result.hasSvgLinkSymbol = true; // 有无外部symbol定义的标记
+                        context.result.hasSvgLinkSymbol = true;
+                        context.result.hasDinamicSvg = true;
 
-                        // 如果是硬编码，把找到的文件存起来，以支持添加工程外图标
-                        if (!bus.at("是否表达式", iconName)) {
-                            iconName = iconName.replace(/\\/g, "/");
-                            !/\.svg$/i.test(iconName) && (iconName += ".svg"); // 后缀可以省略，如果没写则补足
-
-                            let svgfile,
-                                ary = iconName.split(":");
-                            if (ary.length > 2) {
-                                throw new Err("invalid format of name attribute, etc. pkg:svgfilter", errInfoName); // 格式有误，多个冒号
-                            } else if (ary.length > 1) {
-                                svgfile = findSvgByPkgFilter(ary, iconName, errInfoName, context.input.file); // 从npm包中查找
-                            } else {
-                                svgfile = findSvgInProjectAndBuildinPkg(iconName, errInfoName, context.input.file); // 从工程内和内置包中查找
-
-                                if (!svgfile.startsWith(resolvepkg("@rpose/buildin"))) {
-                                    let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
-                                    !refsvgicons.includes(svgfile) && refsvgicons.push(svgfile); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                                }
-                            }
-
-                            let allrefsvgicons = (context.result.allrefsvgicons = context.result.allrefsvgicons || []); // 硬编码用到的全部图标文件
-                            !allrefsvgicons.includes(svgfile) && allrefsvgicons.push(svgfile);
-
-                            let strSvgUse = bus.at("生成SVG引用外部SYMBOL", svgfile, context.input.file, props); // 生成标签字符串，类似 <svg ...><use ...></use></svg>
-                            let nodeSvgUse = bus.at("解析生成AST节点", strSvgUse); // 转成AST节点
-                            node.replaceWith(nodeSvgUse);
+                        let symbolId;
+                        if (bus.at("是否表达式", iconName)) {
+                            // 使用表达式，在运行期确定symbolId相应的图标
+                            symbolId = iconName;
                         } else {
-                            let strSvgUse = bus.at("生成SVG引用外部SYMBOL", iconName, context.input.file, props); // 生成标签字符串，类似 <svg ...><use ...></use></svg>
-                            let nodeSvgUse = bus.at("解析生成AST节点", strSvgUse); // 转成AST节点
-                            node.replaceWith(nodeSvgUse);
+                            // 硬编码时，检查文件是否存在
+                            let oFile = findSvgFileInProject(iconName, errInfoName, context.input.file); // 从工程中查找唯一的图标文件，找不到则报错
+                            symbolId = oFile.file;
+
+                            if (oFile.file.startsWith(svgiconsPath)) {
+                                let refsvgicons = (context.result.refsvgicons = context.result.refsvgicons || []); // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
+                                !refsvgicons.includes(oFile.file) && refsvgicons.push(oFile.file); // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
+                            }
                         }
+
+                        let strSvgUse = bus.at("生成SVG引用外部SYMBOL", symbolId, context.input.file, props); // 生成标签字符串，类似 <svg ...><use ...></use></svg>
+                        let nodeSvgUse = bus.at("SVG图标引用解析为AST节点", strSvgUse); // 转成AST节点
+                        node.replaceWith(nodeSvgUse);
                     } else {
                         // 错误类型，提示修改
                         throw new Err(`support type (${iconType}), etc. svg | inline-symbol | link-symbol`, {
@@ -5135,128 +5540,24 @@ console.time("load");
                     }
                 });
             });
+
+            // 从工程中查找图标文件（直接内联svg时，检查重名，其他情况在页面生成时统一检查）
+            function findSvgFileInProject(filename, errInfo, fromFile) {
+                let oSvg = bus.at("项目SVG图标文件列表", fromFile); // 已含重名检查
+
+                // 按文件名匹配，忽略大小写
+                for (let i = 0, oFile; (oFile = oSvg.files[i++]); ) {
+                    if (oFile.name === filename.toLowerCase()) {
+                        return oFile;
+                    }
+                }
+
+                throw new Err(`svg icon file not found (${filename})`, errInfo); // 图标文件找不到
+            }
         })()
     );
 
-    // 在npm包中查找
-    function findSvgByPkgFilter(ary, nameProp, errInfo, fromFile) {
-        // 简单排除window环境下书写绝对路径的情况
-        if (File.existsFile(nameProp)) {
-            throw new Err("unsupport absolute file path", errInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
-        }
-
-        // 指定NPM包中文件的形式，npm包视为稳定，支持使用通配符提高灵活性
-        let pkg = ary[0].trim();
-        let filter = ary[1].trim();
-        if (!pkg) {
-            throw new Err("missing npm package name, etc. pkg:svgfilter", errInfo); // 输入有误，漏包名
-        }
-        if (!filter) {
-            throw new Err("missing svf file filter, etc. pkg:svgfilter", errInfo); // 输入有误，漏文件名
-        }
-
-        if (!bus.at("自动安装", pkg)) {
-            throw new Err("npm package install failed: " + pkg, errInfo); // 指定包安装失败
-        }
-
-        // 检查缓存
-        let env = bus.at("编译环境");
-        let oCache = bus.at("缓存");
-        let cacheKey = JSON.stringify(["按包名：过滤器查找SVG图标文件", File.path(fromFile), pkg, filter]);
-        if (!env.nocache) {
-            let cacheValue = oCache.get(cacheKey);
-            if (cacheValue) return cacheValue;
-        }
-
-        let oPkg = bus.at("模块组件信息", pkg);
-        let files = File.files(oPkg.path, filter);
-        if (!files.length) {
-            // 默认找不到时，添加任意目录条件再找一遍，如果能找到唯一一个也算成功
-            let filter2 = ("**/" + filter).replace(/\/\//g, "/");
-            files = File.files(oPkg.path, filter2);
-            if (files.length != 1) {
-                // 找不到唯一一个，则按没找到处理
-                throw new Err("svf file not found in package: " + pkg, errInfo); // npm包安装目录内找不到指定的图标文件
-            }
-        }
-
-        if (files.length > 1) {
-            // 找到多个时，按错误处理
-            throw new Err("multi svf file found in package: " + pkg + "\n" + files.join("\n"), errInfo); // npm包安装目录内找到多个图标文件 （通配符匹配到多个导致，应修改）
-        }
-
-        return oCache.set(cacheKey, files[0]); // 正常找到唯一的一个文件
-    }
-
-    // 在工程内和内置包中查找
-    function findSvgInProjectAndBuildinPkg(filter, errInfo, fromFile) {
-        // --------------------------------------------
-        // 优先按源文件相对目录，直接拼接路径查找文件
-        let oPjtContext = bus.at("项目配置处理", fromFile);
-        let svgfile = File.resolve(fromFile, filter); // 相对于源文件所在目录，按相对路径查找svg文件
-        if (File.existsFile(svgfile)) {
-            if (!svgfile.startsWith(oPjtContext.path.root + "/")) {
-                throw new Err("file should not out of project\nsrc: " + fromFile + "\nsvg: " + svgfile, errInfo); // 不支持引用项目外文件，避免版本混乱
-            }
-            return svgfile; // 按源文件相对目录找到
-        }
-
-        // --------------------------------------------
-        // 其次以文件所在的项目配置指定目录，按过滤条件查找
-        let dir = oPjtContext.path.svgicons;
-        let files = File.files(dir, filter);
-        if (files.length == 1) {
-            if (files[0] === filter) {
-                throw new Err("unsupport absolute file path", errInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
-            }
-            return files[0]; // 项目配置指定目录中找到
-        }
-
-        // 默认找不到时，添加任意目录条件再找一遍，如果能找到唯一一个也算成功
-        let filter2, files2;
-        if (files.length < 1) {
-            filter2 = ("**/" + filter).replace(/\/\//g, "/");
-            files2 = File.files(dir, filter2);
-            if (files2.length == 1) {
-                if (files2[0] === filter) {
-                    throw new Err("unsupport absolute file path", errInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
-                }
-                return files2[0]; // 项目配置指定目录中二次找到
-            }
-        }
-
-        // --------------------------------------------
-        // 在内置npm包中查找
-        let buildindir = resolvepkg("@rpose/buildin") + "/svgicons";
-        let buildinfiles = File.files(buildindir, filter);
-        if (buildinfiles.length == 1) {
-            return buildinfiles[0]; // 内置npm包中找到
-        }
-
-        // 默认找不到时，添加任意目录条件再找一遍，如果能找到唯一一个也算成功
-        let buildinfilter2, buildinfiles2;
-        if (buildinfiles.length < 1) {
-            buildinfilter2 = ("**/" + filter).replace(/\/\//g, "/");
-            buildinfiles2 = File.files(buildindir, buildinfilter2);
-            if (buildinfiles2.length == 1) {
-                if (buildinfiles2[0] === filter) {
-                    throw new Err("unsupport absolute file path", errInfo); // 不支持使用绝对路径，避免换机器环境引起混乱
-                }
-                return buildinfiles2[0]; // 内置npm包中二次找到
-            }
-        }
-
-        // 报错
-        if (files.length > 1 || files2.length > 1) {
-            throw new Err("multi svf file found in folder: " + dir + "\n" + [...files, ...files2].join("\n"), errInfo); // 报错，项目配置指定目录中找到多个
-        }
-        if (buildinfiles.length > 1 || buildinfiles2.length > 1) {
-            throw new Err("multi svf file found in package [@rpose/buildin]\n" + [...buildinfiles, ...buildinfiles2].join("\n"), errInfo); // 报错，内置npm包中找到多个
-        }
-        throw new Err("svf file not found", errInfo); // 找不到
-    }
-
-    // ------- f29p-astedit-transform-tag-svgicon-to-svg end
+    // ------- f35p-svgicon-astedit-transform-to-svg end
 })();
 
 /* ------- g11p-astedit-set-flag-is-svg-tag ------- */
@@ -9115,6 +9416,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                 let inlinesymbols = hasSvgInlineSymbols(context) ? bus.at("生成SVG内联SYMBOL定义代码", file) : "";
 
+                bus.at("生成各关联包的外部SYMBOL定义文件", context);
+
                 context.result.html = require(env.prerender)({ srcPath, file, name, type, nocss, inlinesymbols });
             });
         })()
@@ -9196,11 +9499,10 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     });
                 }
 
-                if (srcComponents.indexOf("%svgsymbolfile%") > 0) {
-                    // 替换图标相对路径，图标不存在则复制
+                if (srcComponents.indexOf("%svgsymbolpath%") > 0) {
+                    // 替换图标相对路径
                     let imgPath = bus.at("页面图片相对路径", context.input.file);
-                    let filename = bus.at("生成外部SYMBOL定义文件", context.input.file); // 有缓存，仅生成一次，返回不带路径的文件名(在images目录)
-                    srcComponents = srcComponents.replace(/%svgsymbolfile%/g, imgPath + filename);
+                    srcComponents = srcComponents.replace(/%svgsymbolpath%/g, imgPath);
                 }
 
                 let tagpkg = context.result.tagpkg;
@@ -9883,10 +10185,10 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
     // 前提： 字符串格式正确，且为单一根节点
     bus.on(
-        "解析生成AST节点",
+        "SVG图标引用解析为AST节点",
         (function() {
             return function(text) {
-                let plugins = bus.on("解析生成AST节点插件");
+                let plugins = bus.on("解析SVG图标引用为AST节点插件");
                 let rs = postobject(plugins).process({ text });
 
                 return rs.result;
@@ -9895,13 +10197,13 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     // ------------------------------------------------------
-    // 字符串解析生成AST节点
+    // 解析svg-use图标引用的源码内容，转换为节点
     //
     // 以下插件顺序相关，不可轻易变动
     //
     // ------------------------------------------------------
     bus.on(
-        "解析生成AST节点插件",
+        "解析SVG图标引用为AST节点插件",
         (function() {
             return postobject.plugin("gennode-plugin-01", function(root, context) {
                 root.walk((node, object) => {
@@ -9922,7 +10224,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     bus.on(
-        "解析生成AST节点插件",
+        "解析SVG图标引用为AST节点插件",
         (function() {
             return postobject.plugin("gennode-plugin-02", function(root, context) {
                 // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
@@ -9963,7 +10265,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     bus.on(
-        "解析生成AST节点插件",
+        "解析SVG图标引用为AST节点插件",
         (function() {
             return postobject.plugin("gennode-plugin-03", function(root) {
                 // 多个属性节点合并为一个标签属性节点
@@ -9989,7 +10291,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     bus.on(
-        "解析生成AST节点插件",
+        "解析SVG图标引用为AST节点插件",
         (function() {
             // 自关闭标签统一转换为Tag类型节点
             return postobject.plugin("gennode-plugin-04", function(root, context) {
@@ -10016,7 +10318,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     bus.on(
-        "解析生成AST节点插件",
+        "解析SVG图标引用为AST节点插件",
         (function() {
             // 开闭标签统一转换为Tag类型节点
             return postobject.plugin("gennode-plugin-05", function(root, context) {
@@ -10077,7 +10379,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     bus.on(
-        "解析生成AST节点插件",
+        "解析SVG图标引用为AST节点插件",
         (function() {
             // 最后一步，保存解析结果
             return postobject.plugin("gennode-plugin-99", function(root, context) {

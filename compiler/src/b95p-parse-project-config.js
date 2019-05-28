@@ -26,7 +26,7 @@ bus.on('项目配置处理', function(result={}){
             path.build_dist_images = 'images';
             path.svgicons = root + '/resources/svgicons';
 
-            let result = {oTaglibs: {}, oCsslibs: {}, oCsslibPkgs: {}};
+            let result = {oTaglibs: {}, oCsslibs: {}, oCsslibPkgs: {}, oSvgicons: {}};
             return {path, result};
         }
 
@@ -185,6 +185,22 @@ bus.on('项目配置处理插件', function(){
         });
 
         context.result.oTaglibs = oTaglibs || {};                               // 保存[taglib]解析结果
+    });
+
+}());
+
+// 保存引入的svg图标
+bus.on('项目配置处理插件', function(){
+
+    return postobject.plugin('process-project-config-140', function(root, context){
+
+        let oSvgicons;
+        root.walk( 'svgicon', (node, object) => {
+            oSvgicons = bus.at('解析[svgicon]', object, context);                // 含格式检查、别名重复检查
+            node.remove();
+        });
+
+        context.result.oSvgicons = oSvgicons || {};                              // 保存[svgicon]解析结果
     });
 
 }());

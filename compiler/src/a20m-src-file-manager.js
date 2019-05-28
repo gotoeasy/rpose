@@ -97,41 +97,7 @@ const File = require('@gotoeasy/file');
     });
 
     bus.on('SVG文件添加', async function(svgfile){
-
-        let env = bus.at('编译环境');
-        if ( svgfile.startsWith(env.path.svgicons + '/') ) {
-            bus.at('生成项目SVG-SYMBOL文件', true);
-            bus.at('重新计算页面哈希码');
-        }
-
-        // SVG图标文件添加时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译，如果存在未编译成功的组件，同样需要重新编译
-        let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
-        let needBuild, refFiles = [];
-        for ( let file in oFiles ) {
-            let context = bus.at('组件编译缓存', file);
-            if ( context ) {
-                let refsvgicons = context.result.refsvgicons || [];
-                for ( let i=0,f; f=refsvgicons[i++]; ) {
-                    if ( File.name(f) === name ) {                          // 比较的是不含扩展名的单纯svg文件名，通常直接表达图标名
-                        let tag = getTagOfSrcFile(file);                    // 直接关联的组件标签名
-                        refFiles.push(file);                                // 待重新编译的组件
-                        refFiles.push(...getRefPages(tag));                 // 待重新编译的页面
-                    }
-                }
-            }else{
-                // 添加的svg文件被作为图片用途时，此处理分支也满足
-                needBuild = true;                                           // 存在未编译成功的组件，保险起见同样重新编译
-            }
-        }
-
-        if ( needBuild || refFiles.length ) {
-            (new Set(refFiles)).forEach(pageFile => {
-                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
-                removeHtmlCssJsFile(pageFile);
-            })
-            await bus.at('全部编译');
-        }
-
+        await bus.at('重新编译和该SVG可能相关的组件和页面', svgfile);
     });
 
     bus.on('图片文件添加', async function(){
@@ -170,44 +136,7 @@ const File = require('@gotoeasy/file');
     });
 
     bus.on('SVG文件修改', async function(svgfile){
-
-        let env = bus.at('编译环境');
-        if ( svgfile.startsWith(env.path.svgicons + '/') ) {
-            bus.at('生成项目SVG-SYMBOL文件', true);
-            bus.at('重新计算页面哈希码');
-        }
-
-        // SVG图标文件修改时，找出使用该svg文件的组件，以及使用该组件的页面，都清除缓存后重新编译
-        let oFiles = bus.at('源文件对象清单');
-        let refFiles = [];
-        for ( let file in oFiles ) {
-            let context = bus.at('组件编译缓存', file);
-            if ( context ) {
-                let refsvgicons = context.result.refsvgicons || [];
-                if ( refsvgicons.includes(svgfile) ) {                      // 比较的是全路径文件名
-                    let tag = getTagOfSrcFile(file);                        // 直接关联的组件标签名
-                    refFiles.push(file);                                    // 待重新编译的组件
-                    refFiles.push(...getRefPages(tag));                     // 待重新编译的页面
-                }
-
-                // 添加的svg文件被作为图片用途时的处理
-                let refimages = context.result.refimages || [];
-                if ( refimages.includes(svgfile) ) {                        // 比较的是全路径文件名
-                    let tag = getTagOfSrcFile(file);                        // 直接关联的组件标签名
-                    refFiles.push(file);                                    // 待重新编译的组件
-                    refFiles.push(...getRefPages(tag));                     // 待重新编译的页面
-                }
-            }
-        }
-
-        if ( refFiles.length ) {
-            (new Set(refFiles)).forEach(pageFile => {
-                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
-                removeHtmlCssJsFile(pageFile);
-            })
-            await bus.at('全部编译');
-        }
-
+        await bus.at('重新编译和该SVG可能相关的组件和页面', svgfile);
     });
 
     bus.on('图片文件修改', async function(imgfile){
@@ -277,40 +206,7 @@ const File = require('@gotoeasy/file');
 
 
     bus.on('SVG文件删除', async function(svgfile){
-
-        let env = bus.at('编译环境');
-        if ( svgfile.startsWith(env.path.svgicons + '/') ) {
-            bus.at('生成项目SVG-SYMBOL文件', true);
-            bus.at('重新计算页面哈希码');
-        }
-
-        // SVG图标文件删除时，找出使用该svg文件名（短名）的组件，以及使用该组件的页面，都清除缓存后重新编译
-        let oFiles = bus.at('源文件对象清单'), name = File.name(svgfile);
-        let refFiles = [];
-        let needBuild;
-        for ( let file in oFiles ) {
-            let context = bus.at('组件编译缓存', file);
-            if ( context ) {
-                let refsvgicons = context.result.refsvgicons || [];
-                for ( let i=0,f; f=refsvgicons[i++]; ) {
-                    if ( File.name(f) === name ) {                          // 比较的是不含扩展名的单纯svg文件名，通常直接表达图标名
-                        let tag = getTagOfSrcFile(file);                    // 直接关联的组件标签名
-                        refFiles.push(file);                                // 待重新编译的组件
-                        refFiles.push(...getRefPages(tag));                 // 待重新编译的页面
-                    }
-                }
-            }else{
-                needBuild = true;                                           // 存在未编译成功的组件，保险起见同样重新编译
-            }
-        }
-
-        if ( needBuild || refFiles.length ) {
-            (new Set(refFiles)).forEach(pageFile => {
-                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
-                removeHtmlCssJsFile(pageFile);
-            })
-            await bus.at('全部编译');
-        }
+        await bus.at('重新编译和该SVG可能相关的组件和页面', svgfile);
     });
 
     bus.on('图片文件删除', async function(imgfile){
@@ -319,6 +215,49 @@ const File = require('@gotoeasy/file');
         await bus.at('图片文件修改', imgfile);
     });
 
+    bus.on('重新编译和该SVG可能相关的组件和页面', async function(svgfile){
+
+        // 如果是图表目录中的文件，简化的，但凡用到图标的组件和页面，统统重新编译
+        let env = bus.at('编译环境');
+
+        let oSetFiles = new Set(), oSetPages = new Set();
+        let oFiles = bus.at('源文件对象清单');
+        let pages;
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( context ) {
+
+                // 可能是图标用途的svg文件
+                if ( svgfile.startsWith(env.path.svgicons + '/') ) {
+                    if ( context.result.hasSvgIcon ) {
+                        oSetFiles.add(file);                                    // 直接使用图标的组件
+                        pages = getRefPages(getTagOfSrcFile(file));
+                        pages.forEach(f => oSetPages.add(f));                   // 使用本组件的页面
+
+                        continue;
+                    }
+                }
+
+                // 可能是图片用途的svg文件
+                let refimages = context.result.refimages || [];
+                if ( refimages.includes(svgfile) ) {
+                    oSetFiles.add(file);                                        // 使用该svg作为图片用途的组件
+                    pages = getRefPages(getTagOfSrcFile(file));
+                    pages.forEach(f => oSetPages.add(f));                       // 使用本组件的页面
+                }
+            }
+        }
+
+        oSetPages.forEach(file => {
+            bus.at('组件编译缓存', file, false);                                // 清除编译缓存
+            removeHtmlCssJsFile(file);
+        });
+        oSetFiles.forEach(file => {
+            bus.at('组件编译缓存', file, false);                                // 清除编译缓存
+        });
+
+        await bus.at('全部编译');
+    });
 
 
 })();
@@ -355,14 +294,14 @@ bus.on('使用外部SVG-SYMBOL的页面文件', function (){
         for ( let file in oFiles ) {
             let context = bus.at('组件编译缓存', file );
             if ( context && context.result && context.result.isPage) {
-                if ( context.result.hasSvgLinkSymbol ) {
+                if ( context.result.hasDinamicSvg ) {
                     files.push(file);                                                   // 页面使用了外部SVG-SYMBOL图标
                 }else{
                     let allreferences = context.result.allreferences;
                     for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
                         srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
                         ctx = bus.at('组件编译缓存', srcFile );
-                        if ( ctx && ctx.result && ctx.result.hasSvgLinkSymbol ) {
+                        if ( ctx && ctx.result && ctx.result.hasDinamicSvg ) {
                             files.push(file);                                           // 页面关联的组件使用了外部SVG-SYMBOL图标
                             break;
                         }
