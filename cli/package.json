@@ -1,9 +1,9 @@
 {
   "name": "@rpose/cli",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "main": "index.js",
   "dependencies": {
-    "@rpose/compiler": "0.5.*",
+    "@rpose/compiler": "0.6.*",
     "commander": "2.19.*",
     "chalk": "2.4.*",
     "inquirer": "6.2.*"

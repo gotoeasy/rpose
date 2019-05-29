@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.5.39
+0.6.0
 
 [main]
 compiler.js
@@ -11,20 +11,20 @@ compiler.js
 rp = bin/rpose
 
 [dependencies] // 依赖库
-@rpose/runtime = 0.0.*
-@gotoeasy/bus = 0.0.*
-@gotoeasy/npm = 0.0.*
-@gotoeasy/file = 0.0.*
-@gotoeasy/util = 0.0.*
-@gotoeasy/btf = 1.1.*
-@gotoeasy/err = 0.1.*
-@gotoeasy/csjs = 0.2.*
-@gotoeasy/postobject = 0.0.*
-@gotoeasy/cache = 0.1.*
-@gotoeasy/theme = 0.0.*
-@gotoeasy/pre-render = 0.0.*
-csslibify = 0.3.*
-postcss-sort-media = 0.0.*
+@rpose/runtime = 0.1.*
+@gotoeasy/bus = 0.1.*
+@gotoeasy/npm = 0.1.*
+@gotoeasy/file = 0.1.*
+@gotoeasy/util = 0.1.*
+@gotoeasy/btf = 1.2.*
+@gotoeasy/err = 0.2.*
+@gotoeasy/csjs = 0.3.*
+@gotoeasy/postobject = 0.1.*
+@gotoeasy/cache = 0.2.*
+@gotoeasy/theme = 0.1.*
+@gotoeasy/pre-render = 0.1.*
+csslibify = 0.4.*
+postcss-sort-media = 0.1.*
 csso = 3.5.*
 postcss-import-sync = 7.1.*
 resolve-pkg = 1.0.*
