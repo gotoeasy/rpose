@@ -178,7 +178,7 @@ body
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
-- [x] 内置标签组件 `<svgicon>`，内置部分常用图标
+- [x] 内置图标组件 `<svgicon>`
 
 > `runtime`
 
@@ -237,17 +237,17 @@ body
 
 ## `变更列表`
 <details>
-<summary><strong>Ver 0.5.x</strong></summary>
+<summary><strong>Ver 0.5.*</strong></summary>
 
 - [x] 新增指令`@class`，支持以灵活的原子方式书写样式
-- [x] 内置标签组件 `<svgicon>`，内置部分常用图标
+- [x] 内置SVG图标组件 `<svgicon>`
 - [x] 指令`@show`添加修饰符支持，如`@show.flex`
 - [x] 优化样式库编译缓存，提升编译性能
 - [x] 监视模式下修改本地样式库用到的css文件，重新编译相关的组件及页面
 </details>
 
 <details>
-<summary><strong>Ver 0.4.x</strong></summary>
+<summary><strong>Ver 0.4.*</strong></summary>
 
 - [x] 为方便功能删减修改，咬牙重构，编译器插件化，分离`runtime`、`buildin`模块
 - [x] 更多的编译期检查以及更友好的错误信息提示
@@ -267,19 +267,19 @@ body
 </details>
 
 <details>
-<summary><strong>Ver 0.3.x</strong></summary>
+<summary><strong>Ver 0.3.*</strong></summary>
 
 - [x] 新添指令`@taglib`、`@csslib`，组件支持`[taglib]`、`[csslib]`块定义
 </details>
 
 <details>
-<summary><strong>Ver 0.2.x</strong></summary>
+<summary><strong>Ver 0.2.*</strong></summary>
 
 - [x] 指令统一前缀为`@`以方便识别，如 `@if`、`@ref`、`@show`
 </details>
 
 <details>
-<summary><strong>Ver 0.1.x 概念版</strong></summary> 
+<summary><strong>Ver 0.1.* 概念版</strong></summary> 
 
 - [x] 源文件使用BTF的单文档格式，人性化可读性强，增强开发舒适性<br>
 - [x] 数据驱动、组件式、响应式、声明式的开发过程<br>

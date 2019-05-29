@@ -31,7 +31,8 @@ class  JsWriter{
             return csjs.formatJs( js );
            // return csjs.formatJs( csjs.miniJs(js) );
         }catch(e){
-            File.write(process.cwd() + '/build/error/format-error.js', js);
+            let env  = bus.at('编译环境');
+            File.write(env.path.build + '/error/format-error.js', js);
             throw e;
         }
     }

@@ -37,7 +37,7 @@ bus.on('编译插件', function(){
 
         // 非release模式时输出源码便于确认
         if ( !env.release ) {
-            let fileJs = env.path.build_temp + '/' + bus.at('组件目标文件名', context.input.file) + '.js';
+            let fileJs = bus.at('组件目标临时JS文件名', context.input.file);
             File.write(fileJs, csjs.formatJs(result.componentJs) );
         }
 

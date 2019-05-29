@@ -285,33 +285,3 @@ function removeHtmlCssJsFile(file){
 
 }
 
-bus.on('使用外部SVG-SYMBOL的页面文件', function (){
-
-    return function(){
-
-        let oFiles = bus.at('源文件对象清单');
-        let files = [];
-        for ( let file in oFiles ) {
-            let context = bus.at('组件编译缓存', file );
-            if ( context && context.result && context.result.isPage) {
-                if ( context.result.hasDinamicSvg ) {
-                    files.push(file);                                                   // 页面使用了外部SVG-SYMBOL图标
-                }else{
-                    let allreferences = context.result.allreferences;
-                    for ( let i=0,tagpkg,srcFile,ctx; tagpkg=allreferences[i++]; ) {
-                        srcFile = bus.at('标签源文件', tagpkg, context.result.oTaglibs);
-                        ctx = bus.at('组件编译缓存', srcFile );
-                        if ( ctx && ctx.result && ctx.result.hasDinamicSvg ) {
-                            files.push(file);                                           // 页面关联的组件使用了外部SVG-SYMBOL图标
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        return files;
-    }
-
-}());
-

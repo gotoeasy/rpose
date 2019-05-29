@@ -12,7 +12,6 @@ bus.on('编译插件', function(){
         context.result.hasSvgLinkSymbol = false;                                                                // 有无外部Symbol
         context.result.hasDinamicSvg = false;                                                                   // 有无动态svg影响（svg表达式、内联Symbol、外联Symbol）
         context.result.hasSvgIcon = false;                                                                      // 有无使用图标
-        let svgiconsPath = bus.at('项目配置处理', context.input.file).path.svgicons;
 
         root.walk( 'Tag', (node, object) => {
             if ( !/^svgicon$/i.test(object.value) ) return;
@@ -81,11 +80,6 @@ bus.on('编译插件', function(){
                     // 硬编码时，直接显示相应图标
                     let oFile = findSvgFileInProject(iconName, errInfoName, context.input.file);                    // 从工程中查找唯一的图标文件，找不到则报错
 
-                    if ( oFile.file.startsWith(svgiconsPath) ) {
-                        let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
-                        !refsvgicons.includes(oFile.file) && refsvgicons.push(oFile.file);                          // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                    }
-
                     let nodeSvgTags = bus.at('SVG图标内容解析为AST节点数组', oFile.file, null, oAttrs, object.pos);
                     nodeSvgTags && node.replaceWith(...nodeSvgTags);                                                // 替换为内联svg标签节点
                 }
@@ -112,11 +106,6 @@ bus.on('编译插件', function(){
                     // 硬编码时，检查文件是否存在
                     let oFile = findSvgFileInProject(iconName, errInfoName, context.input.file);                    // 从工程中查找唯一的图标文件，找不到则报错
                     symbolId = oFile.file;
-
-                    if ( oFile.file.startsWith(svgiconsPath) ) {
-                        let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
-                        !refsvgicons.includes(oFile.file) && refsvgicons.push(oFile.file);                          // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                    }
                 }
 
                 let strSvgUse = bus.at('生成SVG引用内联SYMBOL', symbolId, context.input.file, props);                // 生成标签字符串，类似 <svg ...><use ...></use></svg>
@@ -126,7 +115,7 @@ bus.on('编译插件', function(){
             }else if ( /^link-symbol$/i.test(iconType) ) {
                 // -------------------------------
                 // link-symbol(外部symbol定义)
-                // 【特点】工程单位范围内可动态生成
+                // 【特点】能缓存
                 // -------------------------------
                 let props = {};
                 for ( let k in oAttrs ) {
@@ -144,11 +133,6 @@ bus.on('编译插件', function(){
                     // 硬编码时，检查文件是否存在
                     let oFile = findSvgFileInProject(iconName, errInfoName, context.input.file);                    // 从工程中查找唯一的图标文件，找不到则报错
                     symbolId = oFile.file;
-
-                    if ( oFile.file.startsWith(svgiconsPath) ) {
-                        let refsvgicons = context.result.refsvgicons = context.result.refsvgicons || [];            // 项目中的svg文件可能修改，保存依赖关系以便修改时重新编译
-                        !refsvgicons.includes(oFile.file) && refsvgicons.push(oFile.file);                          // 当前组件依赖此svg文件，用于文件监视模式，svg改动时重新编译
-                    }
                 }
 
                 let strSvgUse = bus.at('生成SVG引用外部SYMBOL', symbolId, context.input.file, props);                // 生成标签字符串，类似 <svg ...><use ...></use></svg>
