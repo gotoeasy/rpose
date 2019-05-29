@@ -1,4 +1,5 @@
 const bus = require('@gotoeasy/bus');
+const Err = require('@gotoeasy/err');
 const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译插件', function(){
@@ -9,14 +10,14 @@ bus.on('编译插件', function(){
 
         let oSetAllRef = new Set();
         let oStatus = {};
-        let references = context.result.references;
+        let references = context.result.references;         // 依赖的组件源文件
         references.forEach(tagpkg => {
             addRefComponent(tagpkg, oSetAllRef, oStatus);
         });
 
         // 自身循环引用检查
         if ( oSetAllRef.has(context.result.tagpkg) ) {
-            throw new Err('circular reference: ' + context.result.tagpkg);
+            throw new Err('circular reference: ' + context.input.file);
         }
 
         // 排序便于生成统一代码顺序
@@ -33,7 +34,7 @@ bus.on('编译插件', function(){
 
         
 
-// tagpkg: 待添加依赖组件
+// tagpkg: 待添加依赖组件(全名)
 function addRefComponent(tagpkg, oSetAllRequires, oStatus){
     if ( oStatus[tagpkg] ) {
         return;
@@ -43,16 +44,13 @@ function addRefComponent(tagpkg, oSetAllRequires, oStatus){
     oStatus[tagpkg] = true;
 
     let srcFile = bus.at('标签源文件', tagpkg);
-//    if ( !srcFile ) {
-//        throw new Error('file not found of tag: ' + tagpkg);
-//    }
     let context = bus.at('组件编译缓存', srcFile);
     if ( !context ) {
         context = bus.at('编译组件', srcFile);
     }
-    let references = context.result.references;
-    references.forEach(subTagpkg => {
-        addRefComponent(subTagpkg, oSetAllRequires, oStatus);
+    let references = context.result.references;                  // 依赖的组件源文件
+    references.forEach(tagpkgfullname => {
+        addRefComponent(tagpkgfullname, oSetAllRequires, oStatus);
     });
 
 }

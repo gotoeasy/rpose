@@ -1,6 +1,4 @@
-const Err = require('@gotoeasy/err');
 const bus = require('@gotoeasy/bus');
-const hash = require('@gotoeasy/hash');
 const postcss = require('postcss');
 const tokenizer = require('css-selector-tokenizer');
 
@@ -8,7 +6,7 @@ bus.on('组件样式类名哈希化', function(){
     
     return function (srcFile, css){
 
-        let fnPostcssPlugin = (root, result) => {
+        let fnPostcssPlugin = (root) => {
 
             root.walkRules( rule => {
                 let ast = tokenizer.parse(rule.selector);

@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
-const File = require('@gotoeasy/file');
 
-bus.on('全部重新编译', function (bs){
+bus.on('全部重新编译', function (){
 
     return async function(){
 
@@ -13,25 +11,21 @@ bus.on('全部重新编译', function (bs){
         bus.at('项目配置处理', env.path.root + 'rpose.config.btf', true);   // 重新解析项目配置处理
         let oFiles = bus.at('源文件对象清单', true);                        // 源文件清单重新设定
 
-        let promises = [];
         for ( let key in oFiles ) {
             time1 = new Date().getTime();
 
             let context = bus.at('编译组件', oFiles[key]);
-            context.result.browserifyJs && promises.push(context.result.browserifyJs);
 
             time = new Date().getTime() - time1;
             if ( time > 100 ) {
                 console.info('[compile] ' + time + 'ms -', key.replace(env.path.src + '/', ''));
             }
 
+            await context.result.browserifyJs;
         }
-
-        await Promise.all( promises );
 
         time = new Date().getTime() - stime;
         console.info('[build] ' + time + 'ms');
-
     }
 
 }());

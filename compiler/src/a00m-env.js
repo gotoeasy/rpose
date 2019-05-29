@@ -1,10 +1,10 @@
 const File = require('@gotoeasy/file');
 const Btf = require('@gotoeasy/btf');
 const bus = require('@gotoeasy/bus');
-const util = require('@gotoeasy/util');
 const Err = require('@gotoeasy/err');
 const npm = require('@gotoeasy/npm');
 const path = require('path');
+const findNodeModules = require('find-node-modules');
 
 // 从根目录的rpose.config.btf读取路径文件配置
 // 读不到则使用默认配置
@@ -69,11 +69,18 @@ function parseRposeConfigBtf(file, defaultFile, opts){
     result.path.build = getConfPath(root, mapPath, 'build', 'build');
     result.path.build_temp = result.path.build + '/temp';
     result.path.build_dist = result.path.build + '/dist';
-    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';       // 打包后的图片目录
-    result.path.cache = mapPath.get('cache');                                           // 缓存大目录
+    result.path.build_dist_images = mapPath.get('build_dist_images') || 'images';               // 打包后的图片目录
+    result.path.cache = mapPath.get('cache');                                                   // 缓存大目录
+    result.path.svgicons = root + '/' + (mapPath.get('svgicons') || 'resources/svgicons');      // SVG图标文件目录
 
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());
+
+    result.config = root + '/rpose.config.btf';
+    let packagejson = root + '/package.json';
+    if ( File.existsFile(packagejson) ) {
+        result.packageName = JSON.parse(File.read(packagejson)).name;
+    }
 
     // 自动检查安装依赖包
     autoInstallLocalModules(result.theme, result.prerender);
@@ -93,7 +100,7 @@ function getConfPath(root, map, key, defaultValue){
 function autoInstallLocalModules(...names){
     let ignores = ['@gotoeasy/theme', '@gotoeasy/pre-render'];
 
-    let node_modules = [ ...require('find-node-modules')({ cwd: __dirname, relative: false }), ...require('find-node-modules')({ cwd: process.cwd(), relative: false })];
+    let node_modules = [ ...findNodeModules({ cwd: __dirname, relative: false }), ...findNodeModules({ cwd: process.cwd(), relative: false })];
 
     for ( let i=0,name; name=names[i++]; ) {
         if ( ignores.includes(name) ) continue;

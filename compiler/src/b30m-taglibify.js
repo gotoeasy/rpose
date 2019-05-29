@@ -1,119 +1,76 @@
 const bus = require('@gotoeasy/bus');
-const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
-const Btf = require('@gotoeasy/btf');
 
-bus.on('标签库定义', function(rs={}, rsPkg={}){
-    
-    let stack = [];
+(function(rs={}){
 
-    // [tag] 
-    //   c-btn=pkg:ui-button
-    //   ui-button=pkg
-    //   pkg:ui-button
-    //   ui-button
-    bus.on('标签库引用', function (tag, fileOrRoot){
-       let searchPkg = bus.at('文件所在模块', fileOrRoot);
-       let name, idx1 = tag.indexOf('='), idx2 = tag.indexOf(':');
+    // 按taglib找源文件
+    bus.on('标签库源文件', (taglib, stack=[]) => {
 
-       if ( idx1 < 0 && idx2 < 0 ) {
-           name = tag.trim();                       // ui-button => ui-button
-       } else if ( idx2 > 0 ) {
-           name = tag.substring(idx2+1).trim();     // c-btn=pkg:ui-button => ui-button,  pkg:ui-button => ui-button
-       }else{
-           name = tag.substring(0, idx1).trim();    // ui-button=pkg => ui-button
-       }
+        // 循环引用时报异常
+        let oSet = stack.oSet = stack.oSet || new Set();
+        let refpkgtag = taglib.pkg + ':' + taglib.tag;
+        if ( oSet.has(refpkgtag) ) {
+            let msgs = [];
+            stack.forEach(v => {
+                msgs.push(v.taglib + ' (' + v.file + ')');
+            });
+            msgs.push(taglib.taglib + ' (' + taglib.file + ')');
+            throw new Error('taglib component circular reference\n => ' + msgs.join('\n => '));
+        }
+        oSet.add(refpkgtag);
 
-       let key = searchPkg + ':' + name;
-       return rs[key];  // 返回相应的源文件
+        stack.push(taglib);
+
+        // 先按标签名查找源文件
+        let oTagFile = getTagFileOfPkg(taglib.pkg);
+        if ( oTagFile[taglib.tag] ) {
+            return oTagFile[taglib.tag];
+        }
+
+        // 再按标签别名查找所在包[taglib]配置的标签库，由该标签库递归找源文件
+        let oPkg = bus.at('模块组件信息', taglib.pkg);
+        let oPjtContext = bus.at('项目配置处理', oPkg.config);                                   // 解析项目配置文件
+        let atastag = '@' + taglib.tag;
+        let oTaglib = oPjtContext.result.oTaglibs[atastag];
+
+        let file = '';
+        if ( oTaglib ) {
+            let rst;
+            while ( (rst = bus.at('标签库源文件', oTaglib, stack)) && (typeof rst !== 'string') ) {
+                // 返回另一个标签库对象时，继续递归查找到底
+                // 最终要么找到文件（返回文件绝对路径），要么找不到（返回‘’），要么异常（比如循环引用）
+            }
+            file = rst;
+        }
+
+        if ( !file ) {
+            let msgs = [];
+            stack.forEach(v => {
+                msgs.push(v.taglib + ' (' + v.file + ')');
+            });
+            throw new Error('taglib component not found\n => ' + msgs.join('\n => '));
+        }
+
+        return file;
+
     });
 
-    // ----------------------------------------------------
-    // 在已安装好依赖包的前提下调用，例子（file用于确定模块）
-    // bus.at('标签库定义', 'c-btn=pkg:ui-button', file)
-    // bus.at('标签库定义', 'ui-button=pkg', file)
-    // bus.at('标签库定义', 'pkg:ui-button', file)
-    // 
-    // [defTaglib] 
-    //   c-btn=pkg:ui-button
-    //   ui-button=pkg
-    //   pkg:ui-button
-    // [file] 
-    //   用于定位该标签库根目录的文件
-    return function (defTaglib, file){
-
-        // 默认关联全部源文件，存放内存
-        let oTaglib = bus.at('normalize-taglib', defTaglib);
-        initPkgDefaultTag(oTaglib.pkg);
-
-        // 查找已有关联
-        let askey, tagkey, oPkg, searchPkg = bus.at('文件所在模块', file);
-        askey = searchPkg + ':' + oTaglib.astag;
-        tagkey = oTaglib.pkg + ':' + oTaglib.tag;
-        if ( rs[tagkey] ){
-            rs[askey] = rs[tagkey];
-            stack = [];
-            return rs;
-        }
-
-        stack.push(`[${searchPkg}] ${oTaglib.taglib}`);                                         // 错误提示用
-
-        // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
-        let pkgfile;
-        try{
-            pkgfile = require.resolve(oTaglib.pkg + '/package.json', {paths: [bus.at('编译环境').path.root, __dirname]});
-        }catch(e){
-            stack.unshift(e.message);
-            let msg = stack.join('\n => ');
-            stack = [];
-            // 通常是依赖的package未安装或安装失败导致
-            throw new Error( msg );
-        }
-        let configfile = File.path(pkgfile) + '/rpose.config.btf';
-        if ( !File.existsFile(configfile) ) {
-            stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
-            let msg = stack.join('\n => ');
-            stack = [];
-            throw new Error( msg );                                                             // 文件找不到，又没有配置，错误
-        }
-
-        let btf = new Btf(configfile);
-        let oTaglibKv, taglibBlockText = btf.getText('taglib');                                            // 已发布的包，通常不会有错，不必细致检查
-        try{
-            oTaglibKv = bus.at('解析[taglib]', taglibBlockText, {input:{file: configfile}});
-        }catch(e){
-            stack.push(`[${oTaglib.pkg}] ${oTaglib.pkg}:${oTaglib.tag}`);                                         // 错误提示用
-            stack.push(configfile); 
-            stack.unshift(e.message);
-            let msg = stack.join('\n => ');
-            stack = [];
-            // 通常是[taglib]解析失败导致
-            throw new Error( msg );
-        }
-        let oConfTaglib = oTaglibKv[oTaglib.tag];
-        if ( !oConfTaglib ) {
-            stack.push(configfile); 
-            stack.unshift(`tag [${oTaglib.tag}] not found in package [${oTaglib.pkg}]`);
-            let msg = stack.join('\n => ');
-            stack = [];
-            throw new Error( msg );                                                             // 文件找不到，配置文件中也找不到，错误
-        }
-
-
-        // 通过项目配置查找关联 （不采用安装全部依赖包的方案，按需关联使用以减少不必要的下载和解析）
-        bus.at('自动安装', oConfTaglib.pkg);
-        return bus.at('标签库定义', oConfTaglib.taglib, configfile);         // 要么成功，要么异常
-    }
-
-    function initPkgDefaultTag(pkg){
-        if ( !rsPkg[pkg] ) {
-            let oPkg = bus.at('模块组件信息', pkg);                          // @scope/pkg
-            for ( let i=0,file; file=oPkg.files[i++]; ) {
-                rs[oPkg.name + ':' + File.name(file)] = file;               // 包名：标签 = 文件
+    // 查找指定包中的全部源文件，建立标签关系
+    function getTagFileOfPkg(pkg){
+        let oTagFile;
+        if ( !(oTagFile = rs[pkg]) ) {
+            bus.at('自动安装', pkg);
+            let oPkg = bus.at('模块组件信息', pkg);
+            oTagFile = {};
+            for ( let i=0,file,tag; file=oPkg.files[i++]; ) {
+                tag = File.name(file).toLowerCase();
+                oTagFile[tag] = file;                                                       // 标签 = 文件
+                oTagFile['@'+tag] = file;                                                   // @标签 = 文件
             }
-            rsPkg[pkg] = true;
+            rs[pkg] = oTagFile;
         }
+
+        return oTagFile;
     }
 
-}());
-
+})();

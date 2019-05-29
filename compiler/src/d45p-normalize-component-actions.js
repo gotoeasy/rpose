@@ -16,7 +16,7 @@ bus.on('编译插件', function(){
 
             let actions = object.text ? object.text.value.trim() : '';
             if ( actions ) {
-                let rs = generateActions(actions, object.text.loc);
+                let rs = generateActions(actions);
                 script.actions = rs.src;
                 script.$actionkeys = rs.names;
             }
@@ -32,7 +32,7 @@ bus.on('编译插件', function(){
 
 
 
-function generateActions(code, loc){
+function generateActions(code){
 
     let env = bus.at('编译环境');
     let oCache = bus.at('缓存');
@@ -45,9 +45,9 @@ function generateActions(code, loc){
 
     let rs;
     if ( code.startsWith('{') ) {
-        rs = generateObjActions(code, loc);
+        rs = generateObjActions(code);
     }else{
-        rs = generateFunActions(code, loc);
+        rs = generateFunActions(code);
     }
 
     return oCache.set(cacheKey, rs);
@@ -55,7 +55,7 @@ function generateActions(code, loc){
 
 
 
-function generateFunActions(code, loc){
+function generateFunActions(code){
 
     let ast;
     try{
@@ -107,7 +107,7 @@ function generateFunActions(code, loc){
     return rs;
 }
 
-function generateObjActions(code, loc){
+function generateObjActions(code){
     let src = `this.$actions     = ${code}`;
     let ast;
 

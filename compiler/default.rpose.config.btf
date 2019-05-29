@@ -1,6 +1,8 @@
 [path]
 build               : build
-build_dist_images   : images            // 图片文件打包后的存放目录(默认images)
+build_dist_images   : images                    // 图片文件打包后的存放目录(默认images)
+svgicons            : resources/svgicons        // SVG图标文件的存放目录(默认resources/svgicons)
+
 
 [theme] // 样式风格包
 rpose-theme-demo

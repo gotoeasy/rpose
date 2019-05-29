@@ -155,7 +155,7 @@
             return pattern.indexOf("*") < 0 ? pattern == path : patternToRegExp(pattern).test(path);
         };
         let patternToRegExp = pattern => {
-            let reg = pattern.replace(/[\^\$\.\+\-\=\!\(\)\[\]\{\}\/\?]{1}/g, ch => "\\" + ch);
+            let reg = pattern.replace(/[$.+=!()[\]{}/?^-]{1}/g, ch => "\\" + ch);
             reg = reg.replace(/\*+/g, ".*");
             return new RegExp("^" + reg + "$");
         };
@@ -254,6 +254,7 @@
         on("innerHTML", (el, prop, val) => val === undefined ? el.innerHTML : el.innerHTML = val == null ? "" : val);
         on("innerTEXT", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
         on("textcontent", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
+        on("xlink:href", (el, prop, val) => val === undefined ? el.href.baseVal : el.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", val));
         on("img.src", (el, prop, val) => val === undefined ? el.src : el.src = val);
         on("class", (el, prop, val) => {
             if (val === undefined) {
@@ -273,7 +274,11 @@
             }
             let oStyle = parseStyleToObject(val);
             for (let key in oStyle) {
-                el.style[key] = oStyle[key];
+                if (key.startsWith("--")) {
+                    el.style.setProperty(key, oStyle[key]);
+                } else {
+                    el.style[key] = oStyle[key];
+                }
             }
         });
         return {
@@ -287,10 +292,14 @@
         let rs = {};
         let ary = style.split(";").filter(v => v.trim() != "");
         ary.forEach(v => {
-            let kv = v.split(":").filter(v => v.trim() != ""), key;
+            let kv = v.split(":").map(v => v.trim()).filter(v => !!v), key;
             if (kv.length == 2) {
-                key = toLowerCase(kv[0]).split("-").filter(v => v.trim() != "").map((v, i) => i ? v.charAt(0).toUpperCase() + v.substring(1) : v).join("");
-                rs[key] = kv[1].trim();
+                if (kv[0].startsWith("-")) {
+                    rs[kv[0]] = kv[1];
+                } else {
+                    key = toLowerCase(kv[0]).split("-").filter(v => v.trim() != "").map((v, i) => i ? v.charAt(0).toUpperCase() + v.substring(1) : v).join("");
+                    rs[key] = kv[1];
+                }
             }
         });
         return rs;
@@ -667,12 +676,12 @@
         });
     }
     function enhanceState(component) {
-        Object.defineProperty(component, "getState", {
+        !component.getState && Object.defineProperty(component, "getState", {
             get: () => (function() {
                 return extend({}, this.$state);
             })
         });
-        Object.defineProperty(component, "setState", {
+        !component.setState && Object.defineProperty(component, "setState", {
             get: () => (function(state) {
                 state && this.render(state);
             })

@@ -1,12 +1,11 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
     // 转换处理指令节点 @show
     // 转换为 style中的 display 属性
-    return postobject.plugin(/**/__filename/**/, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root){
 
         const OPTS = bus.at('视图编译选项');
 
@@ -23,7 +22,7 @@ bus.on('编译插件', function(){
                 }
             }
 
-            let display = OPTS.ExpressionStart + '(' + object.value.replace(/^\{/, '').replace(/\}$/, '') + ') ? "display:block;" : "display:none;"' + OPTS.ExpressionEnd;
+            let display = OPTS.ExpressionStart + '(' + (object.value+'').replace(/^\{/, '').replace(/\}$/, '') + ') ? "display:' + object.display + ';" : "display:none;"' + OPTS.ExpressionEnd;
             if ( !styleNode ) {
                 // 不存在样式节点时，创建
                 styleNode = this.createNode( {type: 'Style', value: display} );
@@ -33,7 +32,7 @@ bus.on('编译插件', function(){
                 if ( styleNode.object.value.endsWith(';') ) {
                     styleNode.object.value += display;
                 }else{
-                    styleNode.object.value += ';' + display;        // 放在后面确保覆盖display
+                    styleNode.object.value += ';' + display;                                // 放在后面确保覆盖display
                 }
             }
             styleNode.object.isExpression = true;

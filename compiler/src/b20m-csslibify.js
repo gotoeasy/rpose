@@ -1,99 +1,154 @@
 const bus = require('@gotoeasy/bus');
-const Err = require('@gotoeasy/err');
 const File = require('@gotoeasy/file');
 const hash = require('@gotoeasy/hash');
 const csslibify = require('csslibify');
 
-bus.on('样式库', function(rs={}){
-    
-    // ------------------------------------------------------------------------------------------------------
-    // 此编译模块用的样式库建库方法，定义后就按需使用，中途不会作样式库的修改操作
-    // 使用【包名：文件列表】作为缓存用的样式库名称，以提高性能
-    // 如，foo=pkg:**.min.css和bar=pkg:**/*.min.css，实际使用同一样式库
-    // 
-    // 样式库实例通过返回值取得后自行管理 （参数中传入的name部分被无视）
-    // 
-    // 【 使用 】
-    // bus.at('样式库', 'defaultname=pkg:**.min.css')
-    // bus.at('样式库', 'pkg:**.min.css')
-    // bus.at('样式库', 'pkg')
-    // 
-    // 【 defCsslib 】
-    //   *=pkg:**/**.min.js
-    //   name=pkg:**/aaa*.min.js, **/bbb*.min.js
-    //   name=pkg
-    //   pkg:**/**.min.js
-    //   pkg
-    return function (defCsslib){
+(function (mapFileCsslibs=new Map()){
 
-        let match;
-        let name, pkg, filters = [];
-        if ( (match = defCsslib.match(/^(.*?)=(.*?):(.*)$/)) ) {
-            // name=pkg:filters
-            name = match[1].trim();
-            pkg = match[2].trim();
-            cssfilter = match[3];
-            cssfilter.replace(/;/g, ',').split(',').forEach(filter => {
-                filter = filter.trim();
-                filter && filters.push(filter);
-            });
-        }else if ( (match = defCsslib.match(/^(.*?)=(.*)$/)) ) {
-            // name=pkg
-            name = match[1].trim();
-            pkg = match[2].trim();
-            filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
-        }else if ( (match = defCsslib.match(/^(.*?):(.*)$/)) ) {
-            // pkg:filters
-            name = '*';
-            pkg = match[1].trim();
-            cssfilter = match[2];
-            cssfilter.replace(/;/g, ',').split(',').forEach(filter => {
-                filter = filter.trim();
-                filter && filters.push(filter);
-            });
-        }else{
-            // pkg
-            name = '*';
-            pkg = defCsslib.trim();
-            filters.push('**.min.css');                                                     // 默认取npm包下所有压缩后文件*.min.css
-        }
+    // 参数oCsslib为样式库定义信息对象
+    // 返回样式库对象
+    bus.on('样式库', function (oCsslib, fromFile){
 
         // 导入处理
-        pkg.lastIndexOf('@') > 1 && ( pkg = pkg.substring(0, pkg.lastIndexOf('@')) );       // 模块包名去除版本号 （通常不该有，保险起见处理下）
-        let dir, env = bus.at('编译环境');
-        if ( pkg.startsWith('$') ) {
-            dir = env.path.root + '/' + pkg;                                                // pkg以$开头时优先查找本地目录
-            !File.existsDir(dir) && (dir = env.path.root + '/' + pkg.substring(1));         // 次优先查找去$的本地目录
+        let cssfiles = [];                                                                  // 待导入的css文件数组
+        oCsslib.filters.forEach(filter => {
+            cssfiles.push( ...File.files(oCsslib.dir, filter) );                            // 逐个过滤筛选，确保按过滤器顺序读取文件
+        });
+
+        let text = [];
+        cssfiles.forEach( cssfile => text.push(File.read(cssfile)) );
+        let textid = hash(text.join('\n'));                                                 // 文件内容哈希ID
+
+        let pkg = oCsslib.pkg;                                                              // 样式库包名
+        if ( pkg.startsWith('~') ) {
+            pkg = 'dir_' + textid;                                                          // 本地目录样式库时，添加文件内容哈希ID后缀作为包名(用以支持导入不同文件或修改文件内容而不产生冲突)
+
+            let env = bus.at('编译环境');
+            if ( env.watch ) {
+                let ary = mapFileCsslibs.get(fromFile) || [];
+                mapFileCsslibs.set(fromFile, ary);
+                oCsslib.cssfiles = cssfiles;                                                // 文件存起来方便比较
+                ary.push(oCsslib);                                                          // 如果是文件监视模式，把本地样式库的配置都存起来，便于样式文件修改时判断做重新编译
+            }
+
+        }else{
+            pkg += '_' + textid;                                                            // npm包时，添加文件内容哈希ID后缀作为包名(用以支持导入不同文件或更改版本而不产生冲突)
         }
-        (!dir || !File.existsDir(dir)) && (dir = getNodeModulePath(pkg));                   // 本地无相关目录则按模块处理，安装指定npm包返回安装目录
-        
-        let cssfiles = File.files(dir, ...filters);                                         // 待导入的css文件数组
 
-        (!name || name === '*') && (pkg = '');                                              // 没有指定匿名，或指定为*，按无库名处理（用于组件范围样式）
-        let libid = hash( JSON.stringify([pkg, cssfiles]) );                                // 样式库缓存用ID【包名：文件列表】
+        let csslib = csslibify(pkg, oCsslib.alias, textid);                                 // 用文件内容作为样式库的缓存ID（会浅复制更新包名和别名）
 
-        let csslib = csslibify(pkg, name, libid);
-        !csslib._imported.length && cssfiles.forEach( cssfile => csslib.imp(cssfile) );     // 未曾导入时，做导入
-
-		return csslib;
-    }
-
-}());
-
-
-function getNodeModulePath(npmpkg){
-    bus.at('自动安装', npmpkg);
-
-	let node_modules = [...require('find-node-modules')({ cwd: process.cwd(), relative: false }), ...require('find-node-modules')({ cwd: __dirname, relative: false })];
-
-    for ( let i=0,modulepath,dir; modulepath=node_modules[i++]; ) {
-        dir = File.resolve(modulepath, npmpkg);
-        if ( File.existsDir(dir) ) {
-            return dir;
+        if ( !csslib._imported.length ) {
+            for ( let i=0; i<text.length; i++ ) {
+                csslib.imp(text[i++]);                                                      // 未曾导入时，做导入，直接使用已读内容
+            }
         }
-    }
 
-    // 要么安装失败，或又被删除，总之不应该找不到安装位置
-    throw new Error('path not found of npm package: ' + npmpkg);
+        csslib.isEmpty = !cssfiles.length;                                                  // 保存标志便于判断
+
+        return csslib;
+    });
+
+    bus.on('CSS文件添加', async function (){
+
+        let configFile, srcFiles = [];
+
+        // 全部样式库都按过滤器重新筛选检查，看样式文件列表是否一致
+        mapFileCsslibs.forEach((ary, fromFile) => {
+            for ( let i=0,oCsslib,files; oCsslib=ary[i++]; ) {
+                files = [];
+                oCsslib.filters.forEach(filter => {
+                    files.push( ...File.files(oCsslib.dir, filter) );                       // 重新逐个过滤筛选
+                });
+                if ( files.join('') !== oCsslib.cssfiles.join('') ) {
+                    // 不一样了，该fromFile关联组件要重新编译
+                    if ( fromFile.endsWith('/rpose.config.btf') ) {
+                        configFile = fromFile;
+                    }else{
+                        srcFiles.push(fromFile);
+                    }
+                    break;
+                }
+            }
+        });
+
+        if ( configFile ) {
+            // 影响到了项目配置文件的[csslib]样式库配置，全部重新编译吧
+            mapFileCsslibs.clear();
+            await bus.at('全部重新编译');
+            return;
+        }else{
+            // 影响到了相关组件文件的[csslib]或@csslib样式库配置，关联组件都重新编译
+            await rebuildAllReferances(...srcFiles);
+        }
+
+    });
+
+    bus.on('CSS文件修改', async function (cssFile){
+
+        let configFile, srcFiles = [];
+
+        // 全部样式库逐个检查文件列表是否包含被变更的css文件
+        mapFileCsslibs.forEach((ary, fromFile) => {
+            for ( let i=0,oCsslib; oCsslib=ary[i++]; ) {
+                if ( oCsslib.cssfiles.includes(cssFile) ) {
+                    if ( fromFile.endsWith('/rpose.config.btf') ) {
+                        configFile = fromFile;
+                    }else{
+                        srcFiles.push(fromFile);
+                    }
+                    break;
+                }
+            }
+        });
+
+        if ( configFile ) {
+            // 影响到了项目配置文件的[csslib]样式库配置，全部重新编译吧
+            mapFileCsslibs.clear();
+            await bus.at('全部重新编译');
+            return;
+        }else{
+            // 影响到了相关组件文件的[csslib]或@csslib样式库配置，关联组件都重新编译
+            await rebuildAllReferances(...srcFiles);
+        }
+
+    });
+
+    bus.on('CSS文件删除', async function (){
+        // 和CSS文件添加是一样的处理逻辑
+        await bus.at('CSS文件添加');
+    });
+
+})();
+
+
+// 相关组件页面全部重新编译
+async function rebuildAllReferances(...srcFiles){
+
+    if ( !srcFiles.length ) return;
+
+    let pageFiles = bus.at('组件相关页面源文件', ...srcFiles);
+
+    // 清除页面组件编译缓存，删除已编译的html等文件
+    pageFiles.forEach(file => {
+        bus.at('组件编译缓存', file, false);
+        removeHtmlCssJsFile(file);
+    });
+
+    // 清除组件编译缓存
+    srcFiles.forEach(file => bus.at('组件编译缓存', file, false) );
+
+    await bus.at('全部编译');
 }
 
+// 文件改变时，先删除生成的最终html等文件
+function removeHtmlCssJsFile(file){
+
+    let fileHtml = bus.at('页面目标HTML文件名', file);
+    let fileCss = bus.at('页面目标CSS文件名', file);
+    let fileJs = bus.at('页面目标JS文件名', file);
+
+    File.remove(fileHtml);
+    File.remove(fileCss);
+    File.remove(fileJs);
+
+}

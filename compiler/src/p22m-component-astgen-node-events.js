@@ -34,7 +34,7 @@ bus.on('astgen-node-events', function(){
                     //value = `$actions['${value}']`;                    // "fnClick" => $actions['fnClick']
                 }else{
                     // 指定方法找不到
-                    throw new Err('action not found: ' + fnNm, {file: context.input.file, text: context.input.text, start: node.object.loc.start.pos, end: node.object.loc.end.pos});
+                    throw new Err('action not found: ' + fnNm, { ...context.input, ...node.object.pos });
                 }
             }
             

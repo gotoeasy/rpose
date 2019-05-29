@@ -1,7 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const File = require('@gotoeasy/file');
-const csjs = require('@gotoeasy/csjs');
 const Err = require('@gotoeasy/err');
 
 const AryNm = 'v_Array';
@@ -12,7 +10,7 @@ bus.on('编译插件', function(){
         let writer = context.writer;
         let script = context.script;
 
-        root.walk( 'View', (node, object) => {
+        root.walk( 'View', (node) => {
 
             if ( !node.nodes || node.nodes.length < 1 ) {
                 return writer.write('// 没有节点，无可生成');
@@ -29,9 +27,6 @@ bus.on('编译插件', function(){
             // 视图的模板函数源码
             script.vnodeTemplate = writer.toString();
 
- //   console.info('------------gen js-------------')
- //   console.info(writer.toString())
-        
             return false;
         });
 
@@ -67,8 +62,8 @@ function topNodesWithoutScriptJsify(nodes=[], context){
     if ( nodes.length > 1 ) {
         let text = context.input.text;
         let file = context.input.file;
-        let start = nodes[1].object.loc.start.pos;
-        nodes[0].type !== 'Tag' && (start = nodes[0].object.loc.start.pos);
+        let start = nodes[1].object.pos.start;
+        nodes[0].type !== 'Tag' && (start = nodes[0].object.pos.start);
         throw new Err('invalid top tag', {text, file, start});              // 组件顶部只能有一个标签
     }
 
@@ -76,7 +71,7 @@ function topNodesWithoutScriptJsify(nodes=[], context){
     if ( node.type !== 'Tag' ) {
         let text = context.input.text;
         let file = context.input.file;
-        let start = nodes[0].object.loc.start.pos;
+        let start = nodes[0].object.pos.start;
         throw new Err('missing top tag', {text, file, start});              // 组件顶部只能有一个标签
     }
 

@@ -1,12 +1,11 @@
 const bus = require('@gotoeasy/bus');
-const Err = require('@gotoeasy/err');
 
 bus.on('astgen-node-style', function(){
 
     // 标签样式属性生成json属性值形式代码
     // "size:12px;color:{color};height:100;" => ("size:12px;color:" + (color) + ";height:100;")
     // @show在前面已转换为display一起合并进style
-    return function (tagNode, context){
+    return function (tagNode){
         if ( !tagNode.nodes ) return '';
 
         // 查找检查事件属性节点

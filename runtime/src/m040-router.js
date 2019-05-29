@@ -79,7 +79,7 @@ const Router = ((BUS)=>{
     };
 
     let patternToRegExp = pattern => {
-        let reg = pattern.replace(/[\^\$\.\+\-\=\!\(\)\[\]\{\}\/\?]{1}/g, ch => ('\\' + ch) );        
+        let reg = pattern.replace(/[$.+=!()[\]{}/?^-]{1}/g, ch => ('\\' + ch) );        
         reg = reg.replace(/\*+/g, '.*');	// 单个或连续多个星号，代表任意字符
         return new RegExp('^' + reg + '$');
     }

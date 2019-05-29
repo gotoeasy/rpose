@@ -1,52 +1,47 @@
 const bus = require('@gotoeasy/bus');
-const postobject = require('@gotoeasy/postobject');
 
 // ---------------------------------------------------
 // RPOSE源文件解析
 // ---------------------------------------------------
 bus.on('RPOSE源文件解析', function(){
 
-    return function(text, keepLoc=true){
-        let lines = text.split('\n');                                               // 行内容包含换行符
-        let lineCounts = [];                                                        // 行长度包含换行符
+    return function(text){
+        let lines = text.split('\n');                                                                   // 行内容包含换行符
+        let lineCounts = [];                                                                            // 行长度包含换行符
         for ( let i=0,max=lines.length; i<max; i++ ) {
-            lines[i] += '\n';                                                       // 行内容包含换行符
-            lineCounts[i] = lines[i].length;                                        // 行长度包含换行符
+            lines[i] += '\n';                                                                           // 行内容包含换行符
+            lineCounts[i] = lines[i].length;                                                            // 行长度包含换行符
         }
 
         let nodes = [];
         parse(nodes, lines, lineCounts);
 
         nodes.forEach(block => {
+            let type = 'RposeBlockText';
             if ( block.buf.length ) {
-                let type = 'RposeBlockText';
-                let lastLine = block.buf.pop();
-
                 // 值
-                block.buf.push(lastLine.replace(/\r?\n$/, ''));                     // 删除最后一行回车换行符
-                let value = block.buf.join('');                                     // 无损拼接
+                let lastLine = block.buf.pop();
+                let tmp = lastLine.replace(/\r?\n$/, '');                                               // 删除最后一行回车换行符
+                tmp && block.buf.push(tmp);                                                             // 删除最后一行回车换行符后仍有内容则加回去
+                let value = block.buf.join('');                                                         // 无损拼接
 
                 // 开始位置
-                let start = Object.assign({}, block.name.loc.start);                // 复制块名开始位置信息
-                start.line++;                                                       // 块开始行=块名开始行+1
-                start.column = 0;
-                start.pos += block.name.lineLen;
-                delete block.name.lineLen;
-
+                let start = sumLineCount(lineCounts, block.startLine);                                  // 块内容开始位置（即块名行为止合计长度）
                 // 结束位置
-                let line = block.name.loc.start.line + block.buf.length;            // 结束行
-                let column = block.buf[block.buf.length-1].length;                  // 结束列
-                let pos = sumLineCount(lineCounts, line) + column;                  // 结束位置
-                let end = {line, column, pos};
+                let end = sumLineCount(lineCounts, block.startLine + block.buf.length-1) + tmp.length;
 
-                block.text = { type, value, loc:{start, end} }
+                block.text = { type, value, pos:{start, end} }
+            }else{
+                // 值
+                let value = '';
+                // 开始位置
+                let start = sumLineCount(lineCounts, block.startLine);                                  // 块内容开始位置（即块名行为止合计长度）
+                // 结束位置
+                let end = start;
+
+                block.text = { type, value, pos:{start, end} }
             }
             delete block.buf;
-            if ( keepLoc === false ) {
-                delete block.name.loc;
-                block.comment !== undefined && delete block.comment.loc;
-                block.text !== undefined && delete block.text.loc;
-            }
         });
         return {nodes};
     };
@@ -56,33 +51,27 @@ bus.on('RPOSE源文件解析', function(){
 
 function parse(blocks, lines, lineCounts) {
 
-    let sLine,block,oName,name,comment,value,blockStart = false;
+    let sLine,block,oName,comment,blockStart = false;
     for ( let i=0; i<lines.length; i++ ) {
         sLine = lines[i];
 
         if ( isBlockStart(sLine) ) {
             // 当前是块名行 [nnn]
             block = {type: 'RposeBlock'};
-            oName = getBlockName(sLine);                                        // oName.len包含转义字符长度
-            comment = sLine.substring(oName.len + 2).replace(/\r?\n$/, '');     // 块注释，忽略换行符
+            oName = getBlockName(sLine);                                                                // oName.len包含转义字符长度
+            comment = sLine.substring(oName.len + 2).replace(/\r?\n$/, '');                             // 块注释，忽略换行符
             
-            let line = i;                                                       // 行号，下标从0开始
-            let column = 0;                                                     // 列号，下标从0开始(计中括号)
-            let pos = sumLineCount(lineCounts, line);
-            let start = {line, column, pos};                                    // 起始位置信息
-            column = oName.len + 2;
-            pos += column;
-            let end = {line, column, pos};                                      // 结束位置信息
-
-            block.name = {type: 'RposeBlockName', value: oName.name, loc:{start, end}, lineLen: sLine.length };            // 位置包含中括号
+            let start = sumLineCount(lineCounts, i);                                                    // 开始位置信息，含左中括号
+            let end = start + oName.len + 2;                                                            // 结束位置信息，含右中括号
+            block.name = {type: 'RposeBlockName', value: oName.name, pos:{start, end} };                // 位置包含中括号
             if ( comment ) {
-                start = Object.assign({}, end);                                 // 注释的开始位置=块名的结束位置
-                column = start.column + comment.length;
-                pos = start.pos + comment.length;
-                end = {line, column, pos};
-                block.comment = {type: 'RposeBlockComment', value: comment, loc:{start, end} };     // 注释(不计换行符)
+                start = end;                                                                            // 注释的开始位置=块名的结束位置
+                end = start + comment.length;
+                block.comment = {type: 'RposeBlockComment', value: comment, pos:{start, end} };         // 注释(不计换行符)
             }
+
             block.buf = [];
+            block.startLine = i + 1;                                                                    // 块内容开始行
 
             blocks.push(block);
             blockStart = true;
@@ -97,8 +86,8 @@ function parse(blocks, lines, lineCounts) {
             if ( blockStart ) {
                 // 当前是块内容行
                 let buf = blocks[blocks.length-1].buf;
-                if ( sLine.charAt(0) === '\\' && (/^\\+\[.*\]/.test(sLine) || /^\\+\---------/.test(sLine) || /^\\+\=========/.test(sLine)) ) {
-                    buf.push( sLine.substring(1) );                             // 去除转义字符，拼接当前Block内容
+                if ( sLine.charAt(0) === '\\' && (/^\\+\[.*\]/.test(sLine) || /^\\+---------/.test(sLine) || /^\\+=========/.test(sLine)) ) {
+                    buf.push( sLine.substring(1) );                                                     // 去除转义字符，拼接当前Block内容
                 }else{
                     buf.push( sLine );
                 }
@@ -130,14 +119,14 @@ function getBlockName(sLine) {
         if ( sLine.charAt(i-1) !== '\\' && sLine.charAt(i) === ']' ) {
             name = sLine.substring(1, i).toLowerCase();
             len = name.length;
-            name = name.replace(/\\\]/g, ']');              // 名称部分转义 [\]] => ]; 
-            return {name, len};                             // len包含转义字符长度
+            name = name.replace(/\\\]/g, ']');                              // 名称部分转义 [\]] => ]; 
+            return {name, len};                                             // len包含转义字符长度
         }
     }
 
     name = sLine.substring(1, sLine.lastIndexOf(']')).toLowerCase();
     len = name.length;
-    name = name.replace(/\\\]/g, ']'); // 最后一个]忽略转义 [\] => \; [\]\] => ]\
+    name = name.replace(/\\\]/g, ']');                                      // 最后一个]忽略转义 [\] => \; [\]\] => ]\
     return {name, len};
 }
 

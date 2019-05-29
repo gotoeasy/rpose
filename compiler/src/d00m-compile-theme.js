@@ -2,6 +2,7 @@ const Err = require('@gotoeasy/err');
 const bus = require('@gotoeasy/bus');
 const Btf = require('@gotoeasy/btf');
 const File = require('@gotoeasy/file');
+const findNodeModules = require('find-node-modules');
 
 bus.on('样式风格', function(result){
 
@@ -74,7 +75,7 @@ function getThemeBtfFile() {
 }
 
 function getThemeBtfFileByPkg(themePkg) {
-    let ary = [ ...require('find-node-modules')({ cwd: __dirname, relative: false }), ...require('find-node-modules')({ relative: false })];
+    let ary = [ ...findNodeModules({ cwd: __dirname, relative: false }), ...findNodeModules({ relative: false })];
     for ( let i=0,path,file; path=ary[i++]; ) {
         file = path.replace(/\\/g, '/') + '/' + themePkg + '/theme.btf';
         if ( File.exists(file) ) {
@@ -92,7 +93,7 @@ function getThemeMapByFile(file) {
     }
     fileSet.add(file);
 
-    btf = new Btf(file);
+    let btf = new Btf(file);
     let superPkg = (btf.getText('extend') || '').trim();                    // 继承的模块名
     let superTheme;
     let theme = btf.getMap('theme');

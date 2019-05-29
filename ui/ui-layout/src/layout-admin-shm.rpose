@@ -1,0 +1,227 @@
+// -------------------------------------------------
+// side-header-main布局
+// 
+// [slot]
+// side-menubar  : 侧边菜单栏
+// side-iconbar  : 侧边图标栏
+// header        : 页头
+// main          : 页内容区
+//
+// [state]
+// menubar-width : 侧边菜单栏宽度
+// iconbar-width : 侧边图标栏宽度
+// side-bgcolor  : 侧边栏背景色
+// header-height : 页头高度
+// -------------------------------------------------
+[api]
+statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
+
+[view]
+<div @class="height-100vh display-flex overflow-hidden"
+    style="--LASHM-menubar-width:{$state['menubar-width']};--LASHM-iconbar-width:{$state['iconbar-width']};--LASHM-side-bgcolor:{$state['side-bgcolor']};--LASHM-header-height:{$state['header-height']};">
+    <aside class="layout side-menubar" onclick="closeMobileMenu">
+        <slot name="side-menubar"/>
+    </aside>
+    <aside class="layout side-iconbar">
+        <slot name="side-iconbar"/>
+    </aside>
+    <div class="layout side-page">
+        <a class="layout menubar-icon-pc" href="#" onclick="pcToggle">
+            <svgicon name="circle-right" class="layout menubar-icon-right" fill="#e74c3c" height="20" />
+            <svgicon name="circle-left" class="layout menubar-icon-left" fill="#e74c3c" height="20" />
+        </a>
+        <header class="layout-header" @class="display-flex">
+            <a class="layout menubar-icon-mobile" href="#" onclick="mobileToggle">
+                <svgicon name="system-menu" height="25" />
+            </a>
+            <slot name="header"/>
+        </header>
+        <main class="layout-main">
+            <slot name="main"/>
+        </main>
+    </div>
+
+    <div class="layout mask" onclick="closeMobileMenu"/>
+</div>
+
+[state]
+{
+    'menubar-width': '250px',
+    'iconbar-width': '50px',
+    'side-bgcolor' : '#272c33',
+    'header-height': '50px',
+}
+
+[actions]
+{
+    pcToggle: e => {
+        e.preventDefault();
+        $$('.layout').toggleClass('mode-pc-toggle').removeClass('mode-mobile-toggle');      // 电脑大屏时切换显示侧边栏，清除手机小屏切换模式
+    },
+    mobileToggle: e => {
+        e.preventDefault();
+        $$('.layout').toggleClass('mode-mobile-toggle').removeClass('mode-pc-toggle');      // 手机小屏时切换显示菜单栏，清除电脑大屏切换模式
+    },
+    closeMobileMenu: e => {
+        e.preventDefault();
+        $$('.mode-mobile-toggle').removeClass('mode-mobile-toggle');                        // 手机小屏打开菜单栏后，点击任意位置关闭菜单栏
+    }
+}
+
+[less]
+@z-index-mask               : 900;                                                          /* 遮罩层900 */
+@z-index-sidebar            : 990;                                                          /* 侧边栏990 */
+@z-index-icon               : 999;                                                          /* 侧边栏切换图标999 */
+
+@margin-left-icon           : -11px;                                                        /* 侧边栏切换图标左偏移量 */
+@bgcolor-mask               : rgba(0, 0, 0, 0.3);                                           /* 遮罩黑色透明度0.3 */
+
+@width-screen-pc-min        : 961px;                                                        /* 电脑大屏，961 ~ MAX */
+@width-screen-pad-min       : 600px;                                                        /* 平板中屏，600 ~ 960 */
+@width-screen-pad-max       : 960px;                                                        /* 平板中屏，600 ~ 960 */
+@width-screen-mobile-max    : 599px;                                                        /* 手机小屏，MIN ~ 599 */
+
+/* 满屏零边距 */
+html,body{
+    margin:0;
+    padding:0;
+}
+/* 侧边菜单栏，电脑大屏时显示用 */
+.side-menubar {
+    background-color: var(--LASHM-side-bgcolor);
+    width: var(--LASHM-menubar-width);
+    z-index: @z-index-sidebar;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+/* 侧边图标栏，平板中屏时显示用，电脑大屏也可切换显示 */
+.side-iconbar {
+    background-color: var(--LASHM-side-bgcolor);
+    width: var(--LASHM-iconbar-width);
+    z-index: @z-index-sidebar;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+/* 侧边菜单栏和图标栏的切换图标 */
+.menubar-icon-pc {
+    position: fixed;
+    top: calc((var(--LASHM-header-height) - 20px) / 2);                                     /* 让切换图标在页头垂直居中显示 */
+    margin-left: @margin-left-icon;                                                         /* 左偏移至貌似居中，改善显示效果 */
+    z-index: @z-index-icon;
+}
+/* 手机小屏时显示的菜单图标，用于触发打开菜单栏 */
+.menubar-icon-mobile {
+    width: var(--LASHM-iconbar-width);
+}
+
+/* 右边主区 */
+.side-page {
+    height: 100%;
+    overflow: hidden;                                                                       /* 页头不滚动，内容区滚动自行控制 */
+}
+.layout-header {
+    height: var(--LASHM-header-height);
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+}
+.layout-main {
+    width: 100%;
+    min-width: 350px;
+    height: calc(100% - var(--LASHM-header-height));                                        /* 主内容栏宽度计算 */
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 满屏遮罩层，手机显示菜单栏时显示用 */
+.mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: @z-index-mask;
+    background-color: @bgcolor-mask;
+    display: none;                                                                          /* 遮罩默认不显示 */
+}
+
+/* 电脑大屏，侧边菜单栏和侧边图标栏可切换显示 */
+@media screen and(min-width: @width-screen-pc-min) {
+    .side-menubar {
+        display: block;                                                                     /* 显示菜单栏 */
+    }
+    .side-iconbar, .menubar-icon-mobile {
+        display: none;                                                                      /* 隐藏侧边图标栏，隐藏手机小屏菜单图标 */
+    }
+    .side-page {
+        width: calc(100% - var(--LASHM-menubar-width));                                     /* 主内容栏宽度计算 */
+    }
+
+    .menubar-icon-left {
+        display: block;                                                                     /* 默认显示收起图标 */
+    }
+    .menubar-icon-right {
+        display: none;                                                                      /* 默认隐藏展开图标 */
+    }
+    .menubar-icon-left:hover, .menubar-icon-right:hover {                                   /* 鼠标进入时图标放大4px提示 */
+        height: 24px;
+        width: 24px;
+        margin: -2px 0 0 -2px;
+    }
+
+    .side-menubar.mode-pc-toggle {
+        display: none;                                                                      /* 切换侧边栏时隐藏 （大屏时收起菜单栏，切换为显示侧边图标栏） */
+    }
+    .side-iconbar.mode-pc-toggle {
+        display: block;                                                                     /* 切换侧边栏时显示 （大屏时收起菜单栏，切换为显示侧边图标栏） */
+    }
+    .side-page.mode-pc-toggle {
+        width: calc(100% - var(--LASHM-iconbar-width));                                     /* 切换侧边栏时主内容栏宽度重新计算 */
+    }
+    .menubar-icon-left.mode-pc-toggle {
+        display: none;                                                                      /* 切换为侧边图标栏时，隐藏收起图标 */
+    }
+    .menubar-icon-right.mode-pc-toggle {
+        display: block;                                                                     /* 切换为侧边图标栏时，显示展开图标 */
+    }
+}
+
+/* 平板中屏，显示侧边图标栏 */
+@media screen and(min-width: @width-screen-pad-min) and (max-width: @width-screen-pad-max) {
+    .side-menubar, .menubar-icon-pc, .menubar-icon-mobile {
+        display: none;                                                                      /* 隐藏菜单栏、侧边栏切换图标、小屏菜单图标 */
+    }
+    .side-iconbar {
+        display: block;                                                                     /* 显示侧边图标栏 */
+    }
+    .side-page {
+        width: calc(100% - var(--LASHM-iconbar-width));                                     /* 主内容栏宽度计算 */
+    }
+}
+
+/* 手机小屏，显示打开菜单的图标 */
+@media screen and(max-width: @width-screen-mobile-max) {
+    .side-menubar, .side-iconbar, .menubar-icon-pc {
+        display: none;                                                                      /* 隐藏菜单栏、侧边图标栏、侧边栏切换图标 */
+    }
+    .menubar-icon-mobile {
+        display: flex;                                                                      /* 显示小屏菜单图标 */
+        align-items: center;
+        padding-left: 20px;
+        box-sizing: border-box;
+    }
+    .side-page {
+        width: 100%;                                                                        /* 主内容栏宽度占满 */
+    }
+    .side-menubar.mode-mobile-toggle {
+        display: block;                                                                     /* 点击小屏菜单图标时，显示侧边菜单栏 */
+    }
+    .mask.mode-mobile-toggle {
+        display: block;                                                                     /* 显示侧边菜单栏时，同时显示遮罩层 */
+    }
+    .side-page.mode-mobile-toggle {
+        width: calc(100% - var(--LASHM-menubar-width));                                     /* 显示侧边菜单栏时，主内容栏宽度重新计算 */
+    }
+}

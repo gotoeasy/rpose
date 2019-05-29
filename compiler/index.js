@@ -1,40 +1,39 @@
 const bus = require('@gotoeasy/bus');
-const npm = require('@gotoeasy/npm');
 const Err = require('@gotoeasy/err');
-const File = require('@gotoeasy/file');
-const postobject = require('@gotoeasy/postobject');
 
 console.time('load');
-    npm.requireAll(__dirname, 'src/**.js');
+    require('@gotoeasy/npm').requireAll(__dirname, 'src/**.js');
 console.timeEnd('load');
 
 
 async function build(opts){
-console.time('build');
+    let stime = new Date().getTime();
 
-        try{
-            let env = bus.at('编译环境', opts);
-            bus.at('clean');
+    try{
+        bus.at('编译环境', opts);
+        bus.at('clean');
 
-            await Promise.all( bus.at('全部编译') )
-        }catch(e){
-            console.error(Err.cat('build failed', e).toString());
-        }
+        await bus.at('全部编译');
+    }catch(e){
+        console.error(Err.cat('build failed', e).toString());
+    }
 
-console.timeEnd('build');
+    let time = new Date().getTime() - stime;
+    console.info('build ' + time + 'ms');       // 异步原因，统一不使用time/timeEnd计时
 }
 
 function clean(opts){
-console.time('clean');
+    let stime = new Date().getTime();
 
-        try{
-            let env = bus.at('编译环境', opts);
-            bus.at('clean');
-        }catch(e){
-            console.error(Err.cat('clean failed', e).toString());
-        }
+    try{
+        bus.at('编译环境', opts);
+        bus.at('clean');
+    }catch(e){
+        console.error(Err.cat('clean failed', e).toString());
+    }
 
-console.timeEnd('clean');
+    let time = new Date().getTime() - stime;
+    console.info('clean ' + time + 'ms');       // 异步原因，统一不使用time/timeEnd计时
 }
 
 

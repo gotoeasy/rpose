@@ -1,13 +1,15 @@
 {
   "name": "@rpose/runtime",
-  "version": "0.0.6",
+  "version": "0.0.11",
   "devDependencies": {
     "@gotoeasy/file": "*",
-    "@gotoeasy/csjs": "*"
+    "@gotoeasy/csjs": "*",
+    "eslint": "*"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node build"
+    "build": "node build",
+    "eslint": "node node_modules/eslint/bin/eslint runtime.js"
   },
   "description": "rpose runtime",
   "keywords": [

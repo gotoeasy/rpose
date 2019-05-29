@@ -1,4 +1,7 @@
 // 配置布局组件别名
 [taglib]
-ui-layout                       = @rpose/ui-layout:ui-layout-hmf
-ui-layout-header-main-footer    = @rpose/ui-layout:ui-layout-hmf
+ui-layout           = @rpose/ui-layout:ui-layout-hmf
+
+ui-layout-admin-shm = @rpose/ui-layout:layout-admin-shm
+ui-layout-shm       = @rpose/ui-layout:layout-admin-shm
+layout-shm          = @rpose/ui-layout:layout-admin-shm

@@ -1,12 +1,11 @@
 const bus = require('@gotoeasy/bus');
-const Err = require('@gotoeasy/err');
 
 bus.on('astgen-node-{prop}', function(){
 
     // 标签对象表达式属性生成对象复制语句代码片段
     // 如 {prop1} {prop2}，最终rpose.assign( {attrs属性对象}, prop1, prop2)
     // 生成： (prop1), (prop2)
-    return function (tagNode, context){
+    return function (tagNode){
         if ( !tagNode.nodes ) return '';
 
         // 查找检查事件属性节点

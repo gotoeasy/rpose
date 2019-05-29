@@ -1,6 +1,7 @@
 const bus = require('@gotoeasy/bus');
 const File = require('@gotoeasy/file');
 const hash = require('@gotoeasy/hash');
+const Err = require('@gotoeasy/err');
 const postobject = require('@gotoeasy/postobject');
 
 bus.on('编译组件', function (){

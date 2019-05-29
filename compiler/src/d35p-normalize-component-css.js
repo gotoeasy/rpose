@@ -1,6 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const File = require('@gotoeasy/file');
 
 bus.on('编译插件', function(){
     

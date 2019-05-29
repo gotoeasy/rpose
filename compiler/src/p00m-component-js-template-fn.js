@@ -37,7 +37,7 @@ class ClsTemplate{
         }
         // 字符串拼接转义函数
         let fnText = function(ary, txt, isPreCode){
-            let str = txt.replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/\'/g, "\\'");
+            let str = txt.replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/'/g, "\\'");
             return isPreCode? ("s+='" + str + "'") : (ary.pop() + "+'" + str + "'");
         }
 

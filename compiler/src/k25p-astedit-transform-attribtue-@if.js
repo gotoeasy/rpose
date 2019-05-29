@@ -1,11 +1,10 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
     // 转换处理指令节点 @ref
-    return postobject.plugin(/**/__filename/**/, function(root, context){
+    return postobject.plugin(/**/__filename/**/, function(root){
 
         const OPTS = bus.at('视图编译选项');
 
@@ -15,7 +14,7 @@ bus.on('编译插件', function(){
             /^if$/i.test(tagNode.object.value) && (tagNode.ok = true);
 
             let type = OPTS.TypeCodeBlock;
-            let value = 'if (' + object.value.replace(/^\s*\{=?/, '').replace(/\}\s*$/, '') + ') {';
+            let value = 'if (' + (object.value+'').replace(/^\s*\{=?/, '').replace(/\}\s*$/, '') + ') {';
             let jsNode = this.createNode({type, value});
             tagNode.before(jsNode);
 

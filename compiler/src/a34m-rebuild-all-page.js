@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
-const File = require('@gotoeasy/file');
 
-bus.on('重新编译全部页面', function (bs){
+bus.on('重新编译全部页面', function (){
 
     return async function(){
 
@@ -16,21 +14,18 @@ bus.on('重新编译全部页面', function (bs){
             }
         }
 
-        let promises = [];
         for ( let key in oFiles ) {
             time1 = new Date().getTime();
 
             let context = bus.at('编译组件', oFiles[key]);
-            context.result.browserifyJs && promises.push(context.result.browserifyJs);
 
             time = new Date().getTime() - time1;
             if ( time > 100 ) {
                 console.info('[compile] ' + time + 'ms -', key.replace(env.path.src + '/', ''));
             }
 
+            await context.result.browserifyJs;
         }
-
-        await Promise.all( promises );
 
         time = new Date().getTime() - stime;
         console.info('[build] ' + time + 'ms');
@@ -38,5 +33,4 @@ bus.on('重新编译全部页面', function (bs){
     }
 
 }());
-
 

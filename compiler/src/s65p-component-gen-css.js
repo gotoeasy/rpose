@@ -1,8 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const File = require('@gotoeasy/file');
-const csjs = require('@gotoeasy/csjs');
-const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
@@ -20,12 +18,12 @@ bus.on('编译插件', function(){
         context.result.css = bus.at('组件样式类名哈希化', context.input.file, ary.join('\n'));
 
         let env  = bus.at('编译环境');
-        let file = env.path.build_temp + '/' + bus.at('组件目标文件名', context.input.file) + '.css';
         if ( !env.release ) {
+            let fileCss = bus.at('组件目标临时CSS文件名', context.input.file);
             if ( context.result.css ) {
-                File.write(file, context.result.css);
+                File.write(fileCss, context.result.css);
             }else{
-                File.remove(file);
+                File.remove(fileCss);
             }
         }
 

@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const os = require('@gotoeasy/os');
 const hash = require('@gotoeasy/hash');
 const File = require('@gotoeasy/file');
 
@@ -76,7 +75,7 @@ const File = require('@gotoeasy/file');
         return oFiles;
     });
 
-    bus.on('源文件添加', function(oFile){
+    bus.on('源文件添加', async function(oFile){
 
         let tag = getTagOfSrcFile(oFile.file);
         if ( !tag ) {
@@ -92,12 +91,28 @@ const File = require('@gotoeasy/file');
             return;
         }
 
-        oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);                           // 第一个有效
-        return bus.at('全部编译');
+        oFiles[oFile.file] = getSrcFileObject(oFile.file, tag);             // 第一个有效
+        await bus.at('全部编译');
 
     });
 
-    bus.on('源文件修改', function(oFileIn){
+    bus.on('SVG文件添加', async function(svgfile){
+        await bus.at('重新编译和该SVG可能相关的组件和页面', svgfile);
+    });
+
+    bus.on('图片文件添加', async function(){
+
+        // 图片文件添加时，重新编译未编译成功的组件
+        let oFiles = bus.at('源文件对象清单');
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( !context ) {
+                return await bus.at('全部编译');
+            }
+        }
+    });
+
+    bus.on('源文件修改', async function(oFileIn){
 
         let tag = getTagOfSrcFile(oFileIn.file);
         let refFiles = getRefPages(tag);                                    // 关联页面文件
@@ -113,13 +128,46 @@ const File = require('@gotoeasy/file');
         oFiles[oFile.file] = Object.assign({}, oFileIn);
         refFiles.forEach(file => {
             bus.at('组件编译缓存', file, false);                             // 删除关联页面的编译缓存
-            writeInfoPage(file, `rebuilding for component [${tag}] changed`);
+            removeHtmlCssJsFile(file);
         });
         bus.at('组件编译缓存', oFile.file, false);                          // 删除当前文件的编译缓存
-        return bus.at('全部编译');
+        removeHtmlCssJsFile(oFile.file);
+        await bus.at('全部编译');
     });
 
-    bus.on('源文件删除', function(file){
+    bus.on('SVG文件修改', async function(svgfile){
+        await bus.at('重新编译和该SVG可能相关的组件和页面', svgfile);
+    });
+
+    bus.on('图片文件修改', async function(imgfile){
+
+        // 图片文件修改时，找出使用该图片文件的组件，以及使用该组件的页面，都清除缓存后重新编译
+        let oFiles = bus.at('源文件对象清单');
+        let refFiles = [];
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( context ) {
+                let refimages = context.result.refimages || [];
+                if ( refimages.includes(imgfile) ) {                        // 比较的是全路径文件名
+                    let tag = getTagOfSrcFile(file);                        // 直接关联的组件标签名
+                    refFiles.push(file);                                    // 待重新编译的组件
+                    refFiles.push(...getRefPages(tag));                     // 待重新编译的页面
+                }
+            }
+        }
+
+        if ( refFiles.length ) {
+            (new Set(refFiles)).forEach(pageFile => {
+                bus.at('组件编译缓存', pageFile, false);                     // 清除编译缓存
+                removeHtmlCssJsFile(pageFile);
+            })
+            await bus.at('全部编译');
+        }
+
+    });
+
+
+    bus.on('源文件删除', async function(file){
 
         let tag = getTagOfSrcFile(file);
         let refFiles = getRefPages(tag);                                    // 关联页面文件
@@ -148,13 +196,68 @@ const File = require('@gotoeasy/file');
         // 删除关联编译缓存，重新编译
         refFiles.forEach(file => {
             bus.at('组件编译缓存', file, false);                             // 删除关联页面的编译缓存
-            writeInfoPage(file, `rebuilding for component [${tag}] removed`);
+            removeHtmlCssJsFile(file);
         });
         bus.at('组件编译缓存', oFile.file, false);                           // 删除当前文件的编译缓存
-        return bus.at('全部编译');
+        removeHtmlCssJsFile(oFile.file);
+
+        await bus.at('全部编译');
     });
 
 
+    bus.on('SVG文件删除', async function(svgfile){
+        await bus.at('重新编译和该SVG可能相关的组件和页面', svgfile);
+    });
+
+    bus.on('图片文件删除', async function(imgfile){
+
+        // 图片文件删除时，处理等同图片文件修改
+        await bus.at('图片文件修改', imgfile);
+    });
+
+    bus.on('重新编译和该SVG可能相关的组件和页面', async function(svgfile){
+
+        // 如果是图表目录中的文件，简化的，但凡用到图标的组件和页面，统统重新编译
+        let env = bus.at('编译环境');
+
+        let oSetFiles = new Set(), oSetPages = new Set();
+        let oFiles = bus.at('源文件对象清单');
+        let pages;
+        for ( let file in oFiles ) {
+            let context = bus.at('组件编译缓存', file);
+            if ( context ) {
+
+                // 可能是图标用途的svg文件
+                if ( svgfile.startsWith(env.path.svgicons + '/') ) {
+                    if ( context.result.hasSvgIcon ) {
+                        oSetFiles.add(file);                                    // 直接使用图标的组件
+                        pages = getRefPages(getTagOfSrcFile(file));
+                        pages.forEach(f => oSetPages.add(f));                   // 使用本组件的页面
+
+                        continue;
+                    }
+                }
+
+                // 可能是图片用途的svg文件
+                let refimages = context.result.refimages || [];
+                if ( refimages.includes(svgfile) ) {
+                    oSetFiles.add(file);                                        // 使用该svg作为图片用途的组件
+                    pages = getRefPages(getTagOfSrcFile(file));
+                    pages.forEach(f => oSetPages.add(f));                       // 使用本组件的页面
+                }
+            }
+        }
+
+        oSetPages.forEach(file => {
+            bus.at('组件编译缓存', file, false);                                // 清除编译缓存
+            removeHtmlCssJsFile(file);
+        });
+        oSetFiles.forEach(file => {
+            bus.at('组件编译缓存', file, false);                                // 清除编译缓存
+        });
+
+        await bus.at('全部编译');
+    });
 
 
 })();
@@ -162,31 +265,23 @@ const File = require('@gotoeasy/file');
 // 取标签名，无效者undefined
 function getTagOfSrcFile(file){
     let name = File.name(file);
-    if ( /[^a-zA-Z0-9_\-]/.test(name) || !/^[a-zA-Z]/.test(name) ) {
+    if ( /[^a-zA-Z0-9_-]/.test(name) || !/^[a-zA-Z]/.test(name) ) {
         return;
     }
     return name.toLowerCase();
 }
 
 
-function writeInfoPage(file, msg){
+// 文件改变时，先删除生成的最终html等文件
+function removeHtmlCssJsFile(file){
 
     let fileHtml = bus.at('页面目标HTML文件名', file);
     let fileCss = bus.at('页面目标CSS文件名', file);
     let fileJs = bus.at('页面目标JS文件名', file);
 
-    if ( File.existsFile(fileHtml) ) {
-        File.write(fileHtml, syncHtml(msg));   // html文件存在，可能正被访问，要替换
-        File.remove(fileCss);
-        File.remove(fileJs);
-    }
+    File.remove(fileHtml);
+    File.remove(fileCss);
+    File.remove(fileJs);
 
 }
 
-
-// 在watch模式下，文件改变时，生成的html文件不删除，便于浏览器同步提示信息
-function syncHtml(msg=''){
-	return `<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>Page build failed or src file removed<p/>
-        <pre style="background:#333;color:#ddd;padding:10px;">${msg.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-    </body>`;
-}

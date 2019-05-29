@@ -1,5 +1,4 @@
 const bus = require('@gotoeasy/bus');
-const hash = require('@gotoeasy/hash');
 
 bus.on('astgen-node-tag', function(){
     return tagJsify;
@@ -60,7 +59,7 @@ function tagJsify(node, context){
 }
 
 // TODO
-function isStaticTagNode(node){
+function isStaticTagNode(/* node */){
     return false;
 }
 

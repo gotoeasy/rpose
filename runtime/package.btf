@@ -2,11 +2,12 @@
 @rpose/runtime
 
 [version] // 版本号 （必填）
-0.0.6
+0.0.11
 
 [devDependencies] // 开发依赖库
 @gotoeasy/file = *
 @gotoeasy/csjs = *
+eslint = *
 
 [description] // 描述
 rpose runtime
@@ -17,6 +18,7 @@ gotoeasy, rpose, runtime
 [scripts] // 脚本命令
 test = echo "Error: no test specified" && exit 1
 build = node build
+eslint = node node_modules/eslint/bin/eslint runtime.js
 
 [repository] // 仓库
 type= git

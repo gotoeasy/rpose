@@ -5,7 +5,7 @@ strict  = true
 
 [view]
 <button type="button" class="btn@bs btn-lg@bs dropdown-toggle@bs {
-    'btn-primary@bs': /primary/i.test(type)
+    btn-primary@bs: /primary/i.test(type)
     }"
     style={style}
     disabled={disabled}

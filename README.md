@@ -10,11 +10,10 @@
 没有的事，这是一个前端框架，简单到没法聊<br>
 <br>
 
-
 <br>
-了解请看 https://gotoeasy.github.io
 
-<br>
+[Documents](https://gotoeasy.github.io)
+
 <br>
 有好姿势欢迎提 Issuse
 
@@ -160,7 +159,7 @@ body
 
 ## `功能列表`
 
-* `feature`
+> `feature`
 
 - [x] 源文件使用BTF的单文档格式，人性化强，可读性高
 - [x] 数据驱动、组件式、响应式、声明式的开发过程
@@ -171,22 +170,24 @@ body
 - [x] 提供简易安全的路由方案
 - [x] 提供样式风格模块化方案
 - [x] 提供预渲染模块化方案
+- [x] 提供简易的SVG图标方案
 
-* `buildin`
+> `buildin`
 
 - [x] 语法高亮组件，写法雷同md的 ` ``` `，支持`btf`、`rpose`，支持设定最大高度
 - [x] 内置路由组件`<router>`、`<router-link>`
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
+- [x] 内置图标组件 `<svgicon>`
 
-* `runtime`
+> `runtime`
 
 - [x] 虚拟DOM及局部差异化渲染实现
 - [x] 提供`on`、`at`、`once`、`off`等事件接口
 - [x] 提供`$$`接口，方便dom节点选择及属性修改操作
 - [x] 支持相对特殊的`<svg>`、`<script>`、`<link>`标签
 
-* `compiler`
+> `compiler`
 
 - [x] 编译模块插件化便于增减新功能
 - [x] 组件接口属性需在`[api]`中显式声明，方便人工阅读识别
@@ -218,28 +219,35 @@ body
 - [x] 使用基于磁盘文件的缓存，缓存目录可配置化
 - [x] 支持页面`[api]`中声明为移动优先或桌面优先，默认为移动优先（desktopFirst=false）
 
-* `other`
+> `other`
 
 - [x] 简易实现热刷新服务器替代第三方包，方便按需刷新、按需打开窗口
 - [x] 可通过配置样式库实现按需引用normalize样式
 - [x] 监视模式下修改`.browserslistrc`文件，重新编译全部页面
 - [x] 监视模式下修改`rpose.config.btf`文件，重新编译整个项目
+- [x] 监视模式下修改`<svgicon>`用到的图标文件，重新编译可能相关的组件及页面
+- [x] 监视模式下修改<img>用到的图片文件，重新编译相关的组件及页面
+- [x] 监视模式下修改本地样式库用到的css文件，重新编译相关的组件及页面
+- [ ] 完善文档（70%）
 - [ ] 测试及覆盖率
-- [ ] 缓存性能还可优化
-- [ ] 完善例子及文档
-- [ ] 改进、新特性好姿势增强
+- [ ] 性能继续优化
+- [ ] 新特性好姿势增强
 
 <br>
 
 ## `变更列表`
 <details>
-<summary><strong>Ver 0.5.x</strong></summary>
+<summary><strong>Ver 0.5.*</strong></summary>
 
 - [x] 新增指令`@class`，支持以灵活的原子方式书写样式
+- [x] 内置SVG图标组件 `<svgicon>`
+- [x] 指令`@show`添加修饰符支持，如`@show.flex`
+- [x] 优化样式库编译缓存，提升编译性能
+- [x] 监视模式下修改本地样式库用到的css文件，重新编译相关的组件及页面
 </details>
 
 <details>
-<summary><strong>Ver 0.4.x</strong></summary>
+<summary><strong>Ver 0.4.*</strong></summary>
 
 - [x] 为方便功能删减修改，咬牙重构，编译器插件化，分离`runtime`、`buildin`模块
 - [x] 更多的编译期检查以及更友好的错误信息提示
@@ -259,19 +267,19 @@ body
 </details>
 
 <details>
-<summary><strong>Ver 0.3.x</strong></summary>
+<summary><strong>Ver 0.3.*</strong></summary>
 
 - [x] 新添指令`@taglib`、`@csslib`，组件支持`[taglib]`、`[csslib]`块定义
 </details>
 
 <details>
-<summary><strong>Ver 0.2.x</strong></summary>
+<summary><strong>Ver 0.2.*</strong></summary>
 
 - [x] 指令统一前缀为`@`以方便识别，如 `@if`、`@ref`、`@show`
 </details>
 
 <details>
-<summary><strong>Ver 0.1.x 概念版</strong></summary> 
+<summary><strong>Ver 0.1.* 概念版</strong></summary> 
 
 - [x] 源文件使用BTF的单文档格式，人性化可读性强，增强开发舒适性<br>
 - [x] 数据驱动、组件式、响应式、声明式的开发过程<br>

@@ -23,6 +23,7 @@ const DomAttrHandle = (function(){
 	on('innerHTML', (el, prop, val) => val===undefined ? el.innerHTML : (el.innerHTML=(val==null?'':val)) );
 	on('innerTEXT', (el, prop, val) => val===undefined ? el.textContent : (el.textContent=(val==null?'':val)) );
 	on('textcontent', (el, prop, val) => val===undefined ? el.textContent : (el.textContent=(val==null?'':val)) );
+	on('xlink:href', (el, prop, val) => val===undefined ? el.href.baseVal : el.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', val) );
 
 	on('img.src', (el, prop, val) => val===undefined ? el.src : (el.src=val) );
 
@@ -40,7 +41,7 @@ const DomAttrHandle = (function(){
 		}
 	} );
 
-	// style .... 有必要支持?
+	// style
 	on('style', (el, prop, val) => {
 		if ( val===undefined ) {
 			return el.getAttribute('style');
@@ -48,7 +49,11 @@ const DomAttrHandle = (function(){
 
 		let oStyle = parseStyleToObject(val);
 		for ( let key in oStyle ) {
-			el.style[key] = oStyle[key];
+            if ( key.startsWith('--') ) {
+                el.style.setProperty(key, oStyle[key]);     // 双杠开头的，按变量处理
+            }else{
+                el.style[key] = oStyle[key];
+            }
 		}
 	} );
 
@@ -66,11 +71,16 @@ function parseStyleToObject(style=''){
 	// border-color: red; -webkit-appearance: button; => ["border-color: red", " -webkit-appearance: button"]
 	let ary = style.split(';').filter(v=>v.trim()!='');
 	ary.forEach(v=>{
-		let kv = v.split(':').filter(v=>v.trim()!=''), key;
+		let kv = v.split(':').map(v=>v.trim()).filter(v=>!!v), key;
 		if ( kv.length == 2 ) {
-			// key: border-color => borderColor, -webkit-appearance => webkitAppearance
-			key = toLowerCase(kv[0]).split('-').filter(v=>v.trim()!='').map((v,i)=>i?(v.charAt(0).toUpperCase()+v.substring(1)):v).join('');
-			rs[key] = kv[1].trim(); // borderColor = red
+            if ( kv[0].startsWith("-") ) {
+                // 类似-webkit-的前缀，或是--var变量
+                rs[kv[0]] = kv[1];
+            }else{
+    			// key: border-color => borderColor, -webkit-appearance => webkitAppearance
+                key = toLowerCase(kv[0]).split('-').filter(v=>v.trim()!='').map((v,i)=>i?(v.charAt(0).toUpperCase()+v.substring(1)):v).join('');
+                rs[key] = kv[1]; // borderColor = red
+            }
 		}
 	});
 	return rs;

@@ -11,17 +11,17 @@ bus.on('编译插件', function(){
         root.walk( 'Tag', (node, object) => {
 
             if ( !object.standard ) {
-                oSet.add(object.value);
-
-                let file = bus.at('标签源文件', object.value);
+                let file = bus.at('标签源文件', object.value, context.result.oTaglibs);
                 if ( !file ) {
-                    throw new Err('file not found of tag: ' + object.value, {file: context.input.file, text: context.input.text, start: object.loc.start.pos});
+                    throw new Err('file not found of tag: ' + object.value, { ...context.input, start: object.pos.start });
                 }
+                let tagpkg = bus.at('标签全名', file);
+                oSet.add(tagpkg);
             }
 
         }, {readonly: true});
 
-        result.references = [...oSet];
+        result.references = [...oSet];      // 依赖的组件【标签全名】
     });
 
 }());

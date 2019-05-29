@@ -1,6 +1,6 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.5.1",
+  "version": "0.5.39",
   "main": "compiler.js",
   "dependencies": {
     "@rpose/runtime": "0.0.*",
@@ -30,14 +30,16 @@
   },
   "devDependencies": {
     "ava": "*",
-    "nyc": "*"
+    "nyc": "*",
+    "eslint": "*"
   },
   "bin": {
     "rp": "bin/rpose"
   },
   "scripts": {
-    "build": "node script/build",
-    "test": "nyc ava",
+    "build": "node node_modules/eslint/bin/eslint src & node script/build & node node_modules/eslint/bin/eslint compiler.js",
+    "eslint": "node node_modules/eslint/bin/eslint src & node node_modules/eslint/bin/eslint compiler.js",
+    "test": "node node_modules/eslint/bin/eslint src & node script/build & node node_modules/eslint/bin/eslint compiler.js & nyc ava",
     "coverage": "nyc ava & nyc report --reporter=html & node coverage"
   },
   "description": "rpose compiler",

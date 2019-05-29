@@ -1,0 +1,34 @@
+[api]
+optionkeys = path, onroute, default, notfound
+statekeys = active
+
+[view]
+<section class="rpose-router" @show={$state.active}>
+    <slot/>
+</section>
+
+[methods]
+{
+    init: () => {
+        rpose.router.register({path: this.$options.path, component: this, default: !!this.$options.default, notfound: !!this.$options.notfound});
+        this.route = ctx => {
+            this.setState({active: 1});
+
+            // 默认父节点滚动回原位置
+            // TODO 不一定在父容器滚动，也可能多路由匹配等，效果不见得全对
+            let el = this.getRootElement();
+            el && el.parentNode && el.parentNode.scrollTo(...JSON.parse($$(el).attr('_scrollTo') || '[0, 0]'));
+        };
+    },
+
+    setState: (state) => {
+        if ( this.$state.active && state && !state.active ) {
+            // 如果是由显示变隐藏，记下父节点滚动位置，作为属性保存
+            let el = this.getRootElement();
+            let parent = el ? el.parentNode : null;
+            parent && $$(el).attr('_scrollTo', JSON.stringify([parent.scrollLeft, parent.scrollTop]));
+        }
+
+        state && this.render(state);
+    }
+}
