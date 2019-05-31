@@ -43,10 +43,11 @@ bus.on('编译插件', function(){
                 ${srcRuntime}
 
                 (function($$){
-                    // 组件注册
-                    ${srcStmt}
 
                     ${srcComponents}
+
+                    // 组件注册
+                    ${srcStmt}
 
                     // 组件挂载
                     rpose.mount( rpose.newComponentProxy('${tagpkg}').render(), '${context.doc.mount}' );

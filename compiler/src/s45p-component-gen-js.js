@@ -2,10 +2,10 @@ const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
-const Err = require('@gotoeasy/err');
-const acornGlobals = require('acorn-globals');
+//const Err = require('@gotoeasy/err');
+//const acornGlobals = require('acorn-globals');
 
-const JS_VARS = '$$,require,window,sessionStorage,localStorage,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
+//const JS_VARS = '$$,require,window,sessionStorage,localStorage,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
 
 bus.on('编译插件', function(){
     
@@ -26,14 +26,15 @@ bus.on('编译插件', function(){
             $data.optionkeys = context.doc.api.optionkeys;
             $data.statekeys = context.doc.api.statekeys;
         }
-        $data.actions = script.actions;
+      //  $data.actions = script.actions;
         $data.methods = script.methods;
-        $data.updater = script.updater;
+        $data.Method = script.Method;
+        script.bindfns && script.bindfns.length && ($data.bindfns = script.bindfns);        // 有则设之
         $data.vnodeTemplate = script.vnodeTemplate;
 
         // 生成组件JS源码
         result.componentJs = fnTmpl($data);
-        result.componentJs = checkAndInitVars(result.componentJs, context);
+      //  result.componentJs = checkAndInitVars(result.componentJs, context);
 
         // 非release模式时输出源码便于确认
         if ( !env.release ) {
@@ -45,7 +46,7 @@ bus.on('编译插件', function(){
 
 }());
 
-
+/*
 // 检查是否有变量缩写，有则补足，用以支持{$state.abcd}简写为{abcd}
 function checkAndInitVars(src, context){
     let optionkeys = context.doc.api.optionkeys || [];
@@ -88,3 +89,4 @@ function checkAndInitVars(src, context){
 
     return src.replace(/(\n.+?prototype\.nodeTemplate\s*=\s*function\s+.+?\r?\n)/, '$1' + vars.join('\n'));
 }
+*/

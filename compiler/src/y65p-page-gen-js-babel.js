@@ -16,11 +16,19 @@ bus.on('编译插件', function(){
             if ( cacheValue ) return context.result.babelJs = cacheValue;
         }
 
+        let opts = {
+            plugins: [
+                ["@babel/plugin-proposal-decorators", {legacy: true}],      // 支持装饰器
+                "@babel/plugin-proposal-class-properties",                  // 支持类变量（含私有变量）
+                "@babel/plugin-proposal-private-methods",                   // 支持类私有方法
+            ]
+        };
+
         try{
-            context.result.babelJs = csjs.babel(context.result.pageJs);
+            context.result.babelJs = csjs.babel(context.result.pageJs, opts);
             oCache.set(cacheKey, context.result.babelJs);
         }catch(e){
-            File.write(env.path.build + '/error/babel.log', context.result.pageJs + '\n\n' + e.stack);
+            File.write(env.path.build + '/error/babel-err-pagejs.js', context.result.pageJs + '\n\n' + e.stack);
             throw e;
         }
 

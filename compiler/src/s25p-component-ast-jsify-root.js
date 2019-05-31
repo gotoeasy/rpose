@@ -16,7 +16,8 @@ bus.on('编译插件', function(){
                 return writer.write('// 没有节点，无可生成');
             }
 
-            writer.write( 'function nodeTemplate($state, $options, $actions, $this) {' );
+           // writer.write( 'function nodeTemplate($state, $options, $actions, $this) {' );
+            writer.write( '$vnode($state, $options) {' );
             if ( hasCodeBolck(node.nodes) ) {
                 writer.write( `${ topNodesWithScriptJsify(node.nodes, context) }` );        // 含代码块子节点
             }else{

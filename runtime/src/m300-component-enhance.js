@@ -12,8 +12,8 @@ function enhance(Component, ...args) {
 	enhanceFields(oComp);	// 组件对象ID等
 
 	// 添加方法
-	enhanceRender(oComp);	// 组件渲染
-	enhanceState(oComp);	// 组件状态存取
+//	enhanceRender(oComp);	// 组件渲染
+//	enhanceState(oComp);	// 组件状态存取
 	enhanceRef(oComp);		// 按引用名取DOM节点或组件对象
 	enhanceRoot(oComp);		// 取组件根节点DOM元素
 

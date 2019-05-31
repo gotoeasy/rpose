@@ -1,7 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 const File = require('@gotoeasy/file');
-const csjs = require('@gotoeasy/csjs');
 
 class  JsWriter{
 
@@ -26,15 +25,7 @@ class  JsWriter{
     }
 
     toString (){
-        let js = this.ary.join('\n');
-        try{
-            return csjs.formatJs( js );
-           // return csjs.formatJs( csjs.miniJs(js) );
-        }catch(e){
-            let env  = bus.at('编译环境');
-            File.write(env.path.build + '/error/format-error.js', js);
-            throw e;
-        }
+        return this.ary.join('\n');
     }
 }
 

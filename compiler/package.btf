@@ -35,6 +35,9 @@ chokidar = 2.1.*
 refractor = 2.7.*
 rehype = 7.0.*
 opn = 5.3.*
+@babel/plugin-proposal-decorators = *
+@babel/plugin-proposal-class-properties = *
+@babel/plugin-proposal-private-methods = *
 
 [devDependencies] // 开发依赖库
 ava = *

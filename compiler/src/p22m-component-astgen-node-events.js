@@ -21,20 +21,22 @@ bus.on('astgen-node-events', function(){
         let key, value, comma = '', ary = [];
         ary.push( `{ `);     
         eventsNode.nodes.forEach(node => {
-            key = node.object.name.substring(2);                                                        // onclick => click
+            key = node.object.name.substring(2);                                        // onclick => click
             value = node.object.value;
             if ( node.object.isExpression ) {
-                value = bus.at('表达式代码转换', value);                             // { abcd } => (abcd)
+                value = bus.at('表达式代码转换', value);                                // { abcd } => (abcd)
             }else{
-                value = value.trim();
-                let fnNm = value.startsWith('$actions.') ? value.substring(9) : value;
                 // 静态定义时顺便检查
-                if ( context.script.$actionkeys && context.script.$actionkeys.includes(fnNm) ) {
-                    value = '$actions.' + value;                    // "fnClick" => $actions.fnClick
-                    //value = `$actions['${value}']`;                    // "fnClick" => $actions['fnClick']
+                value = value.trim();
+                let match = value.match(/^this\s*\.(.+)$/) || value.match(/^this\s*\[\s*['"](.+)['"]\s*]/);
+                let fnNm = match ? match[1] : value;                                    // this.fnClick => fnClick, this['fnClick'] => fnClick, fnClick => fnClick
+                if ( context.script.Method[fnNm] ) {
+                    value = 'this.' + fnNm;                                             // fnClick => this.fnClick
                 }else{
                     // 指定方法找不到
-                    throw new Err('action not found: ' + fnNm, { ...context.input, ...node.object.pos });
+                    let names = Object.keys(context.script.Method);
+                    let msg = `event handle not found (${fnNm})${ names.length ? ('\n  etc. ' + names.join('/')) : '' }`;
+                    throw new Err(msg, { ...context.input, ...node.object.Value.pos });
                 }
             }
             

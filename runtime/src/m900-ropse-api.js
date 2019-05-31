@@ -24,6 +24,8 @@ api.at = BUS.at;
 
 api.router = Router;
 
+api.diffRender = diffRender;
+
 // 仅支持浏览器
 window.rpose = api;
 

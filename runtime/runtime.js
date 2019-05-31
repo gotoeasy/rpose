@@ -630,8 +630,6 @@
     function enhance(Component, ...args) {
         let oComp = new Component(...args);
         enhanceFields(oComp);
-        enhanceRender(oComp);
-        enhanceState(oComp);
         enhanceRef(oComp);
         enhanceRoot(oComp);
         return oComp;
@@ -643,48 +641,6 @@
         Object.defineProperty(component, "isInitRender", {
             value: true,
             writable: true
-        });
-    }
-    function enhanceRender(component) {
-        !component.render && Object.defineProperty(component, "render", {
-            get: () => (function(state = {}) {
-                let el, $$el, vnode;
-                if (this.isInitRender) {
-                    extend(this.$state, state, this.$STATE_KEYS);
-                    vnode = this.nodeTemplate(this.$state, this.$options, this.$actions, this);
-                    el = createDom(vnode, this);
-                    if (el && el.nodeType == 1) {
-                        $$(el).addClass(this.$COMPONENT_ID);
-                    }
-                    this.isInitRender = false;
-                    return el;
-                }
-                extend(this.$state, state, this.$STATE_KEYS);
-                $$el = $$("." + this.$COMPONENT_ID);
-                if (!$$el.length) {
-                    warn("dom node missing");
-                    return;
-                }
-                if (this.$updater) {
-                    this.$updater(this.$state);
-                } else {
-                    let vnode2 = this.nodeTemplate(this.$state, this.$options, this.$actions, this);
-                    diffRender(this, vnode2);
-                }
-                return el;
-            })
-        });
-    }
-    function enhanceState(component) {
-        !component.getState && Object.defineProperty(component, "getState", {
-            get: () => (function() {
-                return extend({}, this.$state);
-            })
-        });
-        !component.setState && Object.defineProperty(component, "setState", {
-            get: () => (function(state) {
-                state && this.render(state);
-            })
         });
     }
     function enhanceRoot(component) {
@@ -1142,5 +1098,6 @@
     api.once = BUS.once;
     api.at = BUS.at;
     api.router = Router;
+    api.diffRender = diffRender;
     window.rpose = api;
 })(window, document);

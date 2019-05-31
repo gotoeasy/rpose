@@ -1172,7 +1172,7 @@ console.time("load");
                 context.input = {}; // 存放原始输入（file、text）
                 context.doc = {}; // 存放源文件的中间解析结果
                 context.style = {}; // 存放样式的中间编译结果
-                context.script = {}; // 存放脚本的中间编译结果，script的$actionkeys属性存放事件名数组
+                context.script = {}; // 存放脚本的中间编译结果，script的Method属性存放方法名为键的对象
                 context.keyCounter = 1; // 视图解析时标识key用的计数器
 
                 context.result = {}; // 存放编译结果
@@ -2855,143 +2855,277 @@ console.time("load");
     // ------- d35p-normalize-component-css end
 })();
 
-/* ------- d45p-normalize-component-actions ------- */
+/* ------- d40m-parse-and-remove-[methods]-@action ------- */
 (() => {
-    // ------- d45p-normalize-component-actions start
+    // ------- d40m-parse-and-remove-[methods]-@action start
     const bus = require("@gotoeasy/bus");
-    const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
-    const acorn = require("acorn");
-    const astring = require("astring");
+    const parser = require("@babel/parser");
+    const traverse = require("@babel/traverse").default;
+    const types = require("@babel/types");
+    const babel = require("@babel/core");
 
-    bus.on(
-        "编译插件",
-        (function() {
-            return postobject.plugin("d45p-normalize-component-actions", function(root, context) {
-                let script = context.script;
+    const oSetBuildIn = new Set([
+        "getState",
+        "setState",
+        "$vnode",
+        "getRefElements",
+        "getRefElement",
+        "getRefComponents",
+        "getRefComponent",
+        "getRootElement"
+    ]);
 
-                root.walk("RposeBlock", (node, object) => {
-                    if (!/^actions$/.test(object.name.value)) return;
+    bus.on("解析检查METHODS块并删除装饰器", function(methodsCode, input = {}, PosOffset = 0) {
+        let js = "class C {\n" + methodsCode + "\n}"; // 前面加10位，后面添2位
+        PosOffset = PosOffset - 10; // 减去前面加的10位偏移量
 
-                    let actions = object.text ? object.text.value.trim() : "";
-                    if (actions) {
-                        let rs = generateActions(actions);
-                        script.actions = rs.src;
-                        script.$actionkeys = rs.names;
-                    }
-                    node.remove();
-                    return false;
-                });
-            });
-        })()
-    );
-
-    function generateActions(code) {
-        let env = bus.at("编译环境");
-        let oCache = bus.at("缓存");
-        let cacheKey = JSON.stringify(["generateActions", code]);
-        if (!env.nocache) {
-            let cacheValue = oCache.get(cacheKey);
-            if (cacheValue) return cacheValue;
-        }
-
-        let rs;
-        if (code.startsWith("{")) {
-            rs = generateObjActions(code);
-        } else {
-            rs = generateFunActions(code);
-        }
-
-        return oCache.set(cacheKey, rs);
-    }
-
-    function generateFunActions(code) {
+        // ---------------------------------------------------------
+        // 解析为语法树，支持装饰器写法
+        // ---------------------------------------------------------
         let ast;
         try {
-            ast = acorn.parse(code, { ecmaVersion: 10, sourceType: "module", locations: true });
+            ast = parser.parse(js, {
+                sourceType: "module",
+                plugins: [
+                    "decorators-legacy", // 支持装饰器
+                    "classProperties", // 支持类变量
+                    "classPrivateProperties", // 支持类私有变量
+                    "classPrivateMethods" // 支持类私有方法
+                ]
+            });
         } catch (e) {
-            // 通常是代码有语法错误
-            throw new Err("syntax error in [actions]", e);
-            // TODO
-            //    throw new Err('syntax error in [actions] - ' + e.message, doc.file, {text, start});
+            let msg = e.message || "";
+            let match = msg.match(/\((\d+):(\d+)\)$/);
+            if (match) {
+                msg = msg.substring(0, match.index);
+                let pos = getLinePosStart(js, match[1] - 1, match[2] - 0, PosOffset); // 行列号都从0开始，减0转为数字
+                throw new Err(msg, e, { file: input.file, text: input.text, ...pos });
+            }
+            throw new Err(msg, e);
         }
 
-        let map = new Map();
+        // ---------------------------------------------------------
+        // 遍历语法树上的类方法，保存方法名、装饰器信息、最后删除装饰器
+        // ---------------------------------------------------------
+        let oClassMethod = {};
+        let oClassProperty = {};
+        let oClassPrivateProperty = {};
+        let oClassPrivateMethod = {};
+        let bindfns = [];
 
-        ast.body.forEach(node => {
-            let nd;
-            if (node.type == "FunctionDeclaration") {
-                node.type = "ArrowFunctionExpression";
-                map.set(node.id.name, astring.generate(node));
-            } else if (node.type == "VariableDeclaration") {
-                nd = node.declarations[0].init;
-                if (nd.type == "FunctionDeclaration" || nd.type == "ArrowFunctionExpression") {
-                    nd.type = "ArrowFunctionExpression";
-                    map.set(node.declarations[0].id.name, astring.generate(nd));
+        traverse(ast, {
+            // -----------------------------------
+            // 遍历检查类属性
+            ClassProperty(path) {
+                if (path.node.value && path.node.value.type === "FunctionExpression") {
+                    // 类属性值如果是函数，直接转换成箭头函数
+                    let value = types.arrowFunctionExpression(path.node.value.params, path.node.value.body);
+                    path.replaceWith(types.classProperty(path.node.key, value)); // 转成箭头函数
+                    return; // 及时返回下次还来
                 }
-            } else if (node.type == "ExpressionStatement") {
-                nd = node.expression.right;
-                if (nd.type == "FunctionDeclaration" || nd.type == "ArrowFunctionExpression") {
-                    nd.type = "ArrowFunctionExpression";
-                    map.set(node.expression.left.name, astring.generate(nd));
+
+                let oItem = {};
+                let oKey = path.node.key;
+                oItem.Name = { value: oKey.name, ...getPos(oKey, PosOffset) }; // 方法名
+                if (oClassProperty[oItem.Name.value]) {
+                    // 类变量重名
+                    throw new Err(`duplicate class property name (${oItem.Name.value})`, { ...input, ...oItem.Name });
                 }
+                oClassProperty[oItem.Name.value] = oItem.Name;
+
+                // 属性值如果是明显的方法，也按方法看待，便于事件调用及书写事件装饰器
+                if (path.node.value && path.node.value.type === "ArrowFunctionExpression") {
+                    let oMethod = {};
+                    oMethod.Name = { ...oItem.Name }; // 属性名作方法名
+
+                    if (oClassMethod[oMethod.Name.value]) {
+                        // 方法名重名
+                        throw new Err(`duplicate method name (${oMethod.Name.value})`, { ...input, ...oMethod.Name });
+                    }
+                    if (oSetBuildIn.has(oMethod.Name.value)) {
+                        // 不能重写内置方法
+                        throw new Err(`unsupport overwrite method (${oMethod.Name.value})`, { ...input, ...oMethod.Name });
+                    }
+                    oClassMethod[oMethod.Name.value] = oMethod;
+                    parseDecorators(path, oMethod, input, PosOffset); // 解析装饰器
+
+                    if (path.node.value.type === "FunctionExpression") {
+                        path.replaceWith(types.arrowFunctionExpression(path.node.params, path.node.body)); // 转成箭头函数
+                    }
+                }
+
+                // 确保删除类属性上的全部装饰器
+                delete path.node.decorators;
+            },
+
+            // -----------------------------------
+            // 遍历检查私有类属性
+            ClassPrivateProperty(path) {
+                let oItem = {};
+                let oId = path.node.key.id;
+                oItem.Name = { value: oId.name, ...getPos(oId, PosOffset) }; // 方法名
+                if (oClassPrivateProperty[oItem.Name.value]) {
+                    // 私有类变量重名
+                    throw new Err(`duplicate class private property name (#${oItem.Name.value})`, { ...input, ...oItem.Name });
+                }
+                if (/^#private$/.test(oItem.Name.value)) {
+                    throw new Err(`unsupport defined buildin class private property name (#${oItem.Name.value})`, {
+                        ...input,
+                        start: oItem.Name.start - 1,
+                        end: oItem.Name.end
+                    });
+                }
+                oClassPrivateProperty[oItem.Name.value] = oItem.Name;
+            },
+
+            // -----------------------------------
+            // 遍历检查私有类方法
+            ClassPrivateMethod(path) {
+                let oItem = {};
+                let oId = path.node.key.id;
+                oItem.Name = { value: "#" + oId.name, ...getPos(oId, PosOffset) }; // 方法名
+                oItem.Name.start = oItem.Name.start - 1;
+
+                if (oClassPrivateMethod[oItem.Name.value]) {
+                    // 私有类方法重名
+                    throw new Err(`duplicate class private method name (${oItem.Name.value})`, { ...input, ...oItem.Name });
+                }
+                oClassPrivateMethod[oItem.Name.value] = oItem.Name;
+            },
+
+            // -----------------------------------
+            // 遍历检查类方法
+            ClassMethod(path) {
+                let oMethod = {};
+                let oKey = path.node.key;
+                oMethod.Name = { value: oKey.name, ...getPos(oKey, PosOffset) }; // 方法名
+
+                if (oClassMethod[oMethod.Name.value]) {
+                    // 方法名重名
+                    throw new Err(`duplicate class method name (${oMethod.Name.value})`, { ...input, ...oMethod.Name });
+                }
+                if (oSetBuildIn.has(oMethod.Name.value)) {
+                    // 不能重写内置方法
+                    throw new Err(`unsupport overwrite class method (${oMethod.Name.value})`, { ...input, ...oMethod.Name });
+                }
+                oClassMethod[oMethod.Name.value] = oMethod;
+                bindfns.push(oMethod.Name.value);
+                parseDecorators(path, oMethod, input, PosOffset); // 解析装饰器
             }
         });
 
-        let names = [...map.keys()];
-        let rs = { src: "", names: names };
-        if (names.length) {
-            //    names.sort();
+        // ---------------------------------------------------------
+        // 生成删除装饰器后的代码
+        let code = babel.transformFromAstSync(ast).code;
+        code = code.substring(10, code.length - 2);
 
-            let ary = [];
-            ary.push("this.$actions = {");
-            names.forEach(k => {
-                ary.push('"' + k + '": ' + map.get(k) + ",");
-            });
-            ary.push("}");
+        return { Method: oClassMethod, bindfns, methods: code };
+    });
 
-            rs.src = ary.join("\n");
-        }
+    function parseDecorators(path, oMethod, input, PosOffset) {
+        let decorators = path.node.decorators;
+        if (!decorators) return;
 
-        return rs;
-    }
+        oMethod.decorators = []; // 装饰器对象数组
 
-    function generateObjActions(code) {
-        let src = `this.$actions     = ${code}`;
-        let ast;
+        decorators.forEach(decorator => {
+            let oDecorator = {};
+            oMethod.decorators.push(oDecorator);
 
-        try {
-            ast = acorn.parse(src, { ecmaVersion: 10, sourceType: "module", locations: true });
-        } catch (e) {
-            // 通常是代码有语法错误
-            throw new Err("syntax error in [actions]", e);
-            // TODO
-            //    throw new Err('syntax error in [actions] - ' + e.message, doc.file, {text, start});
-        }
+            if (decorator.expression.type === "CallExpression") {
+                // 函数调用式装饰器
+                let oCallee = decorator.expression.callee;
+                oDecorator.Name = { value: oCallee.name, ...getPos(oCallee, PosOffset) }; // 装饰器名
 
-        let names = [];
-        let properties = ast.body[0].expression.right.properties;
-        properties &&
-            properties.forEach(node => {
-                if (node.value.type == "ArrowFunctionExpression") {
-                    names.push(node.key.name);
-                } else if (node.value.type == "FunctionExpression") {
-                    // 为了让this安全的指向当前组件对象，把普通函数转换为箭头函数，同时也可避免写那无聊的bind(this)
-                    let nd = node.value;
-                    nd.type = "ArrowFunctionExpression";
-                    names.push(node.key.name);
+                if (!/^action$/i.test(oDecorator.Name.value)) {
+                    throw new Err(`unsupport decorator (@${oDecorator.Name.value})`, {
+                        ...input,
+                        start: oDecorator.Name.start - 1,
+                        end: oDecorator.Name.end
+                    });
                 }
-            });
 
-        let rs = { src: "", names: names };
-        if (names.length) {
-            names.sort();
-            rs.src = astring.generate(ast);
+                let i = 0;
+                decorator.expression.arguments.forEach(oArg => {
+                    if (i == 0) {
+                        if (oArg.type === "StringLiteral") {
+                            oDecorator.Event = { value: oArg.value, ...getPos(oArg, PosOffset) }; // 事件名(正常的字符串字面量写法)
+                            if (!bus.at("是否HTML标准事件名", oDecorator.Event.value, true)) {
+                                // 无效的事件名，事件名支持简写省略on前缀
+                                throw new Err(`invalid event name (${oDecorator.Event.value}), etc. onclick/click`, {
+                                    ...input,
+                                    ...oDecorator.Event
+                                });
+                            }
+                        } else {
+                            // TODO 第一参数支持对象形式写法
+                            throw new Err(`support literal string only, etc. @action('click', 'button')`, { ...input, ...getPos(oArg, PosOffset) });
+                        }
+                    } else if (i == 1) {
+                        if (oArg.type === "StringLiteral") {
+                            oDecorator.Selector = { value: oArg.value, ...getPos(oArg, PosOffset) }; // 选择器(正常的字符串字面量写法)
+                            if (!oDecorator.Selector.value.trim()) {
+                                // 无效的事件名，事件名支持简写省略on前缀
+                                throw new Err(`invalid selector (empty)`, { ...input, ...oDecorator.Selector });
+                            }
+                        } else {
+                            // TODO 第一参数支持对象形式写法
+                            throw new Err(`support literal string only, etc. @action('click', 'button')`, { ...input, ...getPos(oArg, PosOffset) });
+                        }
+                    } else {
+                        // TODO 参数
+                    }
+
+                    oDecorator.Event.value = oDecorator.Event.value.toLowerCase(); // 统一转小写
+                    !/^on/.test(oDecorator.Event.value) && (oDecorator.Event.value = "on" + oDecorator.Event.value); // 左边补足‘on’
+
+                    i++;
+                });
+
+                if (!oDecorator.Selector) {
+                    // 装饰器参数不对
+                    throw new Err(`invalid decorator arguments, etc. @action('click', 'button')`, { ...input, ...getPos(decorator, PosOffset) });
+                }
+            } else {
+                // 单纯名称的装饰器
+                let msg;
+                if (!/^action$/i.test(decorator.expression.name)) {
+                    // 装饰器名检查
+                    msg = `unsupport decorator "@${decorator.expression.name}"`;
+                } else {
+                    // 参数遗漏
+                    msg = `missing decorator arguments, etc. @action('click', 'button')`;
+                }
+                throw new Err(msg, { ...input, ...getPos(decorator, PosOffset) });
+            }
+        });
+
+        // 删除装饰器
+        delete path.node.decorators;
+    }
+
+    function getPos(oPos, offset) {
+        let start = oPos.start + offset;
+        let end = oPos.end + offset;
+        return { start, end };
+    }
+
+    // line: 0~n
+    // column: 0~n
+    function getLinePosStart(js, line, column, offset) {
+        let lines = js.split("\n");
+        let start = offset;
+        for (let i = 0; i < line; i++) {
+            start += lines[i].length + 1;
         }
 
-        return rs;
+        let end = start + lines[line].length;
+        start += column;
+        return { start, end };
     }
-    // ------- d45p-normalize-component-actions end
+
+    // ------- d40m-parse-and-remove-[methods]-@action end
 })();
 
 /* ------- d55p-normalize-component-methods ------- */
@@ -2999,9 +3133,6 @@ console.time("load");
     // ------- d55p-normalize-component-methods start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
-    const acorn = require("acorn");
-    const astring = require("astring");
 
     bus.on(
         "编译插件",
@@ -3012,11 +3143,10 @@ console.time("load");
                 root.walk("RposeBlock", (node, object) => {
                     if (!/^methods$/.test(object.name.value)) return;
 
-                    let methods = object.text ? object.text.value.trim() : "";
+                    let methods = object.text ? object.text.value : "";
                     if (methods) {
-                        let rs = generateMethods(methods);
-                        script.methods = rs.src;
-                        //                script.$methodkeys = rs.names;
+                        let rs = bus.at("解析检查METHODS块并删除装饰器", methods, context.input, object.text.pos.start); // 传入[methods]块中的代码，以及源文件、偏移位置
+                        Object.assign(script, rs);
                     }
                     node.remove();
                     return false;
@@ -3024,50 +3154,6 @@ console.time("load");
             });
         })()
     );
-
-    // 把对象形式汇总的方法转换成组件对象的一个个方法，同时都直接改成箭头函数（即使function也不确认this，让this指向组件对象）
-    function generateMethods(methods) {
-        let env = bus.at("编译环境");
-        let oCache = bus.at("缓存");
-        let cacheKey = JSON.stringify(["generateMethods", methods]);
-        if (!env.nocache) {
-            let cacheValue = oCache.get(cacheKey);
-            if (cacheValue) return cacheValue;
-        }
-
-        let code = `oFn               = ${methods}`;
-        let ast;
-        try {
-            ast = acorn.parse(code, { ecmaVersion: 10, sourceType: "module", locations: true });
-        } catch (e) {
-            // 通常是代码有语法错误
-            throw new Err("syntax error in [methods]", e);
-            // TODO
-        }
-
-        let map = new Map();
-
-        let properties = ast.body[0].expression.right.properties;
-        properties &&
-            properties.forEach(node => {
-                if (node.value.type == "ArrowFunctionExpression") {
-                    map.set(node.key.name, "this." + node.key.name + "=" + astring.generate(node.value));
-                } else if (node.value.type == "FunctionExpression") {
-                    // 为了让this安全的指向当前组件对象，把普通函数转换为箭头函数，同时也可避免写那无聊的bind(this)
-                    let arrNode = node.value;
-                    arrNode.type = "ArrowFunctionExpression";
-                    map.set(node.key.name, "this." + node.key.name + "=" + astring.generate(arrNode));
-                }
-            });
-
-        let names = [...map.keys()];
-        names.sort();
-
-        let rs = { src: "", names: names };
-        names.forEach(k => (rs.src += map.get(k) + "\n"));
-
-        return oCache.set(cacheKey, rs);
-    }
 
     // ------- d55p-normalize-component-methods end
 })();
@@ -4173,6 +4259,93 @@ console.time("load");
     );
 
     // ------- e45p-ast-normolize-tag-of-open-close end
+})();
+
+/* ------- e55p-ast-auto-bind-event-by-decorator-@action ------- */
+(() => {
+    // ------- e55p-ast-auto-bind-event-by-decorator-@action start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+
+    bus.on(
+        "编译插件",
+        (function() {
+            // 根据装饰器@action设定，自动绑定事件（添加事件属性）
+            return postobject.plugin("e55p-ast-auto-bind-event-by-decorator-@action", function(root, context) {
+                let fnCreateNode = data => this.createNode(data); // 创建AST节点
+
+                let oMethods = context.script.Method; // 方法对象（方法名: {Name, decorators[{Name,Event,Selector}]}）
+                let oMethod, decorators;
+                for (let method in oMethods) {
+                    oMethod = oMethods[method];
+                    decorators = oMethod.decorators;
+                    if (!decorators || !decorators.length) continue;
+
+                    for (let i = 0, oDecorator, tagNodes; (oDecorator = decorators[i++]); ) {
+                        tagNodes = queryNodes(root, oDecorator.Selector.value);
+                        if (!tagNodes.length) {
+                            // 按选择器找不到标签
+                            throw new Err(`tag not found by the selector (${oDecorator.Selector.value})`, {
+                                ...context.input,
+                                ...oDecorator.Selector
+                            });
+                        }
+                        bindEventHandle(oMethod, oDecorator, tagNodes, fnCreateNode);
+                    }
+                }
+            });
+        })()
+    );
+
+    function bindEventHandle(oMethod, oDecorator, tagNodes = [], fnCreateNode) {
+        tagNodes.forEach(tagNode => {
+            // 查找/创建事件组节点
+            let eventsNode = getEventsNode(tagNode);
+            if (!eventsNode) {
+                eventsNode = fnCreateNode({ type: "Events" });
+                tagNode.addChild(eventsNode);
+            }
+
+            // 创建事件节点
+            let type = "Event";
+            let name = oDecorator.Event.value; // 事件名，如： onclick
+            let Name = { pos: { start: oDecorator.Event.start, end: oDecorator.Event.end } };
+            let value = "this." + oMethod.Name.value; // 方法名，如： fnClick
+            let Value = { pos: { start: oMethod.Name.start, end: oMethod.Name.end } };
+            let isExpression = false;
+            let pos = { start: oMethod.Name.start, end: oMethod.Name.end };
+            let eventNode = fnCreateNode({ type, name, Name, value, Value, isExpression, pos });
+
+            // 添加事件节点
+            eventsNode.addChild(eventNode);
+        });
+    }
+
+    function getEventsNode(tagNode) {
+        let nodes = tagNode.nodes || [];
+        for (let i = 0, node; (node = nodes[i++]); ) {
+            if (node.type === "Events") {
+                return node;
+            }
+        }
+    }
+
+    // -----------------------------------------------
+    // TODO 在组件的[view]中按标签名查找匹配的标签
+    // 同样式的标签名选择器语法，大于号指子标签，空格指子孙标签
+    function queryNodes(root, selector) {
+        let nodes = [];
+        root.walk("Tag", (node, object) => {
+            if (object.value === selector) {
+                nodes.push(node);
+            }
+        });
+
+        return nodes;
+    }
+
+    // ------- e55p-ast-auto-bind-event-by-decorator-@action end
 })();
 
 /* ------- f10m-highlight-file-parser-btf ------- */
@@ -5636,9 +5809,6 @@ console.time("load");
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
-    // HTML标准所定义的全部标签事件
-    const REG_EVENTS = /^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;
-
     bus.on(
         "编译插件",
         (function() {
@@ -5663,13 +5833,19 @@ console.time("load");
                     // 查找目标属性节点
                     let ary = [];
                     attrsNode.nodes.forEach(nd => {
-                        REG_EVENTS.test(nd.object.name) && ary.push(nd); // 找到
+                        bus.at("是否HTML标准事件名", nd.object.name) && ary.push(nd); // 找到
                     });
 
                     if (!ary.length) return; // 没有找到相关节点，跳过
 
+                    // 查找/创建事件组节点
+                    let groupNode = getEventsNode(node);
+                    if (!groupNode) {
+                        groupNode = this.createNode({ type: "Events" });
+                        node.addChild(groupNode);
+                    }
+
                     // 创建节点保存
-                    let groupNode = this.createNode({ type: "Events" });
                     ary.forEach(nd => {
                         let cNode = nd.clone();
                         cNode.type = "Event";
@@ -5682,6 +5858,15 @@ console.time("load");
             });
         })()
     );
+
+    function getEventsNode(tagNode) {
+        let nodes = tagNode.nodes || [];
+        for (let i = 0, node; (node = nodes[i++]); ) {
+            if (node.type === "Events") {
+                return node;
+            }
+        }
+    }
 
     // ------- g25p-astedit-group-attribtue-events end
 })();
@@ -7761,62 +7946,104 @@ console.time("load");
 
     function getSrcTemplate() {
         return `
-
-// ------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
 // 组件 <%= $data['COMPONENT_NAME'] %>
-// 注:应通过rpose.newComponentProxy方法创建组件代理对象后使用，而不是直接调用方法或用new创建
-// ------------------------------------------------------------------------------------------------------
-<% if ( $data['singleton'] ){ %>
-    // 这是个单例组件
-    <%= $data['COMPONENT_NAME'] %>.Singleton = true;
-<% } %>
+// 注:应通过rpose.newComponentProxy方法创建组件代理对象后使用，而不是直接创建
+// --------------------------------------------------------------------------------------
+class <%= $data['COMPONENT_NAME'] %> {
 
-// 属性接口定义
-<%= $data['COMPONENT_NAME'] %>.prototype.$OPTION_KEYS = <%= JSON.stringify($data['optionkeys']) %>;  // 可通过标签配置的属性，未定义则不支持外部配置
-<%= $data['COMPONENT_NAME'] %>.prototype.$STATE_KEYS = <%= JSON.stringify($data['statekeys']) %>;    // 可更新的state属性，未定义则不支持外部更新state
+    // 简化的使用一个私有属性存放内部数据
+    #private = {
+        <% if ( $data['optionkeys'] ) {%>
+        // 可通过标签配置的属性，未定义则不支持外部配置
+        optionkeys: <%= JSON.stringify($data['optionkeys']) %>,
+        <% }  if ( $data['statekeys'] ) { %>
+        // 可更新的state属性，未定义则不支持外部更新state
+        statekeys: <%= JSON.stringify($data['statekeys']) %>,
+        <% } %>
 
-// 组件函数
-function <%= $data['COMPONENT_NAME'] %>(options={}) {
+        // 组件默认选项值
+        options: <%= $data['options'] %>,
+        // 组件默认数据状态值
+        state: <%= $data['state'] %>,
+    };
 
-    <% if ( $data['optionkeys'] != null ){ %>
-    // 组件默认选项值
-    this.$options = <%= $data['options'] %>;
-    rpose.extend(this.$options, options, this.$OPTION_KEYS);    // 按属性接口克隆配置选项
-    <% }else{ %>
-    // 组件默认选项值
-    this.$options = <%= $data['options'] %>;
+    <% if ( $data['optionkeys'] || $data['statekeys'] || $data['bindfns'] ){ %>
+    // 构造方法
+	constructor(options={}) {
+        <% if ( $data['optionkeys'] ){ %>
+        rpose.extend(this.#private.options, options, this.#private.optionkeys);     // 保存属性（按克隆方式复制以避免外部修改影响）
+        <% } %>
+        <% if ( $data['statekeys'] ){ %>
+        rpose.extend(this.#private.state, options, this.#private.statekeys);        // 保存数据（按克隆方式复制以避免外部修改影响）
+        <% } %>
+        <% 
+            let methods = $data['bindfns'] || [];                                   // 类中定义的待bind(this)的方法，属性方法已转换为箭头函数，不必处理
+            !methods.includes('render') && methods.push('render');                  // 默认自带 render
+            methods.sort();
+            for ( let i=0,method; method=methods[i++]; ) {                          // 遍历方法做bind(this)
+        %>
+            this.<%=method%> = this.<%=method%>.bind(this);
+        <% } %>
+    }
     <% } %>
 
-    <% if ( $data['statekeys'] != null ){ %>
-    // 组件默认数据状态值
-    this.$state = <%= $data['state'] %>;
-    rpose.extend(this.$state, options, this.$STATE_KEYS);       // 按属性接口克隆数据状态
-    <% }else{ %>
-    // 组件默认数据状态值
-    this.$state = <%= $data['state'] %>;
-    <% } %>
+    // 取得组件对象的数据状态副本
+    getState(){
+        return rpose.extend({}, this.#private.state, this.#private.statekeys);      // 取得克隆的数据状态副本以避免外部修改影响
+    }
+    setState(state){
+        rpose.extend(this.#private.state, state, this.#private.statekeys);          // 先保存数据（按克隆方式复制以避免外部修改影响）
+        this.render(state);                                                         // 再渲染视图
+    }
 
-    <% if ( $data['actions'] ){ %>
-    // 事件处理器
-    <%= $data['actions'] %>
+    
+    <% if ( !($data['Method'] || {})['render'] ){ %>
+    // 默认渲染方法
+    render (state){
+        let el, $$el, vnode, $this = this, $private = this.#private;
+
+        // 首次渲染
+        if ( !$private.rendered ){
+            vnode = $this.$vnode($private.state, $private.options);                 // 生成节点信息数据用于组件渲染
+            el = rpose.createDom(vnode, $this);
+            if ( el && el.nodeType == 1 ) {
+                $$(el).addClass($this.$COMPONENT_ID);
+            } 
+            $private.rendered = true;
+            return el;
+        }
+
+        // 再次渲染
+        if ( typeof $this.$render === 'function' ){
+            return $this.$render($private.state); 	                                // 有定义方法‘$render’时调用其渲染视图（用于替代默认渲染逻辑提高性能）			                    
+        }
+
+        $$el = $$('.' + $this.$COMPONENT_ID);
+        if ( !$$el.length ){
+            warn('dom node missing');					                            // 组件根节点丢失无法再次渲染
+            return;
+        }
+
+        if ( !state ) {
+            return;                                                                 // 没有新状态，不必处理
+        }
+
+        vnode = $this.$vnode($private.state, $private.options);                     // 生成新的虚拟节点数据
+        rpose.diffRender($this, vnode);					                            // 差异渲染
+
+        return $$el[0];
+    }
     <% } %>
 
     <% if ( $data['methods'] ){ %>
     // 自定义方法
-    <%= $data['methods'] %>;
+    <%= $data['methods'] %>
     <% } %>
 
-    <% if ( $data['updater'] ){ %>
-    // 组件更新函数
-    this.$updater = <%= $data['updater'] %>;
-    <% } %>
+    // 虚拟节点数据
+    <%= $data['vnodeTemplate'] %>
 }
-
-/**
- * 节点模板函数
- */
-<%= $data['COMPONENT_NAME'] %>.prototype.nodeTemplate = <%= $data['vnodeTemplate'] %>
-
 `;
     }
 
@@ -7981,8 +8208,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- p20m-component-astgen-node-attributes start
     const bus = require("@gotoeasy/bus");
 
-    const REG_EVENTS = /^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;
-
     bus.on(
         "astgen-node-attributes",
         (function() {
@@ -8011,18 +8236,13 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     if (node.object.isExpression) {
                         value = bus.at("表达式代码转换", node.object.value);
                     } else if (typeof node.object.value === "string") {
-                        if (
-                            !tagNode.object.standard &&
-                            REG_EVENTS.test(node.object.name) &&
-                            !node.object.isExpression &&
-                            context.script.$actionkeys
-                        ) {
-                            // 这是个组件上的事件名属性（非组件的事件名属性都转成Event了），如果不是表达式，而且在actions中有定义，顺便就办了，免得一定要写成表达式
-                            let val = node.object.value.trim();
-                            let fnNm = val.startsWith("$actions.") ? val.substring(9) : val;
-                            if (context.script.$actionkeys.includes(fnNm)) {
+                        let eventName = node.object.name.toLowerCase();
+                        if (!tagNode.object.standard && bus.at("是否HTML标准事件名", eventName) && !node.object.isExpression) {
+                            // 组件上的标准事件属性，支持硬编码直接指定方法名 （如果在methods中有定义，顺便就办了，免得一定要写成表达式）
+                            let fnNm = node.object.value.trim();
+                            if (context.script.Method[fnNm]) {
                                 // 能找到定义的方法则当方法处理
-                                value = `$actions['${fnNm}']`; // "fnClick" => $actions['fnClick']
+                                value = `this.${fnNm}`; // fnClick => this.fnClick
                             } else {
                                 // 找不到时，按普通属性处理
                                 value = '"' + lineString(node.object.value) + '"';
@@ -8100,15 +8320,17 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     if (node.object.isExpression) {
                         value = bus.at("表达式代码转换", value); // { abcd } => (abcd)
                     } else {
-                        value = value.trim();
-                        let fnNm = value.startsWith("$actions.") ? value.substring(9) : value;
                         // 静态定义时顺便检查
-                        if (context.script.$actionkeys && context.script.$actionkeys.includes(fnNm)) {
-                            value = "$actions." + value; // "fnClick" => $actions.fnClick
-                            //value = `$actions['${value}']`;                    // "fnClick" => $actions['fnClick']
+                        value = value.trim();
+                        let match = value.match(/^this\s*\.(.+)$/) || value.match(/^this\s*\[\s*['"](.+)['"]\s*]/);
+                        let fnNm = match ? match[1] : value; // this.fnClick => fnClick, this['fnClick'] => fnClick, fnClick => fnClick
+                        if (context.script.Method[fnNm]) {
+                            value = "this." + fnNm; // fnClick => this.fnClick
                         } else {
                             // 指定方法找不到
-                            throw new Err("action not found: " + fnNm, { ...context.input, ...node.object.pos });
+                            let names = Object.keys(context.script.Method);
+                            let msg = `event handle not found (${fnNm})${names.length ? "\n  etc. " + names.join("/") : ""}`;
+                            throw new Err(msg, { ...context.input, ...node.object.Value.pos });
                         }
                     }
 
@@ -8474,7 +8696,6 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const File = require("@gotoeasy/file");
-    const csjs = require("@gotoeasy/csjs");
 
     class JsWriter {
         constructor() {
@@ -8498,15 +8719,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         }
 
         toString() {
-            let js = this.ary.join("\n");
-            try {
-                return csjs.formatJs(js);
-                // return csjs.formatJs( csjs.miniJs(js) );
-            } catch (e) {
-                let env = bus.at("编译环境");
-                File.write(env.path.build + "/error/format-error.js", js);
-                throw e;
-            }
+            return this.ary.join("\n");
         }
     }
 
@@ -8543,7 +8756,8 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                         return writer.write("// 没有节点，无可生成");
                     }
 
-                    writer.write("function nodeTemplate($state, $options, $actions, $this) {");
+                    // writer.write( 'function nodeTemplate($state, $options, $actions, $this) {' );
+                    writer.write("$vnode($state, $options) {");
                     if (hasCodeBolck(node.nodes)) {
                         writer.write(`${topNodesWithScriptJsify(node.nodes, context)}`); // 含代码块子节点
                     } else {
@@ -8628,11 +8842,7 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     // ------- s35p-component-script-selector-rename start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
-    const acorn = require("acorn");
-    const walk = require("acorn-walk");
-    const astring = require("astring");
-    const tokenizer = require("css-selector-tokenizer");
+    //const Err = require('@gotoeasy/err');
 
     bus.on(
         "编译插件",
@@ -8660,11 +8870,9 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
 
                 let classnames = (script.classnames = script.classnames || []); // 脚本代码中用到的样式类，存起来后续继续处理
 
-                if (script.actions && reg.test(script.actions)) {
-                    script.actions = transformJsSelector(script.actions, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                }
                 if (script.methods && reg.test(script.methods)) {
-                    script.methods = transformJsSelector(script.methods, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                    // TODO 用babel编辑修改
+                    //script.methods = transformJsSelector(script.methods, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
                 }
 
                 // 脚本中用到的类，检查样式库是否存在，检查类名是否存在
@@ -8694,121 +8902,122 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    function transformJsSelector(code, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs) {
-        let ast, changed;
-        try {
-            ast = acorn.parse(code, { ecmaVersion: 10, sourceType: "module", locations: false }); // TODO 自动紧跟新标准版本
-        } catch (e) {
-            throw new Err("syntax error", e); // 通常是代码有语法错误
-        }
+    /*
+function transformJsSelector(code, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
 
-        walk.simple(ast, {
-            CallExpression(node) {
-                // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
+    let ast, changed;
+    try{
+        ast = acorn.parse(code, {ecmaVersion: 10, sourceType: 'module', locations: false} );        // TODO 自动紧跟新标准版本
+    }catch(e){
+        throw new Err('syntax error', e);  // 通常是代码有语法错误
+    }
 
-                // 第一参数不是字符串时，无可修改，忽略
-                if (!node.arguments || !node.arguments[0] || node.arguments[0].type !== "Literal") {
+    walk.simple(ast, {
+        CallExpression(node) {
+
+            // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
+
+            // 第一参数不是字符串时，无可修改，忽略
+            if ( !node.arguments || !node.arguments[0] || node.arguments[0].type !== 'Literal' ) {
+                return;
+            }
+
+            let fnName, classname, pkgcls;
+            if ( node.callee.type === 'Identifier' ) {
+                // 直接函数调用
+                fnName = node.callee.name;
+                if ( fnName === '$$' || fnName === '$' ) {
+                    node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);                              // $$('div > .foo'), $('div > .bar')
+                }else{
                     return;
                 }
 
-                let fnName, classname, pkgcls;
-                if (node.callee.type === "Identifier") {
-                    // 直接函数调用
-                    fnName = node.callee.name;
-                    if (fnName === "$$" || fnName === "$") {
-                        node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs); // $$('div > .foo'), $('div > .bar')
-                    } else {
-                        return;
-                    }
-                } else if (node.callee.type === "MemberExpression") {
-                    // 对象成员函数调用
-                    fnName = node.callee.property.name;
-                    if (fnName === "getElementsByClassName" || fnName === "toggleClass") {
-                        // document.getElementsByClassName('foo'), $$el.toggleClass('foo')
+            }else if ( node.callee.type === 'MemberExpression' ) {
+                // 对象成员函数调用
+                fnName = node.callee.property.name;
+                if ( fnName === 'getElementsByClassName' || fnName === 'toggleClass' ) {                                        // document.getElementsByClassName('foo'), $$el.toggleClass('foo')
+                    classname = node.arguments[0].value;
+                    pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                    node.arguments[0].value = bus.at('哈希样式类名', srcFile, pkgcls);
+                    classnames.push(classname);                                                                                 // 脚本中用到的类，存起来查样式库使用
+                }else if (fnName === 'querySelector' || fnName === 'querySelectorAll'){                                         // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
+                    node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                }else if (fnName === 'addClass' || fnName === 'removeClass'){                                                   // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
+                    let rs = [], ary = node.arguments[0].value.trim().split(/\s+/);
+                    ary.forEach( cls => {
+                        pkgcls = getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                        rs.push( bus.at('哈希样式类名', srcFile, pkgcls ));
+                        classnames.push(cls);                                                                                   // 脚本中用到的类，存起来查样式库使用
+                    });
+                    node.arguments[0].value = rs.join(' ');
+                }else if (fnName === 'add' || fnName === 'remove'){                                                             // el.classList.add('foo'), el.classList.remove('bar')
+                    if ( node.callee.object.type === 'MemberExpression' && node.callee.object.property.name === 'classList' ) {
                         classname = node.arguments[0].value;
                         pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                        node.arguments[0].value = bus.at("哈希样式类名", srcFile, pkgcls);
-                        classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                    } else if (fnName === "querySelector" || fnName === "querySelectorAll") {
-                        // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
-                        node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                    } else if (fnName === "addClass" || fnName === "removeClass") {
-                        // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
-                        let rs = [],
-                            ary = node.arguments[0].value.trim().split(/\s+/);
-                        ary.forEach(cls => {
-                            pkgcls = getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                            rs.push(bus.at("哈希样式类名", srcFile, pkgcls));
-                            classnames.push(cls); // 脚本中用到的类，存起来查样式库使用
-                        });
-                        node.arguments[0].value = rs.join(" ");
-                    } else if (fnName === "add" || fnName === "remove") {
-                        // el.classList.add('foo'), el.classList.remove('bar')
-                        if (node.callee.object.type === "MemberExpression" && node.callee.object.property.name === "classList") {
-                            classname = node.arguments[0].value;
-                            pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                            node.arguments[0].value = bus.at("哈希样式类名", srcFile, pkgcls);
-                            classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                        } else {
-                            return;
-                        }
-                    } else {
+                        node.arguments[0].value = bus.at('哈希样式类名', srcFile, pkgcls);
+                        classnames.push(classname);                                                                             // 脚本中用到的类，存起来查样式库使用
+                    }else{
                         return;
                     }
-                } else {
+                }else{
                     return;
                 }
 
-                node.arguments[0].raw = `'${node.arguments[0].value}'`; // 输出字符串
-                changed = true;
+            }else{
+                return;
             }
-        });
 
-        return changed ? astring.generate(ast) : code;
-    }
-
-    function transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs) {
-        selector = selector.replace(/@/g, "鬱");
-        let ast = tokenizer.parse(selector);
-        let classname,
-            pkgcls,
-            nodes = ast.nodes || [];
-        nodes.forEach(node => {
-            if (node.type === "selector") {
-                (node.nodes || []).forEach(nd => {
-                    if (nd.type === "class") {
-                        classname = nd.name;
-                        pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                        nd.name = bus.at("哈希样式类名", srcFile, pkgcls);
-                        classnames.push(classname); // 脚本中用到的类，存起来查样式库使用
-                    }
-                });
-            }
-        });
-
-        let rs = tokenizer.stringify(ast);
-        return rs.replace(/鬱/g, "@");
-    }
-
-    // 替换js代码中的样式库别名为实际库名，检查样式库是否存在
-    function getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs) {
-        let ary = cls.trim().split(/鬱|@/);
-        if (ary.length > 1) {
-            let asname = ary[1];
-            let csslib = oAtCsslibs[asname] || oCsslibs[asname] || oPrjCsslibs[asname]; // 找出别名对应的实际库名
-            if (!csslib) {
-                throw new Error("csslib not found: " + ary[0] + "@" + ary[1] + "\nfile: " + srcFile); // js代码中类选择器指定的csslib未定义导致找不到 TODO 友好定位提示
-            }
-            return ary[0] + "@" + csslib.pkg; // 最终按实际别名对应的实际库名进行哈希
-        } else {
-            let nonameCsslib = oAtCsslibs["*"] || oCsslibs["*"] || oPrjCsslibs["*"];
-            if (nonameCsslib && nonameCsslib.has("." + ary[0])) {
-                return ary[0] + "@" + nonameCsslib.pkg; // 无名库，也按实际别名对应的实际库名进行哈希
-            }
+            node.arguments[0].raw = `'${node.arguments[0].value}'`;                                                             // 输出字符串
+            changed = true;
         }
 
-        return ary[0];
+    });
+
+    return changed ? astring.generate(ast) : code;
+}
+
+function transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
+
+    selector = selector.replace(/@/g, '鬱');
+    let ast = tokenizer.parse(selector);
+    let classname, pkgcls, nodes = ast.nodes || [];
+    nodes.forEach(node => {
+        if ( node.type === 'selector' ) {
+            (node.nodes || []).forEach(nd => {
+                if ( nd.type === 'class' ) {
+                    classname = nd.name;
+                    pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                    nd.name = bus.at('哈希样式类名', srcFile, pkgcls );
+                    classnames.push(classname);                             // 脚本中用到的类，存起来查样式库使用
+                }
+            });
+        }
+    });
+
+    let rs = tokenizer.stringify(ast);
+    return rs.replace(/鬱/g, '@');
+}
+
+// 替换js代码中的样式库别名为实际库名，检查样式库是否存在
+function getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs){
+    let ary = cls.trim().split(/鬱|@/);
+    if ( ary.length > 1 ){
+        let asname = ary[1];
+        let csslib = oAtCsslibs[asname] || oCsslibs[asname] || oPrjCsslibs[asname];                             // 找出别名对应的实际库名
+        if ( !csslib ) {
+            throw new Error('csslib not found: ' + ary[0] + '@' + ary[1] + '\nfile: ' + srcFile);               // js代码中类选择器指定的csslib未定义导致找不到 TODO 友好定位提示
+        }
+        return ary[0] + '@' + csslib.pkg;                                                                       // 最终按实际别名对应的实际库名进行哈希
+    }else{
+        let nonameCsslib = oAtCsslibs['*'] || oCsslibs['*'] || oPrjCsslibs['*'];
+        if ( nonameCsslib && nonameCsslib.has('.' + ary[0]) ) {
+            return ary[0] + '@' + nonameCsslib.pkg;                                                             // 无名库，也按实际别名对应的实际库名进行哈希
+        }
     }
+
+    return ary[0];
+}
+*/
 
     // ------- s35p-component-script-selector-rename end
 })();
@@ -8820,12 +9029,10 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     const csjs = require("@gotoeasy/csjs");
     const File = require("@gotoeasy/file");
     const postobject = require("@gotoeasy/postobject");
-    const Err = require("@gotoeasy/err");
-    const acornGlobals = require("acorn-globals");
+    //const Err = require('@gotoeasy/err');
+    //const acornGlobals = require('acorn-globals');
 
-    const JS_VARS = "$$,require,window,sessionStorage,localStorage,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document".split(
-        ","
-    );
+    //const JS_VARS = '$$,require,window,sessionStorage,localStorage,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
 
     bus.on(
         "编译插件",
@@ -8847,14 +9054,15 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     $data.optionkeys = context.doc.api.optionkeys;
                     $data.statekeys = context.doc.api.statekeys;
                 }
-                $data.actions = script.actions;
+                //  $data.actions = script.actions;
                 $data.methods = script.methods;
-                $data.updater = script.updater;
+                $data.Method = script.Method;
+                script.bindfns && script.bindfns.length && ($data.bindfns = script.bindfns); // 有则设之
                 $data.vnodeTemplate = script.vnodeTemplate;
 
                 // 生成组件JS源码
                 result.componentJs = fnTmpl($data);
-                result.componentJs = checkAndInitVars(result.componentJs, context);
+                //  result.componentJs = checkAndInitVars(result.componentJs, context);
 
                 // 非release模式时输出源码便于确认
                 if (!env.release) {
@@ -8865,49 +9073,50 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
         })()
     );
 
-    // 检查是否有变量缩写，有则补足，用以支持{$state.abcd}简写为{abcd}
-    function checkAndInitVars(src, context) {
-        let optionkeys = context.doc.api.optionkeys || [];
-        let statekeys = context.doc.api.statekeys || [];
-        let scopes;
-        try {
-            scopes = acornGlobals(src);
-            if (!scopes.length) return src; // 正常，直接返回
-        } catch (e) {
-            throw Err.cat("source syntax error", "\n-----------------", src, "\n-----------------", "file=" + context.input.file, e); // 多数表达式中有语法错误导致
-        }
-
-        // 函数内部添加变量声明赋值后返回
-        let vars = [];
-        for (let i = 0, v; i < scopes.length; i++) {
-            v = scopes[i];
-
-            let inc$opts = optionkeys.includes(v.name);
-            let inc$state = statekeys.includes(v.name);
-            let incJsVars = JS_VARS.includes(v.name);
-
-            // TODO 优化提示定位
-            if (!inc$opts && !inc$state && !incJsVars) {
-                let msg = "template variable undefined: " + v.name;
-                msg += "\n  file: " + context.input.file;
-                throw new Err(msg); // 变量不在$state或$options的属性范围内
-            }
-            if (inc$opts && inc$state) {
-                let msg = "template variable uncertainty: " + v.name;
-                msg += "\n  file: " + context.input.file;
-                throw new Err(msg); // 变量同时存在于$state和$options，无法自动识别来源，需指定
-            }
-
-            if (inc$state) {
-                vars.push(`let ${v.name} = $state.${v.name};`);
-            } else if (inc$opts) {
-                vars.push(`let ${v.name} = $options.${v.name};`);
-            }
-        }
-
-        return src.replace(/(\n.+?prototype\.nodeTemplate\s*=\s*function\s+.+?\r?\n)/, "$1" + vars.join("\n"));
+    /*
+// 检查是否有变量缩写，有则补足，用以支持{$state.abcd}简写为{abcd}
+function checkAndInitVars(src, context){
+    let optionkeys = context.doc.api.optionkeys || [];
+    let statekeys = context.doc.api.statekeys || [];
+    let scopes;
+    try{
+        scopes = acornGlobals(src);
+        if ( !scopes.length ) return src; // 正常，直接返回
+    }catch(e){
+        throw Err.cat('source syntax error', '\n-----------------', src, '\n-----------------', 'file='+ context.input.file, e); // 多数表达式中有语法错误导致
     }
 
+    // 函数内部添加变量声明赋值后返回
+    let vars = [];
+    for ( let i=0, v; i<scopes.length; i++ ) {
+        v = scopes[i];
+
+        let inc$opts = optionkeys.includes(v.name);
+        let inc$state = statekeys.includes(v.name);
+        let incJsVars = JS_VARS.includes(v.name);
+
+        // TODO 优化提示定位
+        if ( !inc$opts && !inc$state && !incJsVars) {
+            let msg = 'template variable undefined: ' + v.name;
+            msg += '\n  file: ' + context.input.file;
+            throw new Err(msg);        // 变量不在$state或$options的属性范围内
+        }
+        if ( inc$opts && inc$state ) {
+            let msg = 'template variable uncertainty: ' + v.name;
+            msg += '\n  file: ' + context.input.file;
+            throw new Err(msg);        // 变量同时存在于$state和$options，无法自动识别来源，需指定
+        }
+
+        if ( inc$state ) {
+            vars.push(`let ${v.name} = $state.${v.name};`)
+        }else if ( inc$opts ) {
+            vars.push(`let ${v.name} = $options.${v.name};`)
+        }
+    }
+
+    return src.replace(/(\n.+?prototype\.nodeTemplate\s*=\s*function\s+.+?\r?\n)/, '$1' + vars.join('\n'));
+}
+*/
     // ------- s45p-component-gen-js end
 })();
 
@@ -9466,10 +9675,11 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                 ${srcRuntime}
 
                 (function($$){
-                    // 组件注册
-                    ${srcStmt}
 
                     ${srcComponents}
+
+                    // 组件注册
+                    ${srcStmt}
 
                     // 组件挂载
                     rpose.mount( rpose.newComponentProxy('${tagpkg}').render(), '${context.doc.mount}' );
@@ -9544,11 +9754,19 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
                     if (cacheValue) return (context.result.babelJs = cacheValue);
                 }
 
+                let opts = {
+                    plugins: [
+                        ["@babel/plugin-proposal-decorators", { legacy: true }], // 支持装饰器
+                        "@babel/plugin-proposal-class-properties", // 支持类变量（含私有变量）
+                        "@babel/plugin-proposal-private-methods" // 支持类私有方法
+                    ]
+                };
+
                 try {
-                    context.result.babelJs = csjs.babel(context.result.pageJs);
+                    context.result.babelJs = csjs.babel(context.result.pageJs, opts);
                     oCache.set(cacheKey, context.result.babelJs);
                 } catch (e) {
-                    File.write(env.path.build + "/error/babel.log", context.result.pageJs + "\n\n" + e.stack);
+                    File.write(env.path.build + "/error/babel-err-pagejs.js", context.result.pageJs + "\n\n" + e.stack);
                     throw e;
                 }
             });
@@ -10395,6 +10613,32 @@ function <%= $data['COMPONENT_NAME'] %>(options={}) {
     );
 
     // ------- z80m-is-expression end
+})();
+
+/* ------- z81m-is-html-standard-event-name ------- */
+(() => {
+    // ------- z81m-is-html-standard-event-name start
+    const bus = require("@gotoeasy/bus");
+
+    // HTML标准所定义的全部标签事件
+    const REG_EVENTS = /^(onclick|onchange|onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|oncanplaythrough|oncontextmenu|oncopy|oncut|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onfocusin|onfocusout|onformchange|onforminput|onhashchange|oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmousedown|onmouseenter|onmouseleave|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|onpaste|onpause|onplay|onplaying|onprogress|onratechange|onreadystatechange|onreset|onresize|onscroll|onsearch|onseeked|onseeking|onselect|onshow|onstalled|onsubmit|onsuspend|ontimeupdate|ontoggle|onunload|onunload|onvolumechange|onwaiting|onwheel)$/i;
+
+    bus.on(
+        "是否HTML标准事件名",
+        (function() {
+            return function(name, ignoreOn = false) {
+                if (REG_EVENTS.test(name)) {
+                    return true;
+                }
+                if (ignoreOn) {
+                    return REG_EVENTS.test("on" + name);
+                }
+                return false;
+            };
+        })()
+    );
+
+    // ------- z81m-is-html-standard-event-name end
 })();
 
 /* ------- z82m-auto-install-npm-package ------- */

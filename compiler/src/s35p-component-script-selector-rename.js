@@ -1,10 +1,6 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const Err = require('@gotoeasy/err');
-const acorn = require('acorn');
-const walk = require("acorn-walk")
-const astring = require('astring');
-const tokenizer = require('css-selector-tokenizer');
+//const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
@@ -32,11 +28,9 @@ bus.on('编译插件', function(){
 
         let classnames = script.classnames = script.classnames || [];                                   // 脚本代码中用到的样式类，存起来后续继续处理
 
-        if ( script.actions && reg.test(script.actions) ) {
-            script.actions = transformJsSelector(script.actions, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
-        }
         if ( script.methods && reg.test(script.methods) ) {
-            script.methods = transformJsSelector(script.methods, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
+            // TODO 用babel编辑修改
+            //script.methods = transformJsSelector(script.methods, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
         }
 
         // 脚本中用到的类，检查样式库是否存在，检查类名是否存在
@@ -69,7 +63,7 @@ bus.on('编译插件', function(){
 
 }());
 
-
+/*
 function transformJsSelector(code, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
 
     let ast, changed;
@@ -184,3 +178,4 @@ function getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs){
 
     return ary[0];
 }
+*/

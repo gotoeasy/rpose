@@ -1,8 +1,5 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
-const Err = require('@gotoeasy/err');
-const acorn = require('acorn');
-const astring = require('astring');
 
 bus.on('编译插件', function(){
     
@@ -14,11 +11,10 @@ bus.on('编译插件', function(){
 
             if ( !/^methods$/.test(object.name.value) ) return;
 
-            let methods = object.text ? object.text.value.trim() : '';
+            let methods = object.text ? object.text.value : '';
             if ( methods ) {
-                let rs = generateMethods(methods);
-                script.methods = rs.src;
-//                script.$methodkeys = rs.names;
+                let rs = bus.at('解析检查METHODS块并删除装饰器', methods, context.input, object.text.pos.start); // 传入[methods]块中的代码，以及源文件、偏移位置
+                Object.assign(script, rs);
             }
             node.remove();
             return false;
@@ -29,48 +25,3 @@ bus.on('编译插件', function(){
 
 }());
 
-
-
-// 把对象形式汇总的方法转换成组件对象的一个个方法，同时都直接改成箭头函数（即使function也不确认this，让this指向组件对象）
-function generateMethods(methods){
-
-    let env = bus.at('编译环境');
-    let oCache = bus.at('缓存');
-    let cacheKey = JSON.stringify(['generateMethods', methods]);
-    if ( !env.nocache ) {
-        let cacheValue = oCache.get(cacheKey);
-        if ( cacheValue ) return cacheValue;
-    }
-
-    let code = `oFn               = ${methods}`;
-    let ast;
-    try{
-        ast = acorn.parse(code, {ecmaVersion: 10, sourceType: 'module', locations: true} );
-    }catch(e){
-        // 通常是代码有语法错误
-        throw new Err('syntax error in [methods]', e);
-        // TODO
-    }
-
-    let map = new Map();
-
-    let properties = ast.body[0].expression.right.properties;
-    properties && properties.forEach(node => {
-        if ( node.value.type == 'ArrowFunctionExpression' ) {
-            map.set(node.key.name, 'this.' + node.key.name + '=' + astring.generate(node.value))
-        }else if ( node.value.type == 'FunctionExpression' ) {
-            // 为了让this安全的指向当前组件对象，把普通函数转换为箭头函数，同时也可避免写那无聊的bind(this)
-            let arrNode = node.value;
-            arrNode.type = 'ArrowFunctionExpression';
-            map.set(node.key.name, 'this.' + node.key.name + '=' + astring.generate(arrNode))
-        }
-    });
-
-    let names = [...map.keys()];
-    names.sort();
-
-    let rs = {src:'', names: names};
-    names.forEach(k => rs.src += (map.get(k)+'\n'));
-
-    return oCache.set(cacheKey, rs);
-}
