@@ -4335,13 +4335,29 @@ console.time("load");
     // TODO 在组件的[view]中按标签名查找匹配的标签
     // 同样式的标签名选择器语法，大于号指子标签，空格指子孙标签
     function queryNodes(root, selector) {
+        selector = selector.trim().toLowerCase();
+        if (!/[>\s]/.test(selector)) {
+            return queryTagsByName(root, selector);
+        }
+
+        //    let subsels = selector.trim().split(/\s*>\s*/);
+
+        /*
+    subsels.forEach(sel => {
+    
+    
+    });
+*/
+    }
+
+    // 在[view]中按标签名查找匹配的全部标签
+    function queryTagsByName(root, name) {
         let nodes = [];
         root.walk("Tag", (node, object) => {
-            if (object.value === selector) {
+            if (object.value === name) {
                 nodes.push(node);
             }
         });
-
         return nodes;
     }
 
