@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
                 throw new Err('unsupport @taglib on standard tag', { ...context.input, ...object.Name.pos });
             }
 
-            let tagName = tagNode.object.value.toLowerCase();                  // 标签名
+            let tagName = tagNode.object.value;                                 // 标签名
             if ( !tagName.startsWith('@') ) {
                 // 标签名如果没有使用@前缀，要检查是否已存在有组件文件，有则报错
                 let cpFile = bus.at('标签项目源文件', tagNode.object.value);    // 当前项目范围内查找标签对应的源文件

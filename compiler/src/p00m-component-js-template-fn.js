@@ -93,7 +93,7 @@ class <%= $data['COMPONENT_NAME'] %> {
 
     <% if ( $data['optionkeys'] || $data['statekeys'] || $data['bindfns'] ){ %>
     // 构造方法
-	constructor(options={}) {
+    constructor(options={}) {
         <% if ( $data['optionkeys'] ){ %>
         rpose.extend(this.#private.options, options, this.#private.optionkeys);     // 保存属性（按克隆方式复制以避免外部修改影响）
         <% } %>
@@ -128,7 +128,7 @@ class <%= $data['COMPONENT_NAME'] %> {
 
         // 首次渲染
         if ( !$private.rendered ){
-            vnode = $this.$vnode($private.state, $private.options);                 // 生成节点信息数据用于组件渲染
+            vnode = $this.vnodeTemplate($private.state, $private.options);          // 生成节点信息数据用于组件渲染
             el = rpose.createDom(vnode, $this);
             if ( el && el.nodeType == 1 ) {
                 $$(el).addClass($this.$COMPONENT_ID);
@@ -139,12 +139,12 @@ class <%= $data['COMPONENT_NAME'] %> {
 
         // 再次渲染
         if ( typeof $this.$render === 'function' ){
-            return $this.$render($private.state); 	                                // 有定义方法‘$render’时调用其渲染视图（用于替代默认渲染逻辑提高性能）			                    
+            return $this.$render($private.state);                                     // 有定义方法‘$render’时调用其渲染视图（用于替代默认渲染逻辑提高性能）                                
         }
 
         $$el = $$('.' + $this.$COMPONENT_ID);
         if ( !$$el.length ){
-            warn('dom node missing');					                            // 组件根节点丢失无法再次渲染
+            console.warn('dom node missing');                                        // 组件根节点丢失无法再次渲染
             return;
         }
 
@@ -152,8 +152,8 @@ class <%= $data['COMPONENT_NAME'] %> {
             return;                                                                 // 没有新状态，不必处理
         }
 
-        vnode = $this.$vnode($private.state, $private.options);                     // 生成新的虚拟节点数据
-        rpose.diffRender($this, vnode);					                            // 差异渲染
+        vnode = $this.vnodeTemplate($private.state, $private.options);              // 生成新的虚拟节点数据
+        rpose.diffRender($this, vnode);                                                // 差异渲染
 
         return $$el[0];
     }

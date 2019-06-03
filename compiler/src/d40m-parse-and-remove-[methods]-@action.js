@@ -16,8 +16,8 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
     // 解析为语法树，支持装饰器写法
     // ---------------------------------------------------------
     let ast;
-	try{
-		ast = parser.parse(js, {sourceType: "module",
+    try{
+        ast = parser.parse(js, {sourceType: "module",
                 plugins: [
                     "decorators-legacy",                                                    // 支持装饰器
                     "classProperties",                                                      // 支持类变量
@@ -25,7 +25,7 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
                     "classPrivateMethods",                                                  // 支持类私有方法
                 ]
             });
-	}catch(e){
+    }catch(e){
         let msg = e.message || '';
         let match = msg.match(/\((\d+):(\d+)\)$/);
         if ( match ) {
@@ -33,8 +33,8 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
             let pos = getLinePosStart(js, match[1]-1, match[2]-0, PosOffset);               // 行列号都从0开始，减0转为数字
             throw new Err(msg, e, {file: input.file, text: input.text, ...pos});
         }
-		throw new Err(msg, e);
-	}
+        throw new Err(msg, e);
+    }
 
     // ---------------------------------------------------------
     // 遍历语法树上的类方法，保存方法名、装饰器信息、最后删除装饰器
@@ -146,13 +146,16 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
     });
 
 
+    // ---------------------------------------------------------
+    // 检查未定义变量，若有则报错
+    bus.at('检查未定义变量', ast, input, PosOffset);
 
     // ---------------------------------------------------------
     // 生成删除装饰器后的代码
-	let code = babel.transformFromAstSync(ast).code;
+    let code = babel.transformFromAstSync(ast).code;
     code = code.substring(10, code.length - 2);
 
-    return {Method: oClassMethod, bindfns, methods: code};
+    return {Method: oClassMethod, bindfns, methods: code, ast};
 });
 
 function parseDecorators(path, oMethod, input, PosOffset){

@@ -17,7 +17,7 @@ bus.on('编译插件', function(){
             }
 
            // writer.write( 'function nodeTemplate($state, $options, $actions, $this) {' );
-            writer.write( '$vnode($state, $options) {' );
+            writer.write( 'vnodeTemplate($state, $options) {' );
             if ( hasCodeBolck(node.nodes) ) {
                 writer.write( `${ topNodesWithScriptJsify(node.nodes, context) }` );        // 含代码块子节点
             }else{

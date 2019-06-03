@@ -1,6 +1,10 @@
 const bus = require('@gotoeasy/bus');
 const postobject = require('@gotoeasy/postobject');
 //const Err = require('@gotoeasy/err');
+const traverse = require("@babel/traverse").default;
+const types = require('@babel/types');
+const babel = require('@babel/core');
+const tokenizer = require('css-selector-tokenizer');
 
 bus.on('编译插件', function(){
     
@@ -29,8 +33,8 @@ bus.on('编译插件', function(){
         let classnames = script.classnames = script.classnames || [];                                   // 脚本代码中用到的样式类，存起来后续继续处理
 
         if ( script.methods && reg.test(script.methods) ) {
-            // TODO 用babel编辑修改
-            //script.methods = transformJsSelector(script.methods, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
+            // 编辑修改script
+            transformJsSelector(script, context.input.file, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
         }
 
         // 脚本中用到的类，检查样式库是否存在，检查类名是否存在
@@ -54,8 +58,6 @@ bus.on('编译插件', function(){
                         throw new Error('css class not found: '+ clspkg + '\nfile: ' + context.input.file);  // TODO 友好定位提示
                     }
                 }
-
-
             }
         }
 
@@ -63,78 +65,85 @@ bus.on('编译插件', function(){
 
 }());
 
-/*
-function transformJsSelector(code, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
+// babel@7.*
+function transformJsSelector(oScript, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
 
-    let ast, changed;
-    try{
-        ast = acorn.parse(code, {ecmaVersion: 10, sourceType: 'module', locations: false} );        // TODO 自动紧跟新标准版本
-    }catch(e){
-        throw new Err('syntax error', e);  // 通常是代码有语法错误
-    }
+    let ast = oScript.ast;                                                                                                      // 复用[methods]解析的ast
+    let oSetPath = new Set();
 
-    walk.simple(ast, {
-        CallExpression(node) {
+    traverse(ast, {
 
-            // 为避免误修改，不对类似 el.className = 'foo'; 的赋值语句进行转换
+        StringLiteral(path) {
+            if ( !path.parentPath.isCallExpression() ) return;                                                                  // 不是函数调用，跳过
+            if ( oSetPath.has(path) ) return;                                                                                   // 已处理的跳过（避免重复处理死循环）
 
-            // 第一参数不是字符串时，无可修改，忽略
-            if ( !node.arguments || !node.arguments[0] || node.arguments[0].type !== 'Literal' ) {
-                return;
-            }
-
-            let fnName, classname, pkgcls;
-            if ( node.callee.type === 'Identifier' ) {
-                // 直接函数调用
-                fnName = node.callee.name;
+            if ( path.parentPath.node.callee.type === 'Identifier' ) {
+                let fnName = path.parentPath.node.callee.name;
                 if ( fnName === '$$' || fnName === '$' ) {
-                    node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);                              // $$('div > .foo'), $('div > .bar')
-                }else{
-                    return;
-                }
+                    let selector = path.node.value;
+                    selector = transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);             // $$('div > .foo'), $('div > .bar')
+                    path.replaceWith( types.stringLiteral(selector) );
 
-            }else if ( node.callee.type === 'MemberExpression' ) {
-                // 对象成员函数调用
-                fnName = node.callee.property.name;
+                    oSetPath.add(path);                                                                                         // 已处理的path
+                }
+            }else if ( path.parentPath.node.callee.type === 'MemberExpression' && path.parentPath.node.callee.property ) {
+                let fnName = path.parentPath.node.callee.property.name || path.parentPath.node.callee.property.value;           // foo.bar() => bar, foo['bar']() => bar
                 if ( fnName === 'getElementsByClassName' || fnName === 'toggleClass' ) {                                        // document.getElementsByClassName('foo'), $$el.toggleClass('foo')
-                    classname = node.arguments[0].value;
-                    pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                    node.arguments[0].value = bus.at('哈希样式类名', srcFile, pkgcls);
+                    
+                    let classname = path.node.value;
+                    let pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                    classname = bus.at('哈希样式类名', srcFile, pkgcls);
                     classnames.push(classname);                                                                                 // 脚本中用到的类，存起来查样式库使用
-                }else if (fnName === 'querySelector' || fnName === 'querySelectorAll'){                                         // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
-                    node.arguments[0].value = transformSelector(node.arguments[0].value, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                }else if (fnName === 'addClass' || fnName === 'removeClass'){                                                   // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
-                    let rs = [], ary = node.arguments[0].value.trim().split(/\s+/);
+                    path.replaceWith( types.stringLiteral(classname) );
+                    oSetPath.add(path);                                                                                         // 已处理的path
+                }else if ( fnName === 'querySelector' || fnName === 'querySelectorAll' ) {                                      // document.querySelector('div > .foo'), document.querySelectorAll('div > .bar')
+                    
+                    let selector = path.node.value;
+                    selector = transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs);             // $$('div > .foo'), $('div > .bar')
+                    path.replaceWith( types.stringLiteral(selector) );
+
+                    oSetPath.add(path);                                                                                         // 已处理的path
+                }else if ( fnName === 'addClass' || fnName === 'removeClass' ) {                                                // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
+
+                    let rs = [], ary = path.node.value.trim().split(/\s+/);
                     ary.forEach( cls => {
-                        pkgcls = getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                        let pkgcls = getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
                         rs.push( bus.at('哈希样式类名', srcFile, pkgcls ));
                         classnames.push(cls);                                                                                   // 脚本中用到的类，存起来查样式库使用
                     });
-                    node.arguments[0].value = rs.join(' ');
-                }else if (fnName === 'add' || fnName === 'remove'){                                                             // el.classList.add('foo'), el.classList.remove('bar')
-                    if ( node.callee.object.type === 'MemberExpression' && node.callee.object.property.name === 'classList' ) {
-                        classname = node.arguments[0].value;
-                        pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
-                        node.arguments[0].value = bus.at('哈希样式类名', srcFile, pkgcls);
+
+                    let classes = rs.join(' ');
+                    path.replaceWith( types.stringLiteral(classes) );
+
+                    oSetPath.add(path);                                                                                         // 已处理的path
+                }else if ( fnName === 'add' || fnName === 'remove' ) {                                                          // el.classList.add('foo'), el.classList.remove('bar')
+                    if ( path.parentPath.node.callee.object.type === 'MemberExpression'
+                      && path.parentPath.node.callee.object.property.name === 'classList' ) {
+
+                        let classname = path.node.value;
+                        let pkgcls = getClassPkg(classname, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs);
+                        classname = bus.at('哈希样式类名', srcFile, pkgcls);
                         classnames.push(classname);                                                                             // 脚本中用到的类，存起来查样式库使用
+                        path.replaceWith( types.stringLiteral(classname) );
+                        oSetPath.add(path);                                                                                     // 已处理的path
                     }else{
                         return;
                     }
                 }else{
                     return;
                 }
-
-            }else{
-                return;
             }
-
-            node.arguments[0].raw = `'${node.arguments[0].value}'`;                                                             // 输出字符串
-            changed = true;
         }
 
     });
 
-    return changed ? astring.generate(ast) : code;
+    if ( oSetPath.size ) {
+        let code = babel.transformFromAstSync(ast).code;
+        code = code.substring(10, code.length - 2);
+        oScript.methods = code;
+    }
+
+    return delete oScript.ast;                                                                                  // 按说已经用不到了，删除之
 }
 
 function transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
@@ -178,4 +187,3 @@ function getClassPkg(cls, srcFile, oAtCsslibs, oCsslibs, oPrjCsslibs){
 
     return ary[0];
 }
-*/

@@ -25,7 +25,7 @@ bus.on('astgen-node-attributes', function(){
                 value = bus.at('表达式代码转换', node.object.value);
             }else if (typeof node.object.value === 'string'){
 
-                let eventName = node.object.name.toLowerCase();
+                let eventName = node.object.name;
                 if ( !tagNode.object.standard && bus.at('是否HTML标准事件名', eventName) && !node.object.isExpression  ) {
                     // 组件上的标准事件属性，支持硬编码直接指定方法名 （如果在methods中有定义，顺便就办了，免得一定要写成表达式）
                     let fnNm = node.object.value.trim();

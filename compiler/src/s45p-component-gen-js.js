@@ -2,10 +2,7 @@ const bus = require('@gotoeasy/bus');
 const csjs = require('@gotoeasy/csjs');
 const File = require('@gotoeasy/file');
 const postobject = require('@gotoeasy/postobject');
-//const Err = require('@gotoeasy/err');
-//const acornGlobals = require('acorn-globals');
-
-//const JS_VARS = '$$,require,window,sessionStorage,localStorage,parseInt,location,clearInterval,setInterval,assignOptions,rpose,$SLOT,Object,Map,Set,WeakMap,WeakSet,Date,Math,Array,String,Number,JSON,Error,Function,arguments,Boolean,Promise,Proxy,Reflect,RegExp,alert,console,window,document'.split(',');
+const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
@@ -34,7 +31,7 @@ bus.on('编译插件', function(){
 
         // 生成组件JS源码
         result.componentJs = fnTmpl($data);
-      //  result.componentJs = checkAndInitVars(result.componentJs, context);
+        result.componentJs = checkAndInitVars(result.componentJs, context);
 
         // 非release模式时输出源码便于确认
         if ( !env.release ) {
@@ -46,14 +43,13 @@ bus.on('编译插件', function(){
 
 }());
 
-/*
 // 检查是否有变量缩写，有则补足，用以支持{$state.abcd}简写为{abcd}
 function checkAndInitVars(src, context){
     let optionkeys = context.doc.api.optionkeys || [];
     let statekeys = context.doc.api.statekeys || [];
     let scopes;
     try{
-        scopes = acornGlobals(src);
+        scopes = bus.at('查找未定义变量', src);
         if ( !scopes.length ) return src; // 正常，直接返回
     }catch(e){
         throw Err.cat('source syntax error', '\n-----------------', src, '\n-----------------', 'file='+ context.input.file, e); // 多数表达式中有语法错误导致
@@ -61,32 +57,29 @@ function checkAndInitVars(src, context){
 
     // 函数内部添加变量声明赋值后返回
     let vars = [];
-    for ( let i=0, v; i<scopes.length; i++ ) {
-        v = scopes[i];
+    for ( let i=0, name; name=scopes[i++]; ) {
 
-        let inc$opts = optionkeys.includes(v.name);
-        let inc$state = statekeys.includes(v.name);
-        let incJsVars = JS_VARS.includes(v.name);
+        let inc$opts = optionkeys.includes(name);
+        let inc$state = statekeys.includes(name);
 
         // TODO 优化提示定位
-        if ( !inc$opts && !inc$state && !incJsVars) {
-            let msg = 'template variable undefined: ' + v.name;
+        if ( !inc$opts && !inc$state ) {
+            let msg = 'template variable undefined: ' + name;
             msg += '\n  file: ' + context.input.file;
-            throw new Err(msg);        // 变量不在$state或$options的属性范围内
+            throw new Err(msg);                                                     // 变量不在$state或$options的属性范围内
         }
         if ( inc$opts && inc$state ) {
-            let msg = 'template variable uncertainty: ' + v.name;
+            let msg = 'template variable uncertainty: ' + name;
             msg += '\n  file: ' + context.input.file;
-            throw new Err(msg);        // 变量同时存在于$state和$options，无法自动识别来源，需指定
+            throw new Err(msg);                                                     // 变量同时存在于$state和$options，无法自动识别来源，需指定
         }
 
         if ( inc$state ) {
-            vars.push(`let ${v.name} = $state.${v.name};`)
+            vars.push(`let ${name} = $state.${name};`)
         }else if ( inc$opts ) {
-            vars.push(`let ${v.name} = $options.${v.name};`)
+            vars.push(`let ${name} = $options.${name};`)
         }
     }
 
-    return src.replace(/(\n.+?prototype\.nodeTemplate\s*=\s*function\s+.+?\r?\n)/, '$1' + vars.join('\n'));
+    return src.replace(/(\n\s*vnodeTemplate\s*\(\s*\$state\s*,\s*\$options\s*\)\s*{\r?\n)/, '$1' + vars.join('\n'));
 }
-*/

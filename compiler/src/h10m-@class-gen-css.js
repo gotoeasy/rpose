@@ -6,7 +6,7 @@ bus.on('创建@class样式', function(){
     // @class="color-red width-100px height--calc(100%_-_50px) box-sizing--border-box padding-5px_10px"
     // 样式类名和样式内容相关，以减少样式类名的变动
     return (atclass, file) => {
-        let css = [], ary = [...new Set(atclass.trim().toLowerCase().split(/\s+/))];
+        let css = [], ary = [...new Set(atclass.trim().split(/\s+/))];
         ary.sort();
         ary.forEach(v => css.push(bus.at('原子样式', v, file)) );
         css = css.join(' ');
