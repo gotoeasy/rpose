@@ -5993,62 +5993,51 @@ console.time("load");
     // ------- g35p-astedit-process-attribtue-style end
 })();
 
-/* ------- h10m-@class-gen-css ------- */
+/* ------- h10m-@class-content-parser ------- */
 (() => {
-    // ------- h10m-@class-gen-css start
+    // ------- h10m-@class-content-parser start
     const bus = require("@gotoeasy/bus");
-    const hash = require("@gotoeasy/hash");
 
-    bus.on(
-        "创建@class样式",
-        (function() {
-            // @class="color-red width-100px height--calc(100%_-_50px) box-sizing--border-box padding-5px_10px"
-            // 样式类名和样式内容相关，以减少样式类名的变动
-            return (atclass, file) => {
-                let css = [],
-                    ary = [...new Set(atclass.trim().split(/\s+/))];
-                ary.sort();
-                ary.forEach(v => css.push(bus.at("原子样式", v, file)));
-                css = css.join(" ");
-                let name = "atclass-" + hash(css);
-                css = `.${name}{ ${css} }`;
-                return { name, css };
-            };
-        })()
-    );
+    bus.on("解析原子样式", function(atomcss, file) {
+        // 按冒号分隔伪类选择器
+        // 按首双减号或末单减号分割为键值数组
+        //
+        // hover:color-red => {pseudo: 'hover', key: 'color', value: 'red'}
+        // color-red => {pseudo: undefined, key: 'color', value: 'red'}
+        // align-items--flex-end =>  {pseudo: undefined, key: 'align-items', value: 'flex-end'}
+        //
+        let oAtClass = splitAtomicKeyValue(atomcss);
+        if (!oAtClass) {
+            console.warn(`invalid @class value (${atomcss}) in file (${file})`);
+            return null;
+        }
 
-    bus.on(
-        "原子样式",
-        (function() {
-            return (atomcss, file) => {
-                // 按首双减号或末单减号分割为键值数组
-                let kv = splitAtomicKeyValue(atomcss); // color-red => ['color', 'red'], align-items--flex-end => ['align-items', 'flex-end']
-                if (!kv) {
-                    console.warn(`invalid @class value (${atomcss}) in file (${file})`);
-                    return "";
-                }
+        // 自定义样式属性名缩写
+        let map = new Map();
+        map.set("bg", "background");
+        map.set("bgcolor", "background-color");
+        map.has(oAtClass.key) && (oAtClass.key = map.get(oAtClass.key)); // 键名使用缩写时，替换为全名
 
-                // 自定义样式属性名缩写
-                let map = new Map();
-                map.set("bg", "background");
-                map.set("bgcolor", "background-color");
-                map.has(kv[0]) && (kv[0] = map.get(kv[0])); // 输入的是缩写时，替换为全名输出
-
-                return `${kv[0]}:${kv[1]};`;
-            };
-        })()
-    );
+        return oAtClass;
+    });
 
     // 按首双减号或末单减号分割为键值数组
     function splitAtomicKeyValue(atomcss) {
-        let key, value;
+        let pseudo, key, value;
+
+        // 优先判断是否有伪类选择器
+        let idx = atomcss.indexOf(":");
+        if (idx > 0) {
+            pseudo = atomcss.substring(0, idx); // 伪类用冒号分隔
+            atomcss = atomcss.substring(idx + 1);
+        }
 
         // 优先按首双减号'--'分割
-        let idx = atomcss.indexOf("--");
+        idx = atomcss.indexOf("--");
         if (idx > 0) {
             key = atomcss.substring(0, idx);
             value = atomcss.substring(idx + 2).replace(/_/g, " "); // 下划线按空格处理
-            return [key, value];
+            return { pseudo, key, value };
         }
 
         // 默认按末单减号'-'分割
@@ -6056,12 +6045,59 @@ console.time("load");
         if (idx > 0) {
             key = atomcss.substring(0, idx);
             value = atomcss.substring(idx + 1).replace(/_/g, " "); // 下划线按空格处理
-            return [key, value];
+            return { pseudo, key, value };
         }
         return null;
     }
 
-    // ------- h10m-@class-gen-css end
+    // ------- h10m-@class-content-parser end
+})();
+
+/* ------- h12m-@class-gen-css ------- */
+(() => {
+    // ------- h12m-@class-gen-css start
+    const bus = require("@gotoeasy/bus");
+    const hash = require("@gotoeasy/hash");
+
+    bus.on(
+        "创建@class样式",
+        (function() {
+            // @class="hover:color-red color-red width-100px height--calc(100%_-_50px) box-sizing--border-box padding-5px_10px"
+            // 样式类名和样式内容相关，以减少样式类名的变动
+            return (atclass, file) => {
+                let oAtClass,
+                    oPseudo = new Set(),
+                    pseudocss = [],
+                    normalcss = [],
+                    ary = [...new Set(atclass.trim().split(/\s+/))];
+                ary.sort();
+                ary.forEach(v => {
+                    oAtClass = bus.at("解析原子样式", v, file);
+                    if (oAtClass) {
+                        if (oAtClass.pseudo) {
+                            oPseudo.add(oAtClass.pseudo.toLowerCase());
+                            pseudocss.push(`${oAtClass.key}:${oAtClass.value};`);
+                        } else {
+                            normalcss.push(`${oAtClass.key}:${oAtClass.value};`);
+                        }
+                    }
+                });
+
+                let name = "atclass-" + hash(atclass); // 样式类名
+                let ncss = `.${name}{ ${normalcss.join(" ")} }`; // 普通样式
+                let pcss = pseudocss.join(" ");
+                if (pcss) {
+                    let names = [];
+                    oPseudo.forEach(pseudo => names.push(`.${name}:${pseudo}`));
+                    pcss = `${names.join(",")}{ ${pcss} }`; // 伪类样式
+                }
+
+                return { name, css: ncss + "\n" + pcss };
+            };
+        })()
+    );
+
+    // ------- h12m-@class-gen-css end
 })();
 
 /* ------- h15p-astedit-process-attribtue-@class ------- */
