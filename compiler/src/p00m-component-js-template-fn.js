@@ -138,22 +138,13 @@ class <%= $data['COMPONENT_NAME'] %> {
         }
 
         // 再次渲染
-        if ( typeof $this.$render === 'function' ){
-            return $this.$render($private.state);                                     // 有定义方法‘$render’时调用其渲染视图（用于替代默认渲染逻辑提高性能）                                
-        }
-
         $$el = $$('.' + $this.$COMPONENT_ID);
         if ( !$$el.length ){
             console.warn('dom node missing');                                        // 组件根节点丢失无法再次渲染
-            return;
-        }
-
-        if ( !state ) {
-            return;                                                                 // 没有新状态，不必处理
         }
 
         vnode = $this.vnodeTemplate($private.state, $private.options);              // 生成新的虚拟节点数据
-        rpose.diffRender($this, vnode);                                                // 差异渲染
+        rpose.diffRender($this, vnode);                                             // 差异渲染
 
         return $$el[0];
     }

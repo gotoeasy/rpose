@@ -11,7 +11,6 @@ bus.on('检查未定义变量', function(ast, input, PosOffset){
             if (isPrivateName(path)) return;                                                // 使用私有字段或方法时，不检查
             if (isClassMethod(path)) return;
             if (isClassProperty(path)) return;
-
             if (isInMemberExpression(path)) return;
             if (isObjectPropertyName(path)) return;
             if (isParamToCatchClause(path)) return;
@@ -43,7 +42,6 @@ bus.on('查找未定义变量', function(code){
             if (isPrivateName(path)) return;                                                // 使用私有字段或方法时，不检查
             if (isClassMethod(path)) return;
             if (isClassProperty(path)) return;
-
             if (isInMemberExpression(path)) return;
             if (isObjectPropertyName(path)) return;
             if (isParamToCatchClause(path)) return;
@@ -68,7 +66,7 @@ function isPrivateName(path) {
 }
 
 function hasBinding(path) {
-  let parent = path.findParent(path => path.isBlock() || path.isFunction());
+  let parent = path.findParent( path => path.isBlock() || path.isFunction() || path.isForStatement() || path.isForInStatement() );
   let noGlobals = true;
   return parent.scope.hasBinding(path.node.name, noGlobals);
 }

@@ -5,7 +5,7 @@ const File = require('@gotoeasy/file');
 test('测试项目编译后的组件源码是否符合预期', async t => {
 
     let opts = {};
-    opts.cwd =  File.resolve(__dirname, 'test-project');
+    opts.cwd =  File.resolve(__dirname, 'ut-project');
     opts.clean = true;
     opts.release = false;
     opts.debug = false;

@@ -5,7 +5,7 @@ const traverse = require("@babel/traverse").default;
 const types = require('@babel/types');
 const babel = require('@babel/core');
 
-const oSetBuildIn = new Set(['getState', 'setState', '$vnode', 'getRefElements', 'getRefElement', 'getRefComponents', 'getRefComponent', 'getRootElement']);
+const oSetBuildIn = new Set(['$vnode', 'getRefElements', 'getRefElement', 'getRefComponents', 'getRefComponent', 'getRootElement']);
 
 bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input={}, PosOffset=0){
 

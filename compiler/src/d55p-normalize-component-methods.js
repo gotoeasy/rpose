@@ -6,6 +6,7 @@ bus.on('编译插件', function(){
     return postobject.plugin(/**/__filename/**/, function(root, context){
 
         let script = context.script;
+        script.Method = {};
 
         root.walk( 'RposeBlock', (node, object) => {
 

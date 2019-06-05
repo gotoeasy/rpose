@@ -5,19 +5,17 @@ optionkeys = path, params, title
 <a title={title} href={ /^(http[s]?:\/\/|\.+|\/+)/i.test(path) ? path : ('#' + (path || '')) } onclick="click" @class="display--inline-flex align-items-center text-decoration-none"><slot/></a>
 
 
-[actions]
-{
-    click: e => {
-
-        if ( !/^(http[s]?:\/\/|\.+|\/+)/i.test(this.$options.path) ) {
-            e.preventDefault();                                                 // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制
-            this.$options.title && (document.title = this.$options.title);      // 如果指定了title，顺便修改标题
-            let path = this.$options.path || '';
-            let state = this.$options.params;
-            rpose.router.page({path, state});
-        }else{
-            location.href = this.$options.path;
-        }
-
+[methods]
+click(e) {
+    let $private = this.#private;
+    if ( !/^(http[s]?:\/\/|\.+|\/+)/i.test($private.options.path) ) {
+        e.preventDefault();                                                         // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制
+        $private.options.title && (document.title = $private.options.title);        // 如果指定了title，顺便修改标题
+        let path = $private.options.path || '';
+        let state = $private.options.params;
+        rpose.router.page({path, state});
+    }else{
+        location.href = $private.options.path;
     }
+
 }

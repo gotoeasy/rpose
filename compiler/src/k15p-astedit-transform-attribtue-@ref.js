@@ -38,7 +38,7 @@ bus.on('编译插件', function(){
             $contextNode.type = 'Attribute';
             $contextNode.object.type = 'Attribute';
             $contextNode.object.name = '$context';
-            $contextNode.object.value = '{$this}';
+            $contextNode.object.value = '{this}';
             $contextNode.object.isExpression = true;
 
             if ( !attrsNode ) {

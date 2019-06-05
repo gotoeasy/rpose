@@ -7,7 +7,7 @@ const oSetVarNames = new Set([
     'clearInterval', 'setInterval', 'setTimeout', 'parseInt', 'parseFloat', 'isFinite', 'isNaN', 'eval', 'decodeURI', 'encodeURI', 'toString', 'toLocaleString', 'valueOf', 'isPrototypeOf',
     'Function', 'arguments', 'JSON', 'Number', 'String',
     'Error', 'SyntaxError', 'TypeError', 'URIError', 'EvalError', 'RangeError', 'ReferenceError',
-    'Array', 'Boolean', 'Math', 'Date', 'Object', 'RegExp', 'NaN', 'Symbol', 'Number',
+    'Array', 'Boolean', 'Math', 'Date', 'Object', 'RegExp', 'NaN', 'Symbol', 'Number', 'undefined',
     'assignOptions', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Promise', 'Proxy', 'Reflect', 'WeakSet',
 ]);
 

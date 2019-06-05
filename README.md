@@ -52,8 +52,8 @@ body
         </for>
     </ul>
 
-    <form onsubmit="add">
-        <input type="text" ref="input">
+    <form>
+        <input type="text" @ref="input">
         <button>Add #{ $state.items.length + 1 }</button>
     </form>
 </div>
@@ -63,19 +63,21 @@ body
     items: []
 }
 
-[actions]
-{
-    add: e => {
-        e.preventDefault();
-        let el = this.getRefElement('input');
-        el.value && this.$state.items.push(el.value) && (el.value = '');
-        this.render();
-    },
-    del: e => {
-        let index = e.target.getAttribute('index');
-        this.$state.items.splice(index, 1);
-        this.render();
-    }
+[methods]
+@action('submit', 'form')
+add(e) {
+    e.preventDefault();
+    let el = this.getRefElement('input');
+    let items = this.#private.state.items;
+    el.value && items.push(el.value) && (el.value = '');
+    this.render();
+}
+
+del(e) {
+    let index = e.target.getAttribute('index');
+    let items = this.#private.state.items;
+    items.splice(index, 1);
+    this.render();
 }
 
 [css]
@@ -196,7 +198,10 @@ body
 - [x] 标签插槽功能支持
 - [x] 不推荐，但确实可以在view中写js代码
 - [x] `[view]`中支持变量简写，自动检查接口声明进行关联
-- [x] `[actions]`中支持对象写法和函数写法
+- [x] `[methods]`中使用类方法的方式写事件函数，支持`私有属性`和`私有方法`
+- [x] `[methods]`中支持自定义同名函数替代框架的默认实现
+- [x] `[methods]`中支持用`装饰器`的方式绑定事件处理，支持标签选择器语法
+- [x] `[methods]`中的变量在编译期做检查，有使用未定义变量则定位报错
 - [x] 自动哈希化js代码中样式选择器的类名
 - [x] 自动处理使this指向组件对象
 - [x] 友好化错误信息提示，编译错误时准确定位
@@ -228,7 +233,7 @@ body
 - [x] 监视模式下修改`<svgicon>`用到的图标文件，重新编译可能相关的组件及页面
 - [x] 监视模式下修改<img>用到的图片文件，重新编译相关的组件及页面
 - [x] 监视模式下修改本地样式库用到的css文件，重新编译相关的组件及页面
-- [ ] 完善文档（70%）
+- [ ] 完善文档
 - [ ] 测试及覆盖率
 - [ ] 性能继续优化
 - [ ] 新特性好姿势增强
@@ -236,6 +241,16 @@ body
 <br>
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.6.*</strong></summary>
+
+- [x] `[methods]`中使用类方法的方式写事件函数，支持`私有属性`和`私有方法`
+- [x] `[methods]`中支持自定义同名函数替代框架的默认实现
+- [x] `[methods]`中支持用`装饰器`的方式绑定事件处理，支持标签选择器语法
+- [x] `[methods]`中的变量在编译期做检查，有使用未定义变量则定位报错
+- [x] 更友好精准的错误信息提示
+</details>
+
 <details>
 <summary><strong>Ver 0.5.*</strong></summary>
 

@@ -23,20 +23,18 @@ optionkeys  = lang, height, $CODE    // $CODE非常特殊，编译期硬编码�
 </pre>
 
 [methods]
-{ 
-    render: (state={}) => {
-        // 代码高亮组件仅支持一次性渲染
-        if ( this.isInitRender ){
-            rpose.extend(this.$state, state, this.$STATE_KEYS);
-            let vnode = this.nodeTemplate(this.$state, this.$options, this.$actions, this);
-            let el = rpose.createDom(vnode, this); 
-            if ( el && el.nodeType == 1 ) {
-                $$(el).addClass(this.$COMPONENT_ID);
-                $$(el.children[0]).attr('innerHTML', this.$options.$CODE);
-            } 
-            this.isInitRender = false;
-            return el;
-        }
+render (state) {
+    // 代码高亮组件仅支持一次性渲染
+    let $private = this.#private;
+    if ( !$private.rendered ){
+        let vnode = this.vnodeTemplate($private.state, $private.options);           // 生成节点信息数据用于组件渲染
+        let el = rpose.createDom(vnode, this);
+        if ( el && el.nodeType == 1 ) {
+            $$(el).addClass(this.$COMPONENT_ID);
+            $$(el.children[0]).attr('innerHTML', $private.options.$CODE);           // 插入高亮代码
+        } 
+        $private.rendered = true;
+        return el;
     }
 }
 

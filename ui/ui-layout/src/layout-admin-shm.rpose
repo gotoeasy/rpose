@@ -52,20 +52,20 @@ statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
     'header-height': '50px',
 }
 
-[actions]
-{
-    pcToggle: e => {
-        e.preventDefault();
-        $$('.layout').toggleClass('mode-pc-toggle').removeClass('mode-mobile-toggle');      // 电脑大屏时切换显示侧边栏，清除手机小屏切换模式
-    },
-    mobileToggle: e => {
-        e.preventDefault();
-        $$('.layout').toggleClass('mode-mobile-toggle').removeClass('mode-pc-toggle');      // 手机小屏时切换显示菜单栏，清除电脑大屏切换模式
-    },
-    closeMobileMenu: e => {
-        e.preventDefault();
-        $$('.mode-mobile-toggle').removeClass('mode-mobile-toggle');                        // 手机小屏打开菜单栏后，点击任意位置关闭菜单栏
-    }
+[methods]
+pcToggle(e) {
+    e.preventDefault();
+    $$('.layout').toggleClass('mode-pc-toggle').removeClass('mode-mobile-toggle');      // 电脑大屏时切换显示侧边栏，清除手机小屏切换模式
+}
+
+mobileToggle(e) {
+    e.preventDefault();
+    $$('.layout').toggleClass('mode-mobile-toggle').removeClass('mode-pc-toggle');      // 手机小屏时切换显示菜单栏，清除电脑大屏切换模式
+}
+
+closeMobileMenu(e) {
+    e.preventDefault();
+    $$('.mode-mobile-toggle').removeClass('mode-mobile-toggle');                        // 手机小屏打开菜单栏后，点击任意位置关闭菜单栏
 }
 
 [less]
