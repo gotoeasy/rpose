@@ -51,14 +51,13 @@ class HelloWorld {
 
         // 再次渲染
         $$el = $$("." + $this.$COMPONENT_ID);
-        if (!$$el.length) {
+        if ($$el.length) {
+            vnode = $this.vnodeTemplate($private.state, $private.options); // 生成新的虚拟节点数据
+            rpose.diffRender($this, vnode); // 差异渲染
+            return $$el[0];
+        } else {
             console.warn("dom node missing"); // 组件根节点丢失无法再次渲染
         }
-
-        vnode = $this.vnodeTemplate($private.state, $private.options); // 生成新的虚拟节点数据
-        rpose.diffRender($this, vnode); // 差异渲染
-
-        return $$el[0];
     }
 
     // 虚拟节点数据
