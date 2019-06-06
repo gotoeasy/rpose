@@ -192,17 +192,17 @@ function Dom(queryResult){
             el = els[i];
             if ( !el ) continue;
 
-            if (IS_IE){
+            if ( !el.classList ){
                 // The classList property is not supported by IE9 and lower. IE11 still bug on classList, it does not support classList on SVG element
                 if (!el.className){
                     el.className = name;
                 }else{
-                    var ary = el.className.split(' ');
+                    var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(' ');
                     if (ary.indexOf(name) >= 0) {
                         return this;
                     }
                     ary.push(name);
-                    el.className = ary.join(' ');
+                    el.className.baseVal === undefined ? (el.className = ary.join(' ')) : (el.className.baseVal = ary.join(' '));
                 }
             }else{
                 // 单纯的文本节点没有classList
@@ -220,12 +220,12 @@ function Dom(queryResult){
 	// 删除class $$('.xxxx').removeClass('js-active')
 	this.removeClass = function (name){ 
 		name && els.forEach(el => {
-			if (IS_IE){
-				var ary = el.className.split(' ');
+			if ( !el.classList ){
+                var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(' ');
 				var idx = ary.indexOf(name);
 				if (idx >= 0) {
 					ary.slice(idx, 1);
-					el.className = ary.join(' ');
+                    el.className.baseVal === undefined ? (el.className = ary.join(' ')) : (el.className.baseVal = ary.join(' '));
 				}
 			}else{
 				let nms = name.split(/\s+/);
@@ -239,11 +239,11 @@ function Dom(queryResult){
 	// 切换class $$('.xxxx').toggleClass('js-active')
 	this.toggleClass = function (name){ 
 		name && els.forEach(el => {
-			if (IS_IE){
-				var ary = el.className.split(' ');
+			if ( !el.classList ){
+                var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(' ');
 				var idx = ary.indexOf(name);
                 idx >= 0 ? ary.slice(idx, 1) : ary.push(name);                                      // 找到则删除，找不到则添加
-    			el.className = ary.join(' ');
+                el.className.baseVal === undefined ? (el.className = ary.join(' ')) : (el.className.baseVal = ary.join(' '));
 			}else{
                 el.classList.contains(name) ? el.classList.remove(name) : el.classList.add(name);   // 找到则删除，找不到则添加
 			}

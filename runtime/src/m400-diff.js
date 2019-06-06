@@ -97,8 +97,8 @@ function diffRenderChildern(component, parent, parentVnode2){
 
 	if ( !matchAll ) {
 		// 非顺序完全一致，按普通算法比较		
-		ary2.forEach(wv => !wv.S && findVnode(ary1, wv));			// 查找并标记 (找到时都标记S:1)
-		ary1.filter(wv => wv.S ? 1 : ($$(wv.el).remove() && 0) );	// 原节点没被找出来的全部删除，并从包装数组中删除
+		ary2.forEach(wv => !wv.S && findVnode(ary1, wv));			            // 查找并标记 (找到时都标记S:1)
+		ary1.filter(wv => wv.S ? 1 : ($$(wv.el).remove() && 0) );	            // 原节点没被找出来的全部删除，并从包装数组中删除
 
 		// 原节点被删光时，直接插入全部新子节点
 		if ( !ary1.length ) {
@@ -118,9 +118,9 @@ function diffRenderChildern(component, parent, parentVnode2){
 			let el = createDom(wv2.vn, component);
 			if ( el ) { // 不是所有组件都会渲染返回节点
 				if ( wv1 ) {
-					parent.insertBefore( el, wv1.el );	// 在vnode1节点前插入新子节点
+					parent.insertBefore( el, wv1.el );	                        // 在vnode1节点前插入新子节点, TODO ie出错（wv1.el无父节点）
 				}else{
-					parent.appendChild( el )				// 追加新子节点到尾部
+					parent.appendChild( el )				                    // 追加新子节点到尾部
 				}
 			}
 		}else{
@@ -208,6 +208,9 @@ function matchWvnode(wv1, wv2){
 	}
 
 	let vnode1 = wv1.vn, vnode2 = wv2.vn;
+	if ( !vnode1 ) {
+		return 0; // TODO ie时跑进来是这里是怎么回事
+	}
 	if ( vnode1.M ) {
 		vnode1 = vnode1[vnode2.t];
 		if ( !vnode1 ) {

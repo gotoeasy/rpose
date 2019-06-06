@@ -1,7 +1,6 @@
 // ---------------------------
 // 全局常量
 // ---------------------------
-const IS_IE = window == document && document != window;
 
 /*
 checked             (input type=checkbox/radio)

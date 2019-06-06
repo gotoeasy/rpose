@@ -1,5 +1,4 @@
 (function(window, document) {
-    const IS_IE = window == document && document != window;
     const BOOL_PROPS = [ "autofocus", "hidden", "readonly", "disabled", "checked", "selected", "multiple", "translate", "draggable", "noresize" ];
     const $SLOT = "$SLOT";
     const defer = (fn, ...args) => Promise.resolve(...args).then(fn);
@@ -376,16 +375,16 @@
                 if (!el) {
                     continue;
                 }
-                if (IS_IE) {
+                if (!el.classList) {
                     if (!el.className) {
                         el.className = name;
                     } else {
-                        var ary = el.className.split(" ");
+                        var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(" ");
                         if (ary.indexOf(name) >= 0) {
                             return this;
                         }
                         ary.push(name);
-                        el.className = ary.join(" ");
+                        el.className.baseVal === undefined ? el.className = ary.join(" ") : el.className.baseVal = ary.join(" ");
                     }
                 } else {
                     let nms = name.split(/\s+/);
@@ -398,12 +397,12 @@
         };
         this.removeClass = function(name) {
             name && els.forEach(el => {
-                if (IS_IE) {
-                    var ary = el.className.split(" ");
+                if (!el.classList) {
+                    var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(" ");
                     var idx = ary.indexOf(name);
                     if (idx >= 0) {
                         ary.slice(idx, 1);
-                        el.className = ary.join(" ");
+                        el.className.baseVal === undefined ? el.className = ary.join(" ") : el.className.baseVal = ary.join(" ");
                     }
                 } else {
                     let nms = name.split(/\s+/);
@@ -414,11 +413,11 @@
         };
         this.toggleClass = function(name) {
             name && els.forEach(el => {
-                if (IS_IE) {
-                    var ary = el.className.split(" ");
+                if (!el.classList) {
+                    var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(" ");
                     var idx = ary.indexOf(name);
                     idx >= 0 ? ary.slice(idx, 1) : ary.push(name);
-                    el.className = ary.join(" ");
+                    el.className.baseVal === undefined ? el.className = ary.join(" ") : el.className.baseVal = ary.join(" ");
                 } else {
                     el.classList.contains(name) ? el.classList.remove(name) : el.classList.add(name);
                 }
@@ -850,6 +849,9 @@
             return 0;
         }
         let vnode1 = wv1.vn, vnode2 = wv2.vn;
+        if (!vnode1) {
+            return 0;
+        }
         if (vnode1.M) {
             vnode1 = vnode1[vnode2.t];
             if (!vnode1) {
