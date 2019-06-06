@@ -47,11 +47,10 @@ body
 <div>
     <div class="title">TODO LIST</div>
     <ul>
-        <for @for="(item, i) in $state.items">
-        <li><button style="margin-right:20px" index={i} onclick="del">Del</button> {item}</li>
+        <for @for="(item, index) in $state.items">
+        <li><button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}</li>
         </for>
     </ul>
-
     <form>
         <input type="text" @ref="input">
         <button>Add #{ $state.items.length + 1 }</button>
@@ -68,15 +67,15 @@ body
 add(e) {
     e.preventDefault();
     let el = this.getRefElement('input');
-    let items = this.#private.state.items;
-    el.value && items.push(el.value) && (el.value = '');
-    this.render();
+    if ( el.value.trim() ){
+        let items = this.#private.state.items;
+        items.push(el.value) && (el.value = '');
+        this.render();
+    }
 }
 
-del(e) {
-    let index = e.target.getAttribute('index');
-    let items = this.#private.state.items;
-    items.splice(index, 1);
+del(index) {
+    this.#private.state.items.splice(index, 1);
     this.render();
 }
 
