@@ -174,8 +174,8 @@ function Dom(queryResult){
 	// 事件绑定 $$('.xxxx').on('click', fn)
 	this.on = function (name, fn){
 		els.forEach(el => {
-            el.addEventListener ? el.addEventListener(name, fn, false) : el.attachEvent ? el.attachEvent("on" + name, fn) : el["on" + name] = fn;
-            // addDomEventListener(el, name, fn); // 有缺点待解决
+            // el.addEventListener ? el.addEventListener(name, fn, false) : el.attachEvent ? el.attachEvent("on" + name, fn) : el["on" + name] = fn;
+            addDomEventListener(el, name, fn);
         });
 		return this;
 	}
@@ -295,15 +295,15 @@ function Dom(queryResult){
 }
 
 
-/*
-// DOM事件
+
+// DOM事件绑定
 function addDomEventListener(el, name, fn){
     domEventListener(el, name, fn);
     addDocumentEventListener(name);
-	// el.addEventListener ? el.addEventListener(name, fn, false) : el.attachEvent ? el.attachEvent("on" + name, fn) : el["on" + name] = fn;
 }
+// DOM事件存取
 function domEventListener(el, name, fn){
-	let map = domEventListener.m = domEventListener.m || new WeakMap(); // el: {name: Set(...fn) }
+	let map = domEventListener.m = domEventListener.m || new WeakMap(); // WeakMap{el: {name: fn}}
 
 	let oFn;
 	if ( !fn ) {
@@ -313,14 +313,48 @@ function domEventListener(el, name, fn){
 
 	!map.has(el) && map.set(el, {});
 	oFn = map.get(el);
-	let set = oFn[name] || (oFn[name] = new Set());
-	set.add(fn);
+    oFn[name] = fn;
 }
-function fnDocumentEventListener(event) {
+// Document事件执行
+async function fnDocumentEventListener(event) {
 	let el = event.target || event.srcElement;
-	let fns = domEventListener(el, event.type);
-	fns && fns.forEach(fn=>fn(event));
+
+    event.$stopPropagation = event.stopPropagation;
+    event.stopPropagation = function(){
+        this.$stopPropagation();
+        this.isStopPropagation = true;
+    };
+
+    let fn = domEventListener(el, event.type);              // DOM事件存取
+    if ( fn ) {
+        event.targetNode = el;                              // 设定当前DOM节点供使用
+        await fn(event);                                    // 找到则执行
+        if ( event.isStopPropagation ) {
+            event.stopPropagation = event.$stopPropagation;
+            delete event.targetNode;
+            delete event.$stopPropagation;
+            delete event.isStopPropagation;
+            return;                                         // 取消冒泡则结束
+        }
+    }
+
+    while ( (el = el.parentNode) && (el !== document) ) {   // 逐级往上查找父节点
+        fn = domEventListener(el, event.type);              // DOM事件存取
+        if ( fn ) {
+            event.targetNode = el;                          // 设定当前DOM节点供使用
+            await fn(event);                                // 找到则执行
+            if ( event.isStopPropagation ) {
+                break;                                      // 取消冒泡则结束
+            }
+        }
+    }
+
+    event.stopPropagation = event.$stopPropagation;
+    delete event.targetNode;
+    delete event.$stopPropagation;
+    delete event.isStopPropagation;
 }
+// Document事件绑定
 function addDocumentEventListener(name){
 	if ( !addDocumentEventListener[name] ) {
 		addDocumentEventListener[name] = 1;
@@ -328,4 +362,3 @@ function addDocumentEventListener(name){
 
 	}
 }
-*/

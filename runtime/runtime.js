@@ -362,7 +362,7 @@
         };
         this.on = function(name, fn) {
             els.forEach(el => {
-                el.addEventListener ? el.addEventListener(name, fn, false) : el.attachEvent ? el.attachEvent("on" + name, fn) : el["on" + name] = fn;
+                addDomEventListener(el, name, fn);
             });
             return this;
         };
@@ -454,6 +454,61 @@
             return this;
         };
         return this;
+    }
+    function addDomEventListener(el, name, fn) {
+        domEventListener(el, name, fn);
+        addDocumentEventListener(name);
+    }
+    function domEventListener(el, name, fn) {
+        let map = domEventListener.m = domEventListener.m || new WeakMap();
+        let oFn;
+        if (!fn) {
+            oFn = map.get(el) || {};
+            return oFn[name];
+        }
+        !map.has(el) && map.set(el, {});
+        oFn = map.get(el);
+        oFn[name] = fn;
+    }
+    async function fnDocumentEventListener(event) {
+        let el = event.target || event.srcElement;
+        event.$stopPropagation = event.stopPropagation;
+        event.stopPropagation = function() {
+            this.$stopPropagation();
+            this.isStopPropagation = true;
+        };
+        let fn = domEventListener(el, event.type);
+        if (fn) {
+            event.targetNode = el;
+            await fn(event);
+            if (event.isStopPropagation) {
+                event.stopPropagation = event.$stopPropagation;
+                delete event.targetNode;
+                delete event.$stopPropagation;
+                delete event.isStopPropagation;
+                return;
+            }
+        }
+        while ((el = el.parentNode) && el !== document) {
+            fn = domEventListener(el, event.type);
+            if (fn) {
+                event.targetNode = el;
+                await fn(event);
+                if (event.isStopPropagation) {
+                    break;
+                }
+            }
+        }
+        event.stopPropagation = event.$stopPropagation;
+        delete event.targetNode;
+        delete event.$stopPropagation;
+        delete event.isStopPropagation;
+    }
+    function addDocumentEventListener(name) {
+        if (!addDocumentEventListener[name]) {
+            addDocumentEventListener[name] = 1;
+            document.addEventListener ? document.addEventListener(name, fnDocumentEventListener, false) : document.attachEvent("on" + name, fnDocumentEventListener);
+        }
     }
     const mapTagComponent = {};
     const mapSingletonComp = {};

@@ -17,11 +17,10 @@ bus.on('astgen-node-events', function(){
         }
         if ( !eventsNode || !eventsNode.nodes || !eventsNode.nodes.length ) return '';
 
-        // 生成
-        let key, value, comma = '', ary = [];
-        ary.push( `{ `);     
+        // 检查汇总
+        let key, value, map = new Map();
         eventsNode.nodes.forEach(node => {
-            key = node.object.name.substring(2);                                        // onclick => click
+            key = node.object.name.substring(2).toLowerCase();                         // onclick => click
             value = node.object.value;
             if ( node.object.isExpression ) {
                 value = bus.at('表达式代码转换', value);                                // { abcd } => (abcd)
@@ -40,7 +39,24 @@ bus.on('astgen-node-events', function(){
                 }
             }
             
-            ary.push( ` ${comma} ${key}: ${value} ` );
+            let ary = map.get(key) || [];
+            !map.has(key) && map.set(key, ary);
+            ary.push(value);
+        });
+
+        // 生成
+        let comma = '', ary = [];
+        ary.push( `{ `);
+        map.forEach( (values, eventName) => {
+            if ( values.length > 1 ) {
+                let stmts = [];
+                values.forEach(v => {
+                    stmts.push( v + '(e);' );
+                });
+                ary.push( ` ${comma} ${eventName}: ( e=>{ ${stmts.join('\n')} } )` );
+            }else{
+                ary.push( ` ${comma} ${eventName}: ${value} ` );
+            }
             !comma && (comma = ',');
         });
         ary.push( ` } ` );
