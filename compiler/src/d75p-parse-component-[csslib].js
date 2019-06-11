@@ -27,7 +27,7 @@ bus.on('编译插件', function(){
 
                 // 与项目配置的重复性冲突检查
                 if ( oPrjCsslibs[alias] ) {
-                    throw new Err('duplicate csslib name: ' + alias, { file: context.input.file, text: context.input.text, start: csslib.pos.start, end: csslib.pos.end });
+                    throw new Err("duplicate csslib name: " + alias, { ...oPrjContext.input, ...oPrjCsslibs[alias].pos }, { ...context.input, ...csslib.pos });
                 }
 
                 oCsslib = bus.at('样式库', csslib, context.input.file);                     // 转换为样式库对象

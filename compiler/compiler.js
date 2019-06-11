@@ -2178,6 +2178,8 @@ console.time("load");
                             });
                         }
 
+                        oCsslib.pos = { ...csslibs[alias].pos };
+
                         oCsslibs[alias] = oCsslib; // 存放样式库对象
                         oCsslibPkgs[alias] = oCsslib.pkg; // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
                     }
@@ -3185,12 +3187,11 @@ console.time("load");
 
                         // 与项目配置的重复性冲突检查
                         if (oPrjCsslibs[alias]) {
-                            throw new Err("duplicate csslib name: " + alias, {
-                                file: context.input.file,
-                                text: context.input.text,
-                                start: csslib.pos.start,
-                                end: csslib.pos.end
-                            });
+                            throw new Err(
+                                "duplicate csslib name: " + alias,
+                                { ...oPrjContext.input, ...oPrjCsslibs[alias].pos },
+                                { ...context.input, ...csslib.pos }
+                            );
                         }
 
                         oCsslib = bus.at("样式库", csslib, context.input.file); // 转换为样式库对象
@@ -5728,7 +5729,7 @@ console.time("load");
                         node.replaceWith(nodeSvgUse);
                     } else {
                         // 错误类型，提示修改
-                        throw new Err(`support type (${iconType}), etc. svg | inline-symbol | link-symbol`, {
+                        throw new Err(`support type (${iconType}), possible values for type: svg | inline-symbol | link-symbol`, {
                             ...context.input,
                             ...nodeType.object.Value.pos
                         });
@@ -6238,7 +6239,11 @@ console.time("load");
         let map = new Map();
         for (let i = 0, oItem; (oItem = result[i++]); ) {
             if (map.has(oItem.Name.value)) {
-                throw new Err(`duplicate class name (${oItem.Name.value})`, { file, text, start: oItem.Name.start, end: oItem.Name.end });
+                throw new Err(
+                    `duplicate class name (${oItem.Name.value})`,
+                    { file, text, ...map.get(oItem.Name.value).Name },
+                    { file, text, ...oItem.Name }
+                );
             }
             map.set(oItem.Name.value, oItem);
         }

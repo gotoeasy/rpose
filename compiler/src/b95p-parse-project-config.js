@@ -152,6 +152,8 @@ bus.on('项目配置处理插件', function(){
                     throw new Err('css file not found', { file: context.input.file, text: context.input.text, start: csslibs[alias].pos.start, end: csslibs[alias].pos.end });
                 }
 
+                oCsslib.pos = {...csslibs[alias].pos};
+
                 oCsslibs[alias] = oCsslib;                                                  // 存放样式库对象
                 oCsslibPkgs[alias] = oCsslib.pkg;                                           // 存放样式库【别名-包名】映射关系（包名不一定是csslib.pkg）
             }

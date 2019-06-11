@@ -47,7 +47,7 @@ function parseToClasses(file, text, strClass, offset){
     let map = new Map();
     for ( let i=0,oItem; oItem=result[i++]; ) {
         if ( map.has(oItem.Name.value) ) {
-            throw new Err(`duplicate class name (${oItem.Name.value})`, {file, text, start: oItem.Name.start, end: oItem.Name.end});
+            throw new Err(`duplicate class name (${oItem.Name.value})`, { file, text, ...map.get(oItem.Name.value).Name }, { file, text, ...oItem.Name });
         }
         map.set(oItem.Name.value, oItem);
     }

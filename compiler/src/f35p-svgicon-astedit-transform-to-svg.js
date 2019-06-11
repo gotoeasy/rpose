@@ -141,7 +141,7 @@ bus.on('编译插件', function(){
 
             }else{
                 // 错误类型，提示修改
-                throw new Err(`support type (${iconType}), etc. svg | inline-symbol | link-symbol`, { ...context.input, ...nodeType.object.Value.pos });
+                throw new Err(`support type (${iconType}), possible values for type: svg | inline-symbol | link-symbol`, { ...context.input, ...nodeType.object.Value.pos });
             }
 
         });

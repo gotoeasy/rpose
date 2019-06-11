@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.6.7
+0.6.8
 
 [main]
 compiler.js
@@ -17,7 +17,7 @@ rp = bin/rpose
 @gotoeasy/file = 0.1.*
 @gotoeasy/util = 0.1.*
 @gotoeasy/btf = 1.2.*
-@gotoeasy/err = 0.2.*
+@gotoeasy/err = 0.3.*
 @gotoeasy/csjs = 0.3.*
 @gotoeasy/postobject = 0.1.*
 @gotoeasy/cache = 0.2.*
