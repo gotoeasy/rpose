@@ -90,7 +90,6 @@ body
 [live demo](https://gotoeasy.github.io/build/dist/live-demo/todo-list.html)
 </details>
 
-
 <details>
 <summary><strong>layout (@class)</strong></summary>
 
