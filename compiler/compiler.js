@@ -10602,6 +10602,7 @@ class <%= $data['COMPONENT_NAME'] %> {
         "rpose",
         "$SLOT",
         "require",
+        "XMLHttpRequest",
         "window",
         "document",
         "sessionStorage",

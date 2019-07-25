@@ -3,6 +3,7 @@ const bus = require('@gotoeasy/bus');
 const oSetVarNames = new Set([
     '$$', 'rpose', '$SLOT',
     'require',
+    'XMLHttpRequest',
     'window', 'document', 'sessionStorage', 'localStorage', 'location', 'console', 'alert', 'escape', 'unescape',
     'clearInterval', 'setInterval', 'setTimeout', 'parseInt', 'parseFloat', 'isFinite', 'isNaN', 'eval', 'decodeURI', 'encodeURI', 'toString', 'toLocaleString', 'valueOf', 'isPrototypeOf',
     'Function', 'arguments', 'JSON', 'Number', 'String',
