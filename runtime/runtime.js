@@ -459,6 +459,15 @@
         domEventListener(el, name, fn);
         addDocumentEventListener(name);
     }
+    function removeDomEventListener(el, name) {
+        if (domEventListener.m) {
+            if (name) {
+                delete (domEventListener.m.get(el) || {})[name];
+            } else {
+                domEventListener.m.delete(el);
+            }
+        }
+    }
     function domEventListener(el, name, fn) {
         let map = domEventListener.m = domEventListener.m || new WeakMap();
         let oFn;
@@ -752,24 +761,21 @@
     function diffRender(component, vnode2) {
         let $$el = $$("." + component.$COMPONENT_ID);
         if (!$$el.length) {
-            error("root node not found:", component.$COMPONENT_ID);
             return;
         }
         if (!vnode2) {
-            $$el.remove();
-            return;
+            return $$el.remove();
         }
         let vnode1 = domVnode($$el[0]);
         vnode1.M && (vnode1 = vnode1[vnode2.t]);
         if (vnode2.m) {
-            vnode1.o.setState({
+            return vnode1.o.setState({
                 [$SLOT]: vnode2.c
             });
-            return;
         }
         let attr1 = (vnode1 || {}).a || {};
         let attr2 = vnode2.a || {};
-        if (!vnode1 || vnode1.k != vnode2.k || (vnode1.t || vnode1.t) && vnode1.t != vnode2.t || (attr1.id || attr2.id) && attr1.id != attr2.id || (attr1.ref || attr2.ref) && attr1.ref != attr2.ref) {
+        if (!vnode1 || vnode1.k !== vnode2.k || vnode1.t !== vnode2.t || attr1.id != attr2.id) {
             let el = createDom(vnode2, component);
             $$el.replaceWith(el);
             return el;
@@ -782,30 +788,28 @@
             }
         }
         diffRenderChildern(component, $$el[0], vnode2);
-        return $$el[0];
     }
     function diffRenderChildern(component, parent, parentVnode2) {
-        let childern1 = [ ...parent.childNodes || [] ];
-        let childern2 = parentVnode2.c || [];
-        if (!childern1.length) {
-            return childern2.forEach(vn => parent.appendChild(createDom(vn, component)));
+        let childern1els = [ ...parent.childNodes || [] ];
+        let childern2vns = parentVnode2.c || [];
+        if (!childern1els.length) {
+            return childern2vns.forEach(vn2 => parent.appendChild(createDom(vn2, component)));
         }
         let ary1 = [], ary2 = [];
-        childern1.forEach(v => ary1.push({
-            vn: domVnode(v),
-            el: v
+        childern1els.forEach(el => ary1.push({
+            vn: domVnode(el),
+            el: el
         }));
-        childern2.forEach(v => ary2.push({
-            vn: v
+        childern2vns.forEach(vn => ary2.push({
+            vn: vn
         }));
         let matchAll = 1;
-        if (ary1.length == ary2.length) {
+        if (ary1.length === ary2.length) {
             for (let i = 0, wv1, wv2; i < ary1.length; i++) {
                 wv1 = ary1[i];
                 wv2 = ary2[i];
-                if (matchWvnode(wv1, wv2)) {
-                    wv1.S = 1;
-                    wv2.S = 1;
+                if (mabySameWvnode(wv1, wv2)) {
+                    wv1.S = wv2.S = 1;
                     wv2.wv1 = wv1;
                 } else {
                     matchAll = 0;
@@ -816,90 +820,72 @@
             matchAll = 0;
         }
         if (!matchAll) {
-            ary2.forEach(wv => !wv.S && findVnode(ary1, wv));
-            ary1.filter(wv => wv.S ? 1 : $$(wv.el).remove() && 0);
+            ary2.forEach(wv => !wv.S && findAndMarkWVnode(ary1, wv));
+            ary1 = ary1.filter(wv => wv.S ? 1 : $$(wv.el).remove() && 0);
             if (!ary1.length) {
                 return ary2.forEach(wv => parent.appendChild(createDom(wv.vn, component)));
             }
         }
         let j = 0;
         let wv1 = ary1[j];
-        for (let i = 0, idx, wv2; i < ary2.length; i++) {
-            wv2 = ary2[i];
+        for (let i = 0, idx, wv2; wv2 = ary2[i++]; ) {
             if (!wv2.S) {
-                let el = createDom(wv2.vn, component);
-                if (el) {
-                    if (wv1) {
-                        parent.insertBefore(el, wv1.el);
-                    } else {
-                        parent.appendChild(el);
-                    }
-                }
+                let el2 = createDom(wv2.vn, component);
+                el2 && wv1 ? parent.insertBefore(el2, wv1.el) : parent.appendChild(el2);
             } else {
-                if (wv2.wv1 != wv1) {
+                if (wv2.wv1 !== wv1) {
                     ary1.splice(j, 0, ary1.splice(ary1.indexOf(wv2.wv1), 1)[0]);
                     j++;
                     parent.insertBefore(wv2.wv1.el, wv1.el);
-                    if (wv2.vn.m) {
-                        wv2.wv1.vn[wv2.vn.t].o.setState({
-                            [$SLOT]: wv2.vn.c
-                        });
-                    } else {
-                        let diffAttrs = getDiffAttrs(wv2.wv1.vn, wv2.vn);
-                        if (diffAttrs) {
-                            for (let k in diffAttrs) {
-                                wv2.wv1.vn.a[k] = diffAttrs[k];
-                                $$(wv2.wv1.el).attr(k, diffAttrs[k]);
-                            }
-                        } else if (!wv2.vn.t && wv2.wv1.vn.s != wv2.vn.s) {
-                            wv2.wv1.vn.s = wv2.vn.s;
-                            wv2.wv1.el.textContent = wv2.vn.s;
-                        }
-                    }
                 } else {
-                    if (wv2.vn.m) {
-                        wv1.vn[wv2.vn.t].o.setState({
-                            [$SLOT]: wv2.vn.c
-                        });
-                    } else {
-                        let diffAttrs = getDiffAttrs(wv1.vn, wv2.vn);
-                        if (diffAttrs) {
-                            for (let k in diffAttrs) {
-                                wv1.vn.a[k] = diffAttrs[k];
-                                $$(wv1.el).attr(k, diffAttrs[k]);
+                    wv1 = ary1[++j];
+                }
+                if (wv2.vn.m) {
+                    setComponentState(wv2.wv1.vn[wv2.vn.t].o, wv2.vn);
+                } else {
+                    let diffAttrs = getDiffAttrs(wv2.wv1.vn, wv2.vn);
+                    if (diffAttrs) {
+                        for (let k in diffAttrs) {
+                            wv2.wv1.vn.a[k] = diffAttrs[k];
+                            $$(wv2.wv1.el).attr(k, diffAttrs[k]);
+                        }
+                    } else if (!wv2.vn.t && wv2.wv1.vn.s != wv2.vn.s) {
+                        wv2.wv1.vn.s = wv2.vn.s;
+                        wv2.wv1.el.textContent = wv2.vn.s;
+                    }
+                    if (wv2.vn.e) {
+                        for (let k in wv2.vn.e) {
+                            removeDomEventListener(wv2.wv1.el, k);
+                            if (isFunction(wv2.vn.e[k])) {
+                                $$(wv2.wv1.el).on(k, wv2.vn.e[k]);
+                            } else if (vnode.e[k] == null) {} else {
+                                console.error("invalid event handle:", k, "=", wv2.vn.e[k]);
                             }
-                        } else if (!wv2.vn.t && wv1.vn.s != wv2.vn.s) {
-                            wv1.vn.s = wv2.vn.s;
-                            wv1.el.textContent = wv2.vn.s;
                         }
                     }
-                    wv1 = ary1[++j];
                 }
             }
         }
         ary2.forEach(wv => {
             if (wv.S) {
                 if (wv.vn.m) {
-                    wv.wv1.vn[wv.vn.t].o.setState({
-                        [$SLOT]: wv.vn.c
-                    });
+                    setComponentState(wv.wv1.vn[wv.vn.t].o, wv.vn);
                 } else {
                     diffRenderChildern(component, wv.wv1.el, wv.vn);
                 }
             }
         });
     }
-    function findVnode(wvnodes, wv2) {
+    function findAndMarkWVnode(wvns1, wv2) {
         let vnode1, vnode2 = wv2.vn;
-        for (let i = 0, wv1; wv1 = wvnodes[i++]; ) {
-            if (matchWvnode(wv1, wv2)) {
-                wv1.S = 1;
-                wv2.S = 1;
+        for (let i = 0, wv1; wv1 = wvns1[i++]; ) {
+            if (mabySameWvnode(wv1, wv2)) {
+                wv1.S = wv2.S = 1;
                 return wv2.wv1 = wv1;
             }
         }
     }
-    function matchWvnode(wv1, wv2) {
+    function mabySameWvnode(wv1, wv2) {
         if (wv1.S) {
             return 0;
         }
@@ -915,7 +901,7 @@
         }
         let attr1 = vnode1.a || {};
         let attr2 = vnode2.a || {};
-        if (vnode1.k != vnode2.k || (vnode1.t || vnode2.t) && vnode1.t != vnode2.t || (attr1.id || attr2.id) && attr1.id != attr2.id || (attr1.ref || attr2.ref) && attr1.ref != attr2.ref || (vnode1.g || vnode2.g) && vnode1.g != vnode2.g) {
+        if (vnode1.k !== vnode2.k || vnode1.t !== vnode2.t || attr1.id !== attr2.id) {
             return 0;
         }
         return 1;
@@ -930,21 +916,21 @@
         let rs = {};
         let has = 0;
         keys2.forEach(k => {
-            if (attr1[k] != attr2[k]) {
-                if (k == "class") {
+            if (attr1[k] !== attr2[k]) {
+                if (k === "class") {
                     let oDiff = getDiffClass(attr1[k], attr2[k]);
                     if (oDiff) {
                         rs[k] = oDiff;
                         has = 1;
                     }
-                } else if (k == $SLOT) {} else if (k == "style") {
+                } else if (k === "style") {
                     let oDiff = getDiffStyle(attr1[k], attr2[k]);
                     if (oDiff) {
                         rs[k] = oDiff;
                         has = 1;
                     }
                 } else if (BOOL_PROPS.includes(k)) {
-                    if (toBoolean(attr1[k]) != toBoolean(attr2[k])) {
+                    if (toBoolean(attr1[k]) !== toBoolean(attr2[k])) {
                         rs[k] = toBoolean(attr2[k]);
                         has = 1;
                     }
@@ -966,7 +952,7 @@
             if (obj1[k] == null) {
                 rs[k] = toBoolean(obj2[k]);
                 has = 1;
-            } else if (toBoolean(obj1[k]) != toBoolean(obj2[k])) {
+            } else if (toBoolean(obj1[k]) !== toBoolean(obj2[k])) {
                 rs[k] = toBoolean(obj2[k]);
                 has = 1;
             }
@@ -989,6 +975,11 @@
             }
         });
         return has ? rs : null;
+    }
+    function setComponentState(component, vnode) {
+        component.setState(Object.assign({}, vnode.a, vnode.e, {
+            [$SLOT]: vnode.c
+        }));
     }
     function mount(dom, selector, context) {
         dom && (context || document).querySelector(selector || "body").appendChild(dom);

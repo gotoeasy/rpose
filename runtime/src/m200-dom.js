@@ -301,6 +301,16 @@ function addDomEventListener(el, name, fn){
     domEventListener(el, name, fn);
     addDocumentEventListener(name);
 }
+// DOM事件删除
+function removeDomEventListener(el, name){
+    if (domEventListener.m) {
+        if (name) {
+            delete (domEventListener.m.get(el) || {})[name];
+        }else{
+            domEventListener.m.delete(el);
+        }
+    }
+}
 // DOM事件存取
 function domEventListener(el, name, fn){
 	let map = domEventListener.m = domEventListener.m || new WeakMap(); // WeakMap{el: {name: fn}}

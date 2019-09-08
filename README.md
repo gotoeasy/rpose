@@ -47,9 +47,9 @@ body
 <div>
     <div class="title">TODO LIST</div>
     <ul>
-        <for @for="(item, index) in $state.items">
-        <li><button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}</li>
-        </for>
+        <li @for="(item, index) in $state.items">
+            <button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}
+        </li>
     </ul>
     <form>
         <input type="text" @ref="input">
@@ -188,6 +188,7 @@ body
 - [x] 提供`$$`接口，方便dom节点选择及属性修改操作
 - [x] 支持相对特殊的`<svg>`、`<script>`、`<link>`标签
 - [x] 使用代理事件，`event.targetNode`存放当前事件节点
+- [x] 差异渲染时支持事件更新
 
 > `compiler`
 
@@ -243,6 +244,12 @@ body
 <br>
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.7.*</strong></summary>
+
+- [x] 差异渲染时支持事件更新
+</details>
+
 <details>
 <summary><strong>Ver 0.6.*</strong></summary>
 
