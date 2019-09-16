@@ -2,7 +2,7 @@
 @rpose/cli
 
 [version] // 版本号
-0.7.1
+0.7.2
 
 [main] // 入口文件
 index.js
@@ -11,7 +11,7 @@ index.js
 rpose = bin/rpose
 
 [dependencies] // 依赖库
-@rpose/compiler = 0.6.*
+@rpose/compiler = 0.7.*
 commander = 2.19.*
 chalk = 2.4.*
 inquirer = 6.2.*
