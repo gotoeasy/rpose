@@ -1,23 +1,14 @@
 (function(window, document) {
     const BOOL_PROPS = [ "autofocus", "hidden", "readonly", "disabled", "checked", "selected", "multiple", "translate", "draggable", "noresize" ];
     const $SLOT = "$SLOT";
-    const defer = (fn, ...args) => Promise.resolve(...args).then(fn);
-    const log = (...args) => console.log(...args);
-    const warn = (...args) => console.warn(...args);
-    const error = (...args) => console.error(...args);
     const _toString = obj => Object.prototype.toString.call(obj);
     const isFunction = obj => typeof obj == "function" && obj.constructor == Function;
-    const isBoolean = str => typeof str === "boolean";
-    const isNumber = str => typeof str === "number";
     const isString = str => typeof str === "string";
-    const isObject = obj => obj !== null && typeof str === "object";
     const isArray = obj => Array.isArray(obj) || obj instanceof Array;
     const isPlainObject = obj => _toString(obj) === "[object Object]";
     const isDate = obj => _toString(obj) === "[object Date]";
-    const isRegExp = obj => _toString(obj) === "[object RegExp]";
     const isMap = obj => _toString(obj) === "[object Map]";
     const isSet = obj => _toString(obj) === "[object Set]";
-    const isTextNode = obj => _toString(obj) === "[object Text]";
     const toLowerCase = str => str.toLowerCase();
     const BUS = (() => {
         let keySetFn = {};
@@ -49,7 +40,7 @@
             }
             return rs;
         };
-        on("window.onload", e => {
+        on("window.onload", () => {
             $$(".pre-render").addClass("loaded");
             setTimeout(() => $$(".pre-render").remove(), 5e3);
         });
@@ -76,7 +67,7 @@
         let fnLocationChange = e => BUS.at("router.locationchange", e);
         let eventname = historyApi ? "popstate" : "hashchange";
         window.addEventListener ? window.addEventListener(eventname, fnLocationChange, false) : window.attachEvent("on" + eventname, fnLocationChange);
-        BUS.on("window.onload", e => {
+        BUS.on("window.onload", () => {
             let path = location.hash ? location.hash.substring(1) : "", useDefault = 1;
             route({
                 path: path,
@@ -103,7 +94,7 @@
                 });
             });
         } else {
-            locationchange = (e => {
+            locationchange = (() => {
                 if (!ignoreHashchange) {
                     let hash = location.hash ? location.hash.substring(1) : "";
                     let idx = hash.indexOf("?");
@@ -428,7 +419,6 @@
             if (!els.length) {
                 return value == null ? null : this;
             }
-            let rs;
             for (let i = 0; i < els.length; i++) {
                 if (value == null) {
                     return DomAttrHandle.at(els[0], name);
@@ -526,9 +516,6 @@
             mapTagComponent[key] = components[key];
         }
     }
-    function getComponent(name) {
-        return mapTagComponent[name];
-    }
     function newComponentProxy(componentKey, opt) {
         let Component = mapTagComponent[componentKey];
         if (!Component) {
@@ -624,7 +611,7 @@
                     for (let k in vnode.e) {
                         if (isFunction(vnode.e[k])) {
                             $$(el).on(k, vnode.e[k]);
-                        } else if (vnode.e[k] == undefined) {} else {
+                        } else if (vnode.e[k] != null) {
                             console.error("invalid event handle:", k, "=", vnode.e[k]);
                         }
                     }
@@ -641,32 +628,6 @@
         }
         el && domVnode(el, vnode);
         return el;
-    }
-    function assignOptions(...objs) {
-        if (objs.length == 1) {
-            return objs[0];
-        }
-        let rs = objs[0];
-        for (let i = 1; i < objs.length; i++) {
-            for (let k in objs[i]) {
-                if (k == "ref") {
-                    continue;
-                }
-                if (k == "class") {
-                    if (isString(objs[i][k])) {
-                        let ary = objs[i][k].split(/\s/);
-                        let objCls = {};
-                        ary.forEach(v => v.trim() && (objCls[v] = 1));
-                        rs[k] = objCls;
-                    } else {
-                        rs[k] = objs[i][k];
-                    }
-                } else {
-                    rs[k] = objs[i][k];
-                }
-            }
-        }
-        return rs;
     }
     function loadScript(attr) {
         let ary = loadScript.s || (loadScript.s = []);
@@ -828,7 +789,7 @@
         }
         let j = 0;
         let wv1 = ary1[j];
-        for (let i = 0, idx, wv2; wv2 = ary2[i++]; ) {
+        for (let i = 0, wv2; wv2 = ary2[i++]; ) {
             if (!wv2.S) {
                 let el2 = createDom(wv2.vn, component);
                 el2 && wv1 ? parent.insertBefore(el2, wv1.el) : parent.appendChild(el2);
@@ -858,7 +819,7 @@
                             removeDomEventListener(wv2.wv1.el, k);
                             if (isFunction(wv2.vn.e[k])) {
                                 $$(wv2.wv1.el).on(k, wv2.vn.e[k]);
-                            } else if (vnode.e[k] == null) {} else {
+                            } else if (wv2.vn.e[k] != null) {
                                 console.error("invalid event handle:", k, "=", wv2.vn.e[k]);
                             }
                         }
@@ -877,7 +838,6 @@
         });
     }
     function findAndMarkWVnode(wvns1, wv2) {
-        let vnode1, vnode2 = wv2.vn;
         for (let i = 0, wv1; wv1 = wvns1[i++]; ) {
             if (mabySameWvnode(wv1, wv2)) {
                 wv1.S = wv2.S = 1;
@@ -989,24 +949,6 @@
             return html.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
         return html;
-    }
-    function unescapeHtml(str) {
-        if (typeof str == "string") {
-            return str.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
-        }
-        return str;
-    }
-    function isEmpty(obj) {
-        if (!obj) {
-            return true;
-        }
-        if (isPlainObject(obj)) {
-            for (let k in obj) {
-                return false;
-            }
-            return true;
-        }
-        return !!obj;
     }
     function uid(prefix) {
         if (prefix) {

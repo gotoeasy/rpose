@@ -258,7 +258,6 @@ function Dom(queryResult){
 			return value == null ? null : this;
 		}
 
-		let rs;
 		for ( let i=0; i<els.length; i++ ) {
 			if ( value == null ) {
 				return DomAttrHandle.at(els[0], name); // 取值时仅返回首个节点属性值

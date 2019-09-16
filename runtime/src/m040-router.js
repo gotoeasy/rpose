@@ -17,7 +17,7 @@ const Router = ((BUS)=>{
 	window.addEventListener ? window.addEventListener(eventname, fnLocationChange, false) : window.attachEvent("on" + eventname, fnLocationChange);
 
     // 期初显示，window.onload时按指定路由显示
-    BUS.on('window.onload', e => {
+    BUS.on('window.onload', () => {
         let path = location.hash ? location.hash.substring(1) : '', useDefault = 1;
         route({path, useDefault}) && replace({path, state:{useDefault}});           // 地址+默认页，初期显示不支持参数，实际使用了默认页时修改地址避免唐突
     });
@@ -32,7 +32,7 @@ const Router = ((BUS)=>{
             useDefault ? route({path, useDefault}) : route({path, state});          // 地址+参数，无默认页
         };
     }else{
-        locationchange = e => {
+        locationchange = () => {
             if ( !ignoreHashchange ) {
                 let hash = location.hash ? location.hash.substring(1) : '';
                 let idx = hash.indexOf('?');

@@ -16,6 +16,7 @@ function escapeHtml(html){
 	return html;
 }
 
+/*
 function unescapeHtml(str){
 	if ( typeof str == 'string' ) {
 		return str.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
@@ -35,7 +36,7 @@ function isEmpty(obj) {
 	}
 	return !!obj;
 }
-
+*/
 
 function uid(prefix) {
 	if ( prefix ) {

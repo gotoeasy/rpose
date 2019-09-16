@@ -103,7 +103,7 @@ function diffRenderChildern(component, parent, parentVnode2){
     // 按新虚拟节点顺序更新视图
     let j = 0;
     let wv1 = ary1[j];
-    for ( let i=0,idx,wv2; wv2=ary2[i++]; ) {
+    for ( let i=0,wv2; wv2=ary2[i++]; ) {
         if ( !wv2.S ) {
             // 是个新节点
             let el2 = createDom(wv2.vn, component); // 不是所有组件都会渲染返回节点
@@ -144,9 +144,7 @@ function diffRenderChildern(component, parent, parentVnode2){
                         removeDomEventListener(wv2.wv1.el, k);                      // 清空原节点全部事件
                         if ( isFunction(wv2.vn.e[k]) ) {
                             $$(wv2.wv1.el).on(k, wv2.vn.e[k] );
-                        }else if ( vnode.e[k] == null ) {
-                            // 没有定义事件处理方法，忽略
-                        }else{
+                        }else if ( wv2.vn.e[k] != null ) {
                             console.error('invalid event handle:', k, '=', wv2.vn.e[k]);    // 绑定的不是方法
                         }
                     }
@@ -170,7 +168,6 @@ function diffRenderChildern(component, parent, parentVnode2){
 }
 
 function findAndMarkWVnode(wvns1, wv2){
-    let vnode1, vnode2 = wv2.vn;
     for ( let i=0,wv1; wv1=wvns1[i++]; ) {
         if ( mabySameWvnode(wv1, wv2) ) {
             wv1.S = wv2.S = 1;

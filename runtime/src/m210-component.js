@@ -11,9 +11,9 @@ function registerComponents(components={}){
 	}
 }
 
-function getComponent(name){
-	return mapTagComponent[name];
-}
+//function getComponent(name){
+//	return mapTagComponent[name];
+//}
 
 function newComponentProxy(componentKey, opt){
 	let Component = mapTagComponent[componentKey];
@@ -146,9 +146,7 @@ function createDom(vnode, $thisContext) {
 				for (let k in vnode.e) {
 					if ( isFunction(vnode.e[k]) ) {
 						$$(el).on(k, vnode.e[k] );
-					}else if ( vnode.e[k] == undefined ) {
-						// 没有定义事件处理方法，忽略
-					}else{
+					}else if ( vnode.e[k] != null ) {
 						console.error('invalid event handle:', k, '=', vnode.e[k]); // 绑定的不是方法
 					}
 				}
@@ -175,6 +173,7 @@ function createDom(vnode, $thisContext) {
 	return el;
 }
 
+/*
 function assignOptions(...objs) {
 	if (objs.length == 1) {
 		return objs[0];
@@ -202,6 +201,7 @@ function assignOptions(...objs) {
 	}
 	return rs;
 }
+*/
 
 function loadScript(attr){
 	let ary = loadScript.s || (loadScript.s = []);

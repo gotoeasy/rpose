@@ -13,5 +13,7 @@ module.exports = {
         "ecmaVersion": 2018
     },
     "rules": {
+        'no-cond-assign': 'off'
+        ,'require-atomic-updates': 'off'
     }
 };
