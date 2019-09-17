@@ -46,10 +46,8 @@ body
 [view]
 <div>
     <div class="title">TODO LIST</div>
-    <ul>
-        <li @for="(item, index) in $state.items">
-            <button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}
-        </li>
+    <ul @for="(item, index) in $state.items">
+        <li><button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}</li>
     </ul>
     <form>
         <input type="text" @ref="input">
