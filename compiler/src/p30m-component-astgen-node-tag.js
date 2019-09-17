@@ -38,7 +38,7 @@ function tagJsify(node, context){
     // 有单纯的表达式对象属性时，转换成对象复制语句
     let props = bus.at('astgen-node-{prop}', node, context);                // (prop1),(prop2)
     if ( props ) {
-        attrs = `rpose.assign( ${attrs}, ${props})`;
+        attrs = attrs ? `rpose.assign( ${attrs}, ${props})` : `${props}`;   // 有其他属性时用对象复制形式合并，否则直接赋值
     }
 
 
