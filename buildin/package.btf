@@ -2,7 +2,7 @@
 @rpose/buildin
 
 [version] // 版本号 （必填）
-0.1.1
+0.1.2
 
 [main] // 入口文件
 

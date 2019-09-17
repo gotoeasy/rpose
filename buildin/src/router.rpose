@@ -14,10 +14,10 @@ init() {
     this.route = ctx => {
         this.setState({active: 1});
 
-        // 默认父节点滚动回原位置
+        // 默认父节点滚动回原位置，edge不支持
         // TODO 不一定在父容器滚动，也可能多路由匹配等，效果不见得全对
         let el = this.getRootElement();
-        el && el.parentNode && el.parentNode.scrollTo(...JSON.parse($$(el).attr('_scrollTo') || '[0, 0]'));
+        el && el.parentNode && el.parentNode.scrollTo && el.parentNode.scrollTo(...JSON.parse($$(el).attr('_scrollTo') || '[0, 0]'));
     };
 }
 
