@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.7.3
+0.7.4
 
 [main]
 compiler.js
@@ -23,8 +23,11 @@ rp = bin/rpose
 @gotoeasy/cache = 0.3.*
 @gotoeasy/theme = 0.2.*
 @gotoeasy/pre-render = 0.2.*
+postcss-sort-media = 0.2.*
 csslibify = 0.5.*
-postcss-sort-media = 0.1.*
+@babel/plugin-proposal-decorators = *
+@babel/plugin-proposal-class-properties = *
+@babel/plugin-proposal-private-methods = *
 csso = 3.5.*
 postcss-import-sync = 7.1.*
 resolve-pkg = 1.0.*
@@ -32,9 +35,6 @@ chokidar = 2.1.*
 refractor = 2.7.*
 rehype = 7.0.*
 opn = 5.3.*
-@babel/plugin-proposal-decorators = *
-@babel/plugin-proposal-class-properties = *
-@babel/plugin-proposal-private-methods = *
 
 [devDependencies] // 开发依赖库
 ava = *
