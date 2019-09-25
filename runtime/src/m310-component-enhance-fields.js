@@ -10,11 +10,5 @@ function enhanceFields(component) {
 		value : uid('_cid_')
 	});
 
-    // 【2】是否初次渲染
-	Object.defineProperty(component, "isInitRender", {
-		value : true,
-		writable : true
-	});
-
 }
 
