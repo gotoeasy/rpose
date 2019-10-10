@@ -17,7 +17,7 @@ bus.on('astgen-node-attributes', function(){
         if ( !attrsNode || !attrsNode.nodes || !attrsNode.nodes.length ) return '';
 
         // 生成
-        let key, value, comma = '', ary = [];
+        let key, value, comma = '', ary = [], hasInner = false;
         ary.push( `{ `);     
         attrsNode.nodes.forEach(node => {
             key = '"' + lineString(node.object.name) + '"';
@@ -46,10 +46,12 @@ bus.on('astgen-node-attributes', function(){
 
             ary.push( ` ${comma} ${key}: ${value} ` );
             !comma && (comma = ',');
+
+			!hasInner && /(innerHTML|innerTEXT|textContent)/i.test(key) && (hasInner = true); // 是否含 innerHTML|innerTEXT|textContent 属性（不区分大小写）
         });
         ary.push( ` } ` );
         
-        return ary.join('\n')
+        return { hasInner, result: ary.join('\n') };
     }
 
 }());

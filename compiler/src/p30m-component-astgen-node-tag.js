@@ -12,8 +12,12 @@ function tagJsify(node, context){
     let isTop = node.parent.type === 'View';                                // 是否为组件的顶部节点
     let isStatic = isStaticTagNode(node);                                   // 是否为静态不变节点，便于运行期的节点差异比较优化
     let isComponent = !node.object.standard;                                // 是否为组件标签节点
-    let childrenJs = bus.at('astgen-node-tag-nodes', node.nodes, context);  // 子节点代码，空白或 [{...},{...},{...}]
-    let attrs = bus.at('astgen-node-attributes', node, context);
+    let oAttrsRs = bus.at('astgen-node-attributes', node, context);         // 属性结果对象
+    let attrs = oAttrsRs.result;
+    let childrenJs = "";
+	if ( !oAttrsRs.hasInner ) {                                             // 不含 innerHTML|innerTEXT|textContent 属性时生成子节点，否则忽略子节点
+        childrenJs = bus.at('astgen-node-tag-nodes', node.nodes, context);  // 子节点代码，空白或 [{...},{...},{...}]
+	}
     let events = bus.at('astgen-node-events', node, context);
     let isSvg = node.object.svg;                                            // 是否svg标签或svg子标签
 
