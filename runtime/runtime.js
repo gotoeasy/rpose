@@ -662,10 +662,6 @@
         Object.defineProperty(component, "$COMPONENT_ID", {
             value: uid("_cid_")
         });
-        Object.defineProperty(component, "isInitRender", {
-            value: true,
-            writable: true
-        });
     }
     function enhanceRoot(component) {
         Object.defineProperty(component, "getRootElement", {
