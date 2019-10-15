@@ -20,6 +20,7 @@ function tagJsify(node, context){
 	}
     let events = bus.at('astgen-node-events', node, context);
     let isSvg = node.object.svg;                                            // 是否svg标签或svg子标签
+    let atkey = bus.at('astgen-node-@key', node, context);                  // @key的值
 
     // style和class要合并到attrs中去
     let style = bus.at('astgen-node-style', node, context);
@@ -53,8 +54,9 @@ function tagJsify(node, context){
     isStatic && ary.push(       ` ,x: 1 `                               );  // 静态节点标识（当前节点和子孙节点没有变量不会变化）
     isComponent && ary.push(    ` ,m: 1 `                               );  // 组件标签节点标识（便于运行期创建标签或组件）
     isSvg && ary.push(          ` ,g: 1 `                               );  // svg标签或svg子标签标识
-    ary.push(                   ` ,k: ${context.keyCounter++} `         );  // 组件范围内的唯一节点标识（便于运行期差异比较优化）
-    childrenJs && ary.push(     ` ,c: ${childrenJs} `                   );  // 静态节点标识（当前节点和子孙节点没有变量不会变化）
+    !atkey && ary.push(         ` ,k: ${context.keyCounter++} `         );  // 节点标识（便于运行期差异比较优化）
+    atkey && ary.push(          ` ,K: ${atkey} `                        );  // 自定义节点标识（便于运行期差异比较优化）
+    childrenJs && ary.push(     ` ,c: ${childrenJs} `                   );  // 子节点数组
     attrs && ary.push(          ` ,a: ${attrs} `                        );  // 属性对象
     events && ary.push(         ` ,e: ${events} `                       );  // 事件对象
     ary.push(                   `}`                                     );

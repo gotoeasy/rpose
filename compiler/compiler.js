@@ -1173,7 +1173,7 @@ console.time("load");
                 context.doc = {}; // 存放源文件的中间解析结果
                 context.style = {}; // 存放样式的中间编译结果
                 context.script = {}; // 存放脚本的中间编译结果，script的Method属性存放方法名为键的对象
-                context.keyCounter = 1; // 视图解析时标识key用的计数器
+                context.keyCounter = 1; // 视图解析时标识key用的计数器（同一组子节点单位内递增）
 
                 context.result = {}; // 存放编译结果
 
@@ -6443,6 +6443,63 @@ console.time("load");
     // ------- h35p-astedit-process-attribtue-@ref end
 })();
 
+/* ------- h37p-astedit-process-attribtue-@key ------- */
+(() => {
+    // ------- h37p-astedit-process-attribtue-@key start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+    const Err = require("@gotoeasy/err");
+
+    bus.on(
+        "编译插件",
+        (function() {
+            // 处理标签中指定类型的属性，提取后新建节点管理
+            // 处理标签中的 @key 属性
+            return postobject.plugin("h37p-astedit-process-attribtue-@key", function(root, context) {
+                root.walk("Tag", (node, object) => {
+                    if (!node.nodes || !node.nodes.length) return; // 节点没有定义属性，跳过
+
+                    // 查找Attributes
+                    let attrsNode;
+                    for (let i = 0, nd; (nd = node.nodes[i++]); ) {
+                        if (nd.type === "Attributes") {
+                            attrsNode = nd;
+                            break;
+                        }
+                    }
+                    if (!attrsNode || !attrsNode.nodes || !attrsNode.nodes.length) return; // 没有相关属性节点，跳过
+
+                    // 查找目标属性节点
+                    let ary = [];
+                    attrsNode.nodes.forEach(nd => {
+                        /^@key$/i.test(nd.object.name) && ary.push(nd); // 找到
+                    });
+
+                    if (!ary.length) return; // 没有找到相关节点，跳过
+
+                    if (ary.length > 1) {
+                        // 属性 @key 不能重复
+                        throw new Err("duplicate attribute of @key", { ...context.input, ...ary[1].object.Name.pos });
+                    }
+                    if (/^(if|for)$/.test(object.value)) {
+                        throw new Err(`unsupport attribute @key on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
+                    }
+
+                    // 创建节点保存
+                    let oNode = ary[0].clone();
+                    oNode.type = "@key";
+                    oNode.object.type = "@key";
+
+                    node.addChild(oNode);
+                    ary[0].remove(); // 删除节点
+                });
+            });
+        })()
+    );
+
+    // ------- h37p-astedit-process-attribtue-@key end
+})();
+
 /* ------- h45p-astedit-process-attribtue-@if ------- */
 (() => {
     // ------- h45p-astedit-process-attribtue-@if start
@@ -8135,6 +8192,8 @@ class <%= $data['COMPONENT_NAME'] %> {
     <% } %>
 
     // 虚拟节点数据
+    // r：是否组件根节点、x：静态节点标识、k：节点标识、K：自定义节点标识
+    // t：标签名、c：子节点数组、a：属性对象、e：事件对象、s：文本、m：组件标签标识、g：svg标签或svg子标签标识
     <%= $data['vnodeTemplate'] %>
 }
 `;
@@ -8162,77 +8221,9 @@ class <%= $data['COMPONENT_NAME'] %> {
     // ------- p10m-transform-expression end
 })();
 
-/* ------- p12m-component-astgen-node-text ------- */
+/* ------- p15p-component-reference-components ------- */
 (() => {
-    // ------- p12m-component-astgen-node-text start
-    const bus = require("@gotoeasy/bus");
-
-    bus.on(
-        "astgen-node-text",
-        (function() {
-            return function(node, context) {
-                const OPTS = bus.at("视图编译选项");
-
-                if (node.type === OPTS.TypeText) {
-                    return textJsify(node, context);
-                } else if (node.type === OPTS.TypeExpression) {
-                    return expressionJsify(node, context);
-                }
-
-                return "";
-            };
-        })()
-    );
-
-    function textJsify(node, context) {
-        let obj = node.object; // 当前节点数据对象
-
-        let ary = [];
-        let text = '"' + lineString(obj.value) + '"'; // 按双引号转换
-        ary.push(`{ `);
-        ary.push(`  s: ${text} `); // 静态文字
-        ary.push(` ,k: ${context.keyCounter++} `); // 组件范围内的唯一节点标识（便于运行期差异比较优化）
-        ary.push(`}`);
-
-        return ary.join("\n");
-    }
-
-    function expressionJsify(node, context) {
-        let obj = node.object; // 当前节点数据对象
-
-        let ary = [];
-        let text = obj.value.replace(/^\s*\{/, "(").replace(/\}\s*$/, ")"); // 去除前后大括号{}，换为小括号包围起来确保正确 // TODO 按选项设定替换
-        ary.push(`{ `);
-        ary.push(`  s: ${text} `); // 一般是动态文字，也可以是静态
-        ary.push(` ,k: ${context.keyCounter++} `); // 组件范围内的唯一节点标识（便于运行期差异比较优化）
-        ary.push(`}`);
-
-        return ary.join("\n");
-    }
-
-    function lineString(str, quote = '"') {
-        if (str == null) {
-            return str;
-        }
-
-        let rs = str
-            .replace(/\\/g, "\\\\")
-            .replace(/\r/g, "\\r")
-            .replace(/\n/g, "\\n");
-        if (quote == '"') {
-            rs = rs.replace(/"/g, '\\"');
-        } else if (quote == "'") {
-            rs = rs.replace(/'/g, "\\'");
-        }
-        return rs;
-    }
-
-    // ------- p12m-component-astgen-node-text end
-})();
-
-/* ------- p15p-reference-components ------- */
-(() => {
-    // ------- p15p-reference-components start
+    // ------- p15p-component-reference-components start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
     const Err = require("@gotoeasy/err");
@@ -8240,7 +8231,7 @@ class <%= $data['COMPONENT_NAME'] %> {
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("p15p-reference-components", function(root, context) {
+            return postobject.plugin("p15p-component-reference-components", function(root, context) {
                 let result = context.result;
                 let oSet = new Set();
                 root.walk(
@@ -8263,19 +8254,19 @@ class <%= $data['COMPONENT_NAME'] %> {
         })()
     );
 
-    // ------- p15p-reference-components end
+    // ------- p15p-component-reference-components end
 })();
 
-/* ------- p17p-components-reference-standard-tags ------- */
+/* ------- p17p-component-reference-standard-tags ------- */
 (() => {
-    // ------- p17p-components-reference-standard-tags start
+    // ------- p17p-component-reference-standard-tags start
     const bus = require("@gotoeasy/bus");
     const postobject = require("@gotoeasy/postobject");
 
     bus.on(
         "编译插件",
         (function() {
-            return postobject.plugin("p17p-components-reference-standard-tags", function(root, context) {
+            return postobject.plugin("p17p-component-reference-standard-tags", function(root, context) {
                 let result = context.result;
                 let oSet = new Set();
                 root.walk(
@@ -8293,7 +8284,7 @@ class <%= $data['COMPONENT_NAME'] %> {
         })()
     );
 
-    // ------- p17p-components-reference-standard-tags end
+    // ------- p17p-component-reference-standard-tags end
 })();
 
 /* ------- p20m-component-astgen-node-attributes ------- */
@@ -8459,9 +8450,131 @@ class <%= $data['COMPONENT_NAME'] %> {
     // ------- p22m-component-astgen-node-events end
 })();
 
-/* ------- p24m-component-astgen-node-style ------- */
+/* ------- p24m-component-astgen-node-@key ------- */
 (() => {
-    // ------- p24m-component-astgen-node-style start
+    // ------- p24m-component-astgen-node-@key start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "astgen-node-@key",
+        (function() {
+            // 转换处理指令节点 @key 取其值作为最终K属性值
+            return function(tagNode) {
+                if (!tagNode.nodes) return "";
+
+                // 查找检查事件属性节点
+                let atkeyNode;
+                for (let i = 0, nd; (nd = tagNode.nodes[i++]); ) {
+                    if (nd.type === "@key") {
+                        atkeyNode = nd;
+                        break; // 找到
+                    }
+                }
+                if (!atkeyNode) return "";
+
+                let value = atkeyNode.object.value;
+                if (atkeyNode.object.isExpression) {
+                    value = bus.at("表达式代码转换", value); // { abcd } => (abcd)
+                } else {
+                    value = '"' + lineString((value + "").trim()) + '"'; // 硬编码的强制转为字符串
+                }
+
+                return value;
+            };
+        })()
+    );
+
+    function lineString(str, quote = '"') {
+        if (str == null) {
+            return str;
+        }
+
+        let rs = str
+            .replace(/\\/g, "\\\\")
+            .replace(/\r/g, "\\r")
+            .replace(/\n/g, "\\n");
+        if (quote == '"') {
+            rs = rs.replace(/"/g, '\\"');
+        } else if (quote == "'") {
+            rs = rs.replace(/'/g, "\\'");
+        }
+        return rs;
+    }
+
+    // ------- p24m-component-astgen-node-@key end
+})();
+
+/* ------- p24m-component-astgen-node-text ------- */
+(() => {
+    // ------- p24m-component-astgen-node-text start
+    const bus = require("@gotoeasy/bus");
+
+    bus.on(
+        "astgen-node-text",
+        (function() {
+            return function(node, context) {
+                const OPTS = bus.at("视图编译选项");
+
+                if (node.type === OPTS.TypeText) {
+                    return textJsify(node, context);
+                } else if (node.type === OPTS.TypeExpression) {
+                    return expressionJsify(node, context);
+                }
+
+                return "";
+            };
+        })()
+    );
+
+    function textJsify(node, context) {
+        let obj = node.object; // 当前节点数据对象
+
+        let ary = [];
+        let text = '"' + lineString(obj.value) + '"'; // 按双引号转换
+        ary.push(`{ `);
+        ary.push(`  s: ${text} `); // 静态文字
+        ary.push(` ,k: ${context.keyCounter++} `); // 节点标识（便于运行期差异比较优化）
+        ary.push(`}`);
+
+        return ary.join("\n");
+    }
+
+    function expressionJsify(node, context) {
+        let obj = node.object; // 当前节点数据对象
+
+        let ary = [];
+        let text = obj.value.replace(/^\s*\{/, "(").replace(/\}\s*$/, ")"); // 去除前后大括号{}，换为小括号包围起来确保正确 // TODO 按选项设定替换
+        ary.push(`{ `);
+        ary.push(`  s: ${text} `); // 一般是动态文字，也可以是静态
+        ary.push(` ,k: ${context.keyCounter++} `); // 节点标识（便于运行期差异比较优化）
+        ary.push(`}`);
+
+        return ary.join("\n");
+    }
+
+    function lineString(str, quote = '"') {
+        if (str == null) {
+            return str;
+        }
+
+        let rs = str
+            .replace(/\\/g, "\\\\")
+            .replace(/\r/g, "\\r")
+            .replace(/\n/g, "\\n");
+        if (quote == '"') {
+            rs = rs.replace(/"/g, '\\"');
+        } else if (quote == "'") {
+            rs = rs.replace(/'/g, "\\'");
+        }
+        return rs;
+    }
+
+    // ------- p24m-component-astgen-node-text end
+})();
+
+/* ------- p26m-component-astgen-node-style ------- */
+(() => {
+    // ------- p26m-component-astgen-node-style start
     const bus = require("@gotoeasy/bus");
 
     bus.on(
@@ -8542,12 +8655,12 @@ class <%= $data['COMPONENT_NAME'] %> {
         return rs;
     }
 
-    // ------- p24m-component-astgen-node-style end
+    // ------- p26m-component-astgen-node-style end
 })();
 
-/* ------- p26m-component-astgen-node-class ------- */
+/* ------- p28m-component-astgen-node-class ------- */
 (() => {
-    // ------- p26m-component-astgen-node-class start
+    // ------- p28m-component-astgen-node-class start
     const bus = require("@gotoeasy/bus");
     const Err = require("@gotoeasy/err");
 
@@ -8611,12 +8724,12 @@ class <%= $data['COMPONENT_NAME'] %> {
         return "{" + rs.join(",") + "}";
     }
 
-    // ------- p26m-component-astgen-node-class end
+    // ------- p28m-component-astgen-node-class end
 })();
 
-/* ------- p28m-component-astgen-node-{prop} ------- */
+/* ------- p30m-component-astgen-node-{prop} ------- */
 (() => {
-    // ------- p28m-component-astgen-node-{prop} start
+    // ------- p30m-component-astgen-node-{prop} start
     const bus = require("@gotoeasy/bus");
 
     bus.on(
@@ -8651,12 +8764,12 @@ class <%= $data['COMPONENT_NAME'] %> {
         })()
     );
 
-    // ------- p28m-component-astgen-node-{prop} end
+    // ------- p30m-component-astgen-node-{prop} end
 })();
 
-/* ------- p30m-component-astgen-node-tag ------- */
+/* ------- p32m-component-astgen-node-tag ------- */
 (() => {
-    // ------- p30m-component-astgen-node-tag start
+    // ------- p32m-component-astgen-node-tag start
     const bus = require("@gotoeasy/bus");
 
     bus.on(
@@ -8683,6 +8796,7 @@ class <%= $data['COMPONENT_NAME'] %> {
         }
         let events = bus.at("astgen-node-events", node, context);
         let isSvg = node.object.svg; // 是否svg标签或svg子标签
+        let atkey = bus.at("astgen-node-@key", node, context); // @key的值
 
         // style和class要合并到attrs中去
         let style = bus.at("astgen-node-style", node, context);
@@ -8715,8 +8829,9 @@ class <%= $data['COMPONENT_NAME'] %> {
         isStatic && ary.push(` ,x: 1 `); // 静态节点标识（当前节点和子孙节点没有变量不会变化）
         isComponent && ary.push(` ,m: 1 `); // 组件标签节点标识（便于运行期创建标签或组件）
         isSvg && ary.push(` ,g: 1 `); // svg标签或svg子标签标识
-        ary.push(` ,k: ${context.keyCounter++} `); // 组件范围内的唯一节点标识（便于运行期差异比较优化）
-        childrenJs && ary.push(` ,c: ${childrenJs} `); // 静态节点标识（当前节点和子孙节点没有变量不会变化）
+        !atkey && ary.push(` ,k: ${context.keyCounter++} `); // 节点标识（便于运行期差异比较优化）
+        atkey && ary.push(` ,K: ${atkey} `); // 自定义节点标识（便于运行期差异比较优化）
+        childrenJs && ary.push(` ,c: ${childrenJs} `); // 子节点数组
         attrs && ary.push(` ,a: ${attrs} `); // 属性对象
         events && ary.push(` ,e: ${events} `); // 事件对象
         ary.push(`}`);
@@ -8729,12 +8844,12 @@ class <%= $data['COMPONENT_NAME'] %> {
         return false;
     }
 
-    // ------- p30m-component-astgen-node-tag end
+    // ------- p32m-component-astgen-node-tag end
 })();
 
-/* ------- p32m-component-astgen-node-tag-nodes ------- */
+/* ------- p34m-component-astgen-node-tag-nodes ------- */
 (() => {
-    // ------- p32m-component-astgen-node-tag-nodes start
+    // ------- p34m-component-astgen-node-tag-nodes start
     const bus = require("@gotoeasy/bus");
     const Err = require("@gotoeasy/err");
 
@@ -8750,7 +8865,13 @@ class <%= $data['COMPONENT_NAME'] %> {
     function nodesJsify(nodes = [], context) {
         if (!nodes.length) return "";
 
-        return hasCodeBolck(nodes) ? nodesWithScriptJsify(nodes, context) : nodesWithoutScriptJsify(nodes, context);
+        let keyCounter = context.keyCounter; // 保存原节点标识值
+        context.keyCounter = 1; // 重新设定节点标识（令其按在同一组子节点单位内递增）
+
+        let rs = hasCodeBolck(nodes) ? nodesWithScriptJsify(nodes, context) : nodesWithoutScriptJsify(nodes, context);
+
+        context.keyCounter = keyCounter; // 还原节点标识值
+        return rs;
     }
 
     // 节点数组中含有代码块，通过箭头函数返回动态数组
@@ -8792,7 +8913,7 @@ class <%= $data['COMPONENT_NAME'] %> {
             src = bus.at("astgen-node-text", node, context);
             src && ary.push(src);
         });
-        return "[" + ary.join(",\n") + "]"; // [{...},{...},{...}]
+        return ary.length ? "[" + ary.join(",\n") + "]" : ""; // 空白或 [{...},{...},{...}]
     }
 
     function hasCodeBolck(nodes) {
@@ -8804,7 +8925,7 @@ class <%= $data['COMPONENT_NAME'] %> {
         return false;
     }
 
-    // ------- p32m-component-astgen-node-tag-nodes end
+    // ------- p34m-component-astgen-node-tag-nodes end
 })();
 
 /* ------- s15p-component-ast-jsify-writer ------- */

@@ -10,7 +10,13 @@ bus.on('astgen-node-tag-nodes', function(){
 function nodesJsify(nodes=[], context){
     if ( !nodes.length ) return '';
 
-    return hasCodeBolck(nodes) ? nodesWithScriptJsify(nodes, context) : nodesWithoutScriptJsify(nodes, context);
+    let keyCounter = context.keyCounter;    // 保存原节点标识值
+    context.keyCounter = 1;                 // 重新设定节点标识（令其按在同一组子节点单位内递增）
+
+    let rs = hasCodeBolck(nodes) ? nodesWithScriptJsify(nodes, context) : nodesWithoutScriptJsify(nodes, context);
+
+    context.keyCounter = keyCounter;        // 还原节点标识值
+    return rs;
 }
 
 // 节点数组中含有代码块，通过箭头函数返回动态数组
@@ -51,7 +57,7 @@ function nodesWithoutScriptJsify(nodes=[], context){
         src = bus.at('astgen-node-text', node, context);
         src && ary.push( src );
     })
-    return '[' + ary.join(',\n') + ']';     // [{...},{...},{...}]
+    return ary.length ? ('[' + ary.join(',\n') + ']') : '';     // 空白或 [{...},{...},{...}]
 }
 
 

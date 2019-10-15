@@ -33,7 +33,8 @@ function diffRender(component, vnode2){
     let attr1 = (vnode1 || {}).a || {};
     let attr2 = vnode2.a || {};
     if ( !vnode1                                        // 原虚拟节点找不到
-        || vnode1.k !== vnode2.k                        // 序号不同，肯定不是同一节点
+        || vnode1.k !== vnode2.k                        // 节点标识不同肯定是不同节点，节点标识相同未必是同一节点
+        || vnode1.K != vnode2.K                         // 自定义节点标识不同肯定是不同节点，自定义节点标识相同理应同一节点
 		|| vnode1.t !== vnode2.t                        // 标签名不同，肯定不是同一节点
         || attr1.id != attr2.id                         // 自定义的ID不同，肯定不是同一节点
         ) {
@@ -76,7 +77,7 @@ function diffRenderChildern(component, parent, parentVnode2){
         for ( let i=0,wv1,wv2; i<ary1.length; i++) {
             wv1 = ary1[i];
             wv2 = ary2[i];
-            if ( mabySameWvnode(wv1, wv2) ) {
+            if ( mabeSameWvnode(wv1, wv2) ) {
                 wv1.S = wv2.S = 1;
                 wv2.wv1 = wv1;
             }else{
@@ -169,14 +170,14 @@ function diffRenderChildern(component, parent, parentVnode2){
 
 function findAndMarkWVnode(wvns1, wv2){
     for ( let i=0,wv1; wv1=wvns1[i++]; ) {
-        if ( mabySameWvnode(wv1, wv2) ) {
+        if ( mabeSameWvnode(wv1, wv2) ) {
             wv1.S = wv2.S = 1;
             return wv2.wv1 = wv1;
         }
     }
 }
 
-function mabySameWvnode(wv1, wv2){
+function mabeSameWvnode(wv1, wv2){
     if ( wv1.S ) {
         return 0;                           // 已标记过的不再匹配
     }
@@ -194,7 +195,8 @@ function mabySameWvnode(wv1, wv2){
     
     let attr1 = vnode1.a || {};
     let attr2 = vnode2.a || {};
-    if ( vnode1.k !== vnode2.k              // 序号不同，肯定不是同一节点
+    if ( vnode1.k !== vnode2.k              // 节点标识不同肯定是不同节点，节点标识相同未必是同一节点
+        || vnode1.K != vnode2.K             // 自定义节点标识不同肯定是不同节点，自定义节点标识相同理应同一节点
         || vnode1.t !== vnode2.t            // 标签名不同，肯定不是同一节点
         || attr1.id !== attr2.id            // 自定义的ID不同，肯定不是同一节点
         ) {

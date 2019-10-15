@@ -46,8 +46,8 @@ body
 [view]
 <div>
     <div class="title">TODO LIST</div>
-    <ul @for="(item, index) in $state.items">
-        <li><button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}</li>
+    <ul>
+        <li @for="(item, index) in $state.items" @key={index}><button style="margin-right:20px" onclick={ ()=>this.del(index) }>Del</button> {item}</li>
     </ul>
     <form>
         <input type="text" @ref="input">
@@ -161,7 +161,7 @@ body
 
 - [x] 源文件使用BTF的单文档格式，人性化强，可读性高
 - [x] 数据驱动、组件式、响应式、声明式的开发过程
-- [x] 提供指令`@ref`、`@show`、`@if`、`@for`、`@taglib`、`@csslib`、`@class`
+- [x] 提供指令`@ref`、`@key`、`@show`、`@if`、`@for`、`@taglib`、`@csslib`、`@class`
 - [x] 提供组件级和项目级的`[taglib]`配置，和`@taglib`有影响范围区别
 - [x] 提供组件级和项目级的`[csslib]`配置，和`@csslib`有影响范围区别
 - [x] 项目可发布为npm模块，发布内容为项目配置及源码和资源，开发工程可直接引用自动安装按需编译使用
@@ -246,6 +246,7 @@ body
 <summary><strong>Ver 0.7.*</strong></summary>
 
 - [x] 差异渲染时支持事件更新
+- [x] 新增指令`@key`，作用类似vue的`:key`或react的`key`
 </details>
 
 <details>

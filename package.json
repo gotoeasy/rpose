@@ -1,6 +1,6 @@
 {
   "name": "rpose",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

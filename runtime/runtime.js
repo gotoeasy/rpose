@@ -732,7 +732,7 @@
         }
         let attr1 = (vnode1 || {}).a || {};
         let attr2 = vnode2.a || {};
-        if (!vnode1 || vnode1.k !== vnode2.k || vnode1.t !== vnode2.t || attr1.id != attr2.id) {
+        if (!vnode1 || vnode1.k !== vnode2.k || vnode1.K != vnode2.K || vnode1.t !== vnode2.t || attr1.id != attr2.id) {
             let el = createDom(vnode2, component);
             $$el.replaceWith(el);
             return el;
@@ -765,7 +765,7 @@
             for (let i = 0, wv1, wv2; i < ary1.length; i++) {
                 wv1 = ary1[i];
                 wv2 = ary2[i];
-                if (mabySameWvnode(wv1, wv2)) {
+                if (mabeSameWvnode(wv1, wv2)) {
                     wv1.S = wv2.S = 1;
                     wv2.wv1 = wv1;
                 } else {
@@ -835,13 +835,13 @@
     }
     function findAndMarkWVnode(wvns1, wv2) {
         for (let i = 0, wv1; wv1 = wvns1[i++]; ) {
-            if (mabySameWvnode(wv1, wv2)) {
+            if (mabeSameWvnode(wv1, wv2)) {
                 wv1.S = wv2.S = 1;
                 return wv2.wv1 = wv1;
             }
         }
     }
-    function mabySameWvnode(wv1, wv2) {
+    function mabeSameWvnode(wv1, wv2) {
         if (wv1.S) {
             return 0;
         }
@@ -857,7 +857,7 @@
         }
         let attr1 = vnode1.a || {};
         let attr2 = vnode2.a || {};
-        if (vnode1.k !== vnode2.k || vnode1.t !== vnode2.t || attr1.id !== attr2.id) {
+        if (vnode1.k !== vnode2.k || vnode1.K != vnode2.K || vnode1.t !== vnode2.t || attr1.id !== attr2.id) {
             return 0;
         }
         return 1;
