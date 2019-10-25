@@ -52,8 +52,8 @@ function diffRender(component, vnode2){
         }
     }
     
-    // 继续做子节点的差异比较更新
-    diffRenderChildern(component, $$el[0], vnode2);
+    // 没有@html和@text属性时，继续做子节点的差异比较更新
+    !attr1['@html'] && !attr1['@text'] && diffRenderChildern(component, $$el[0], vnode2);
 }
 
 function diffRenderChildern(component, parent, parentVnode2){

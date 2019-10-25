@@ -8318,6 +8318,10 @@ class <%= $data['COMPONENT_NAME'] %> {
                 ary.push(`{ `);
                 attrsNode.nodes.forEach(node => {
                     key = '"' + lineString(node.object.name) + '"';
+                    /(innerHTML|@html)/i.test(key) && (key = '"@html"'); // 统一转为小写@html
+                    /(innerTEXT|@text|textContent)/i.test(key) && (key = '"@text"'); // 统一转为小写@text
+                    !hasInner && /(@html|@text)/.test(key) && (hasInner = true); // 是否含 @html|@text 属性（由于优化跳过不必要的子节点差异比较）
+
                     if (node.object.isExpression) {
                         value = bus.at("表达式代码转换", node.object.value);
                     } else if (typeof node.object.value === "string") {
@@ -8341,8 +8345,6 @@ class <%= $data['COMPONENT_NAME'] %> {
 
                     ary.push(` ${comma} ${key}: ${value} `);
                     !comma && (comma = ",");
-
-                    !hasInner && /(innerHTML|innerTEXT|textContent)/i.test(key) && (hasInner = true); // 是否含 innerHTML|innerTEXT|textContent 属性（不区分大小写）
                 });
                 ary.push(` } `);
 

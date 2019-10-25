@@ -241,7 +241,9 @@
         on("*", (el, prop, val) => isFunction(val) || val == null || prop.startsWith("$") ? el.getAttribute(prop) : el.setAttribute(prop, val));
         BOOL_PROPS.forEach(k => on(k, (el, prop, val) => val === undefined ? el[k] : el[k] = toBoolean(val)));
         on("value", (el, prop, val) => val === undefined ? el.value : el.value = val == null ? "" : val);
+        on("@html", (el, prop, val) => val === undefined ? el.innerHTML : el.innerHTML = val == null ? "" : val);
         on("innerHTML", (el, prop, val) => val === undefined ? el.innerHTML : el.innerHTML = val == null ? "" : val);
+        on("@text", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
         on("innerTEXT", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
         on("textcontent", (el, prop, val) => val === undefined ? el.textContent : el.textContent = val == null ? "" : val);
         on("xlink:href", (el, prop, val) => val === undefined ? el.href.baseVal : el.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", val));
@@ -744,7 +746,7 @@
                 $$el.attr(k, diffAttrs[k]);
             }
         }
-        diffRenderChildern(component, $$el[0], vnode2);
+        !attr1["@html"] && !attr1["@text"] && diffRenderChildern(component, $$el[0], vnode2);
     }
     function diffRenderChildern(component, parent, parentVnode2) {
         let childern1els = [ ...parent.childNodes || [] ];
