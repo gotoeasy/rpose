@@ -66,15 +66,13 @@ function extend(...args){
 	if ( !keys ) return;
 
 	let oOrig = args[0];
-	oOrig.class = classToPlantObject(oOrig.class);
-
 	if ( isArray(keys) ) {
 		for ( let i=0, oCopy; i<args.length-1; i++ ) {
 			oCopy = args[i];
 			if ( oOrig !== oCopy && isPlainObject(oCopy) ) {
 				keys.forEach(k => {
 					if ( oCopy[k] !== undefined ) {
-						k == 'class' ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : (oOrig[k] = _copyObjectValue(oCopy[k]));
+						k == 'class' ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : (oOrig[k] = _copyObjectValue(oCopy[k]));
 					}
 				});
 			}
@@ -84,7 +82,7 @@ function extend(...args){
 			oCopy = args[i];
 			if ( oOrig !== oCopy && isPlainObject(oCopy) ) {
 				for ( let k in oCopy ) {
-					k == 'class' ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : (oOrig[k] = _copyObjectValue(oCopy[k]));
+					k == 'class' ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : (oOrig[k] = _copyObjectValue(oCopy[k]));
 				}
 			}
 		}
@@ -103,15 +101,13 @@ function assign(...args){
 	if ( !keys ) return;
 
 	let oOrig = args[0];
-	oOrig.class = classToPlantObject(oOrig.class);
-
 	if ( isArray(keys) ) {
 		for ( let i=1, oCopy; i<args.length-1; i++ ) {
 			oCopy = args[i];
 			if ( oOrig !== oCopy && isPlainObject(oCopy) ) {
 				keys.forEach(k => {
 					if ( oCopy[k] !== undefined ) {
-						k == 'class' ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : (oOrig[k] = oCopy[k]);
+						k == 'class' ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : (oOrig[k] = oCopy[k]);
 					}
 				});
 			}
@@ -121,7 +117,7 @@ function assign(...args){
 			oCopy = args[i];
 			if ( oOrig !== oCopy && isPlainObject(oCopy) ) {
 				for ( let k in oCopy ) {
-					k == 'class' ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : (oOrig[k] = oCopy[k]);
+					k == 'class' ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : (oOrig[k] = oCopy[k]);
 				}
 			}
 		}

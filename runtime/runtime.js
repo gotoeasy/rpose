@@ -238,7 +238,7 @@
         let callbacks = {};
         let on = (key, fn) => callbacks[toLowerCase(key)] || (callbacks[toLowerCase(key)] = fn);
         let at = (el, prop, val) => (callbacks[toLowerCase(el.tagName + "." + prop)] || callbacks[toLowerCase(prop)] || callbacks["*"]).apply(this, [ el, prop, val ]);
-        on("*", (el, prop, val) => isFunction(val) || val == null || prop.startsWith("$") ? el.getAttribute(prop) : el.setAttribute(prop, val));
+        on("*", (el, prop, val) => val == null || isFunction(val) || /^[-`~!%@$#&*(){}+=:;"'<>,.?/]/.test(prop) ? el.getAttribute(prop) : el.setAttribute(prop, val));
         BOOL_PROPS.forEach(k => on(k, (el, prop, val) => val === undefined ? el[k] : el[k] = toBoolean(val)));
         on("value", (el, prop, val) => val === undefined ? el.value : el.value = val == null ? "" : val);
         on("@html", (el, prop, val) => val === undefined ? el.innerHTML : el.innerHTML = val == null ? "" : val);
@@ -974,14 +974,13 @@
             return;
         }
         let oOrig = args[0];
-        oOrig.class = classToPlantObject(oOrig.class);
         if (isArray(keys)) {
             for (let i = 0, oCopy; i < args.length - 1; i++) {
                 oCopy = args[i];
                 if (oOrig !== oCopy && isPlainObject(oCopy)) {
                     keys.forEach(k => {
                         if (oCopy[k] !== undefined) {
-                            k == "class" ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : oOrig[k] = _copyObjectValue(oCopy[k]);
+                            k == "class" ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : oOrig[k] = _copyObjectValue(oCopy[k]);
                         }
                     });
                 }
@@ -991,7 +990,7 @@
                 oCopy = args[i];
                 if (oOrig !== oCopy && isPlainObject(oCopy)) {
                     for (let k in oCopy) {
-                        k == "class" ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : oOrig[k] = _copyObjectValue(oCopy[k]);
+                        k == "class" ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : oOrig[k] = _copyObjectValue(oCopy[k]);
                     }
                 }
             }
@@ -1007,14 +1006,13 @@
             return;
         }
         let oOrig = args[0];
-        oOrig.class = classToPlantObject(oOrig.class);
         if (isArray(keys)) {
             for (let i = 1, oCopy; i < args.length - 1; i++) {
                 oCopy = args[i];
                 if (oOrig !== oCopy && isPlainObject(oCopy)) {
                     keys.forEach(k => {
                         if (oCopy[k] !== undefined) {
-                            k == "class" ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : oOrig[k] = oCopy[k];
+                            k == "class" ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : oOrig[k] = oCopy[k];
                         }
                     });
                 }
@@ -1024,7 +1022,7 @@
                 oCopy = args[i];
                 if (oOrig !== oCopy && isPlainObject(oCopy)) {
                     for (let k in oCopy) {
-                        k == "class" ? Object.assign(oOrig.class, classToPlantObject(oCopy[k])) : oOrig[k] = oCopy[k];
+                        k == "class" ? Object.assign(oOrig.class = classToPlantObject(oOrig.class), classToPlantObject(oCopy[k])) : oOrig[k] = oCopy[k];
                     }
                 }
             }

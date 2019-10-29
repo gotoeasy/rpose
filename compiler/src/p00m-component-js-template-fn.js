@@ -111,7 +111,7 @@ class <%= $data['COMPONENT_NAME'] %> {
     }
     <% } %>
 
-    // 取得组件对象的数据状态副本
+    // 默认组件对象的数据状态存取方法
     getState(){
         return rpose.extend({}, this.#private.state, this.#private.statekeys);      // 取得克隆的数据状态副本以避免外部修改影响
     }
@@ -147,6 +147,13 @@ class <%= $data['COMPONENT_NAME'] %> {
             console.warn('dom node missing');                                       // 组件根节点丢失无法再次渲染
         }
 
+    }
+    <% } %>
+
+    <% if ( $data['@merge'] ){ %>
+    // 默认状态合并方法（不会触发渲染更新）
+    merge(obj) {
+        Object.assign(this.#private.state, obj);
     }
     <% } %>
 

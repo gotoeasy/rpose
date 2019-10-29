@@ -29,6 +29,8 @@ bus.on('编译插件', function(){
         script.bindfns && script.bindfns.length && ($data.bindfns = script.bindfns);        // 有则设之
         $data.vnodeTemplate = script.vnodeTemplate;
 
+        $data['@merge'] = result.merge;                                                     // 是否有@merge
+
         // 生成组件JS源码
         result.componentJs = fnTmpl($data);
         result.componentJs = checkAndInitVars(result.componentJs, context);
