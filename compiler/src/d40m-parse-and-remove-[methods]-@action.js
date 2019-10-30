@@ -205,8 +205,8 @@ function parseDecorators(path, oMethod, input, PosOffset){
                     // TODO 参数
                 }
 
-                oDecorator.Event.value = oDecorator.Event.value.toLowerCase();                                      // 统一转小写
-                !/^on/.test(oDecorator.Event.value) && (oDecorator.Event.value = 'on' + oDecorator.Event.value);    // 左边补足‘on’
+                // oDecorator.Event.value = oDecorator.Event.value.toLowerCase();                                      // 统一转小写
+                // !/^on/.test(oDecorator.Event.value) && (oDecorator.Event.value = 'on' + oDecorator.Event.value);    // 左边补足‘on’
 
                 i++;
             });

@@ -32,25 +32,58 @@ bus.on('编译插件', function(){
 
 function bindEventHandle(oMethod, oDecorator, oSetNodes, fnCreateNode){
     oSetNodes.forEach(tagNode => {
-        // 查找/创建事件组节点
-        let eventsNode = getEventsNode(tagNode);
-        if ( !eventsNode ) {
-            eventsNode = fnCreateNode( {type: 'Events'} );
-            tagNode.addChild(eventsNode);
+
+        if ( tagNode.object.standard ) {
+            // ----------------------------------
+            // 针对的是标准标签，转换为事件属性
+            // ----------------------------------
+
+            // 查找/创建事件组节点
+            let eventsNode = getEventsNode(tagNode);
+            if ( !eventsNode ) {
+                eventsNode = fnCreateNode( {type: 'Events'} );
+                tagNode.addChild(eventsNode);
+            }
+
+            // 创建事件节点
+            let type = 'Event';
+            let name = oDecorator.Event.value.toLowerCase();                                            // 事件名统一转小写，如： onclick或click
+            !/^on/.test(name) && (name = 'on' + name);                                                  // 左边补足‘on’
+            let Name = { pos: {start: oDecorator.Event.start, end: oDecorator.Event.end} };
+            let value = 'this.' + oMethod.Name.value;                                                   // 方法名，如： fnClick
+            let Value = { pos: {start: oMethod.Name.start, end: oMethod.Name.end} };
+            let isExpression = false;
+            let pos = {start: oMethod.Name.start, end: oMethod.Name.end};
+            let eventNode = fnCreateNode( {type, name, Name, value, Value, isExpression, pos} );
+            
+            // 添加事件节点
+            eventsNode.addChild(eventNode);
+        } else {
+            // ----------------------------------
+            // 针对的是标准标签，转换为组件属性
+            // ----------------------------------
+
+            // 查找/创建属性组节点
+            let attrsNode = getAttributesNode(tagNode);
+            if ( !attrsNode ) {
+                attrsNode = fnCreateNode( {type: 'Attributes'} );
+                tagNode.addChild(attrsNode);
+            }
+
+            // 创建属性节点
+            let type = 'Attribute';
+            let name = oDecorator.Event.value;                                                          // 组件属性名，需保留原样，如： onclick
+            let Name = { pos: {start: oDecorator.Event.start, end: oDecorator.Event.end} };
+            let value = 'this.' + oMethod.Name.value;                                                   // 方法名，如： fnClick
+            let Value = { pos: {start: oMethod.Name.start, end: oMethod.Name.end} };
+            let isExpression = true;
+            let pos = {start: oMethod.Name.start, end: oMethod.Name.end};
+            let attrNode = fnCreateNode( {type, name, Name, value, Value, isExpression, pos} );
+            
+            // 添加事件节点
+            attrsNode.addChild(attrNode);
         }
 
-        // 创建事件节点
-        let type = 'Event';
-        let name = oDecorator.Event.value;                                                          // 事件名，如： onclick
-        let Name = { pos: {start: oDecorator.Event.start, end: oDecorator.Event.end} };
-        let value = 'this.' + oMethod.Name.value;                                                   // 方法名，如： fnClick
-        let Value = { pos: {start: oMethod.Name.start, end: oMethod.Name.end} };
-        let isExpression = false;
-        let pos = {start: oMethod.Name.start, end: oMethod.Name.end};
-        let eventNode = fnCreateNode( {type, name, Name, value, Value, isExpression, pos} );
-        
-        // 添加事件节点
-        eventsNode.addChild(eventNode);
     });
 }
 
@@ -58,6 +91,15 @@ function getEventsNode(tagNode){
     let nodes = tagNode.nodes || [];
     for ( let i=0,node; node=nodes[i++]; ) {
         if ( node.type === 'Events' ) {
+            return node;
+        }
+    }
+}
+
+function getAttributesNode(tagNode){
+    let nodes = tagNode.nodes || [];
+    for ( let i=0,node; node=nodes[i++]; ) {
+        if ( node.type === 'Attributes' ) {
             return node;
         }
     }

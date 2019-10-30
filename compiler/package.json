@@ -1,6 +1,6 @@
 {
   "name": "@rpose/compiler",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "main": "compiler.js",
   "dependencies": {
     "@rpose/runtime": "0.2.*",
