@@ -2870,8 +2870,8 @@ console.time("load");
     const oSetBuildIn = new Set(["$vnode", "getRefElements", "getRefElement", "getRefComponents", "getRefComponent", "getRootElement"]);
 
     bus.on("解析检查METHODS块并删除装饰器", function(methodsCode, input = {}, PosOffset = 0) {
-        let js = "class C {\n" + methodsCode + "\n}"; // 前面加10位，后面添2位
-        PosOffset = PosOffset - 10; // 减去前面加的10位偏移量
+        let js = "class C { #private={};       \n" + methodsCode + "\n}"; // 前面加30位，后面添2位
+        PosOffset = PosOffset - 30; // 减去前面加的10位偏移量
 
         // ---------------------------------------------------------
         // 解析为语法树，支持装饰器写法
@@ -2962,14 +2962,9 @@ console.time("load");
                     // 私有类变量重名
                     throw new Err(`duplicate class private property name (#${oItem.Name.value})`, { ...input, ...oItem.Name });
                 }
-                if (/^#private$/.test(oItem.Name.value)) {
-                    throw new Err(`unsupport defined buildin class private property name (#${oItem.Name.value})`, {
-                        ...input,
-                        start: oItem.Name.start - 1,
-                        end: oItem.Name.end
-                    });
+                if (!/^#private$/.test(oItem.Name.value)) {
+                    oClassPrivateProperty[oItem.Name.value] = oItem.Name; // #private内置用
                 }
-                oClassPrivateProperty[oItem.Name.value] = oItem.Name;
             },
 
             // -----------------------------------
@@ -3015,7 +3010,7 @@ console.time("load");
         // ---------------------------------------------------------
         // 生成删除装饰器后的代码
         let code = babel.transformFromAstSync(ast).code;
-        code = code.substring(10, code.length - 2);
+        code = code.substring(30, code.length - 2);
 
         return { Method: oClassMethod, bindfns, methods: code, ast };
     });
@@ -7976,9 +7971,9 @@ console.time("load");
                     if (
                         !nBefore ||
                         !nAfter ||
-                        (nBefore.type === "Tag" || nAfter.type === "Tag") ||
-                        (nBefore.type === OPTS.TypeHtmlComment || nAfter.type === OPTS.TypeHtmlComment) ||
-                        (nBefore.type === OPTS.TypeCodeBlock || nAfter.type === OPTS.TypeCodeBlock)
+                        nBefore.type === "Tag" || nAfter.type === "Tag" ||
+                        nBefore.type === OPTS.TypeHtmlComment || nAfter.type === OPTS.TypeHtmlComment ||
+                        nBefore.type === OPTS.TypeCodeBlock || nAfter.type === OPTS.TypeCodeBlock
                     ) {
                         node.remove();
                     }
@@ -9340,7 +9335,7 @@ class <%= $data['COMPONENT_NAME'] %> {
 
         if (oSetPath.size) {
             let code = babel.transformFromAstSync(ast).code;
-            code = code.substring(10, code.length - 2);
+            code = code.substring(30, code.length - 2); // [解析检查METHODS块并删除装饰器]中设定的偏移量30
             oScript.methods = code;
         }
 

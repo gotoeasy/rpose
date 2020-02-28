@@ -139,11 +139,11 @@ function transformJsSelector(oScript, srcFile, classnames, oAtCsslibs, oCsslibs,
 
     if ( oSetPath.size ) {
         let code = babel.transformFromAstSync(ast).code;
-        code = code.substring(10, code.length - 2);
+        code = code.substring(30, code.length - 2);                                                                             // [解析检查METHODS块并删除装饰器]中设定的偏移量30
         oScript.methods = code;
     }
 
-    return delete oScript.ast;                                                                                  // 按说已经用不到了，删除之
+    return delete oScript.ast;                                                                                                  // 按说已经用不到了，删除之
 }
 
 function transformSelector(selector, srcFile, classnames, oAtCsslibs, oCsslibs, oPrjCsslibs){
