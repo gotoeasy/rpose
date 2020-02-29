@@ -27,7 +27,13 @@ bus.on('热刷新服务器', function (hasQuery){
         let env = bus.at('编译环境');
         if ( !env.watch ) return;
 
-        createHttpServer(env.path.build_dist, 3700);
+        let port = env.port ? (!/^\d+$/.test(env.port) ? randomNum(3000, 9999) : env.port) : 3700;
+        createHttpServer(env.path.build_dist, port);
+    }
+
+    // 生成从minNum到maxNum的随机数
+    function randomNum(minNum=3000, maxNum=9999) {
+        return parseInt(Math.random() * ( maxNum - minNum + 1 ) + minNum, 10);
     }
 
     // 查询

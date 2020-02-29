@@ -75,6 +75,7 @@ function parseRposeConfigBtf(file, defaultFile, opts){
 
     result.theme = ((btf.getText('theme') == null || !btf.getText('theme').trim()) ? '@gotoeasy/theme' : btf.getText('theme').trim());
     result.prerender = ((btf.getText('prerender') == null || !btf.getText('prerender').trim()) ? '@gotoeasy/pre-render' : btf.getText('prerender').trim());
+    result.port = ((btf.getText('port') == null || !btf.getText('port').trim()) ? null : btf.getText('port').trim());
 
     result.config = root + '/rpose.config.btf';
     let packagejson = root + '/package.json';

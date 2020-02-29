@@ -81,6 +81,7 @@ console.time("load");
         result.theme = btf.getText("theme") == null || !btf.getText("theme").trim() ? "@gotoeasy/theme" : btf.getText("theme").trim();
         result.prerender =
             btf.getText("prerender") == null || !btf.getText("prerender").trim() ? "@gotoeasy/pre-render" : btf.getText("prerender").trim();
+        result.port = btf.getText("port") == null || !btf.getText("port").trim() ? null : btf.getText("port").trim();
 
         result.config = root + "/rpose.config.btf";
         let packagejson = root + "/package.json";
@@ -928,8 +929,14 @@ console.time("load");
                 let env = bus.at("编译环境");
                 if (!env.watch) return;
 
-                createHttpServer(env.path.build_dist, 3700);
+                let port = env.port ? (!/^\d+$/.test(env.port) ? randomNum(3000, 9999) : env.port) : 3700;
+                createHttpServer(env.path.build_dist, port);
             };
+
+            // 生成从minNum到maxNum的随机数
+            function randomNum(minNum = 3000, maxNum = 9999) {
+                return parseInt(Math.random() * (maxNum - minNum + 1) + minNum, 10);
+            }
 
             // 查询
             function queryHandle(req, res, oUrl) {
