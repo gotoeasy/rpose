@@ -22,7 +22,7 @@
 
 ## `青松的姿势`
 <details>
-<summary><strong>hello world</strong></summary>
+<summary><strong>Hello world</strong></summary>
 
 ```
 // hello-world.rpose
