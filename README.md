@@ -228,6 +228,7 @@ body
 - [x] 支持页面`[api]`中声明为移动优先或桌面优先，默认为移动优先（desktopFirst=false）
 - [x] 同一节点支持多个事件声明，编译期按事件类型名自动合并
 - [x] 错误信息对比定位提示，同一文件则自动合并提示
+- [x] 配置文件`rpose.config.btf`中支持设定监视模式的端口，默认3700，设为random即随机
 
 > `other`
 
@@ -256,6 +257,7 @@ body
 - [x] 优化虚拟节点函数，令其更精简
 - [x] 优化`runtime`包
 - [x] 新增指令`@merge`，针对特定标准标签的特殊场景，提供简化写法<br>比如input标签输入变更后，有时想把输入值写入state但又不想触发渲染，通常需要写onchange实现，数量一多就变得繁琐，这时可以简化的用`@merge="fieldname"`达到目的
+- [x] 配置文件`rpose.config.btf`中支持设定监视模式的端口，默认3700，设为random即随机
 </details>
 
 <details>
