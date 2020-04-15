@@ -2,7 +2,7 @@
     const BOOL_PROPS = [ "autofocus", "hidden", "readonly", "disabled", "checked", "selected", "multiple", "translate", "draggable", "noresize" ];
     const $SLOT = "$SLOT";
     const _toString = obj => Object.prototype.toString.call(obj);
-    const isFunction = obj => typeof obj == "function" && obj.constructor == Function;
+    const isFunction = obj => obj && (typeof obj === "function" || obj.constructor === Function);
     const isString = str => typeof str === "string";
     const isArray = obj => Array.isArray(obj) || obj instanceof Array;
     const isPlainObject = obj => _toString(obj) === "[object Object]";

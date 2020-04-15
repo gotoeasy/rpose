@@ -9,7 +9,7 @@
 //const error = (...args) => console.error(...args);
 
 const _toString = obj => Object.prototype.toString.call(obj);
-const isFunction = obj => (typeof obj == 'function') && obj.constructor == Function;
+const isFunction = obj => (obj && (typeof obj === 'function' || obj.constructor === Function));
 //const isBoolean = str => typeof str === 'boolean';
 //const isNumber = str => typeof str === 'number';
 const isString = str => typeof str === 'string';
