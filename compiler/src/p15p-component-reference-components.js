@@ -10,7 +10,7 @@ bus.on('编译插件', function(){
         let oSet = new Set();
         root.walk( 'Tag', (node, object) => {
 
-            if ( !object.standard ) {
+            if ( !object.standard && !/^(if|for)$/i.test(object.value) ) {
                 let file = bus.at('标签源文件', object.value, context.result.oTaglibs);
                 if ( !file ) {
                     throw new Err('file not found of tag: ' + object.value, { ...context.input, start: object.pos.start });

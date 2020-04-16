@@ -12,7 +12,7 @@ bus.on('编译插件', function(){
         root.walk( '@for', (node, object) => {
 
             let tagNode = node.parent;                                                      // 所属标签节点
-            /^for$/i.test(tagNode.object.value) && (tagNode.ok = true);
+            /^for$/i.test(tagNode.object.value) && (tagNode.object.$HasAtAttr = true);      // 有@for属性
 
             let type = OPTS.TypeCodeBlock;
             let value = parseFor(context, object);

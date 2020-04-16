@@ -11,7 +11,7 @@ bus.on('编译插件', function(){
         root.walk( '@if', (node, object) => {
 
             let tagNode = node.parent;                                                      // 所属标签节点
-            /^if$/i.test(tagNode.object.value) && (tagNode.ok = true);
+            /^if$/i.test(tagNode.object.value) && (tagNode.object.$HasAtAttr = true);       // 有@if属性
 
             let type = OPTS.TypeCodeBlock;
             let value = 'if (' + (object.value+'').replace(/^\s*\{=?/, '').replace(/\}\s*$/, '') + ') {';
