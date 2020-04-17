@@ -1,0 +1,222 @@
+[view]
+<div @class="height-100% display-flex flex-direction-column color-#eee overflow-hidden">
+    <div @class="height-50px display-flex justify-content-center align-items-center font-size-25px"><slot name="title"/></div>
+    <@line margin="0 auto" color="#aaa"/>
+    <div class="iconbar-link">
+        <for @for="item1 in $state.menus">
+            <router-link @if={item1.title} path={item1.path} title={item1.title} click={e=>this.clickMenu(e, item1)}>
+                <svgicon type="inline-symbol" name={item1.icon}/>
+            </router-link>
+            <ul class="side-menu side-sub-menu1" @if={item1.opened}>
+                <for @for="item2 in item1.menus">
+                    <li @if={item2.title}>
+                        <router-link path={item2.path} title={item2.title} click={e=>this.clickMenu(e, item2, item1)}>
+                            <svgicon type="inline-symbol" name={item2.icon}/>
+                            <span>{item2.title}</span>
+                            <svgicon type="inline-symbol" @if={item2.menus} name={item2.opened ? 'angle-down' : 'angle-right'} height="16" width="16"/>
+                        </router-link>
+                        <ul class="side-menu side-sub-menu2" @if={item2.title && item2.opened}>
+                            <for @for="item3 in item2.menus">
+                                <li>
+                                    <router-link @if={item3.title} path={item3.path} title={item3.title} click={e=>this.clickMenu(e, item3, item2)}>
+                                        <svgicon type="inline-symbol" name={item3.icon}/>
+                                        <span>{item3.title}</span>
+                                    </router-link>
+                                </li>
+                            </for>
+                        </ul>
+                    </li>
+                    <li @if={!item2.title}>
+                        <@line margin="20px 0 20px 0" color="#aaa"/>
+                    </li>
+                </for>
+            </ul>
+            <@line @if={!item1.title} margin="5px 0 10px 0" color="#aaa"/>
+        </for>
+    </div>
+</div>
+
+[state]
+{
+    menus : [
+        { path : 'intro',           icon : 'bullhorn',      title : '初识 rpose'},
+        { path : 'quickstart',      icon : 'guide',         title : '快速上手', },
+        { path : 'setup',           icon : 'check',         title : '安装使用', },
+        { },
+        { path : 'buildin',         icon : 'component',     title : '内置标签组件', },
+        { path : 'at',              icon : 'at',            title : '内置指令集', },
+        { },
+        { path : 'slot',            icon : 'list-alt',      title : '插槽', },
+        { path : 'prerender',       icon : 'brush',         title : '预渲染', },
+        { path : 'router',          icon : 'random',        title : '前端路由', },
+        { path : 'taglib',          icon : 'tag',           title : '标签库', },
+        { path : 'csslib',          icon : 'css3-alt',      title : '样式库', },
+        { path : 'svgicon',         icon : 'icon',          title : '图标组件', },
+        { },
+    ],
+}
+
+[methods]
+clickMenu(e, item, parent){
+    if (item.disabled) return false;    // 禁用的菜单，不做响应处理
+
+    if (item.menus){
+        // 点击菜单组时，切换子菜单显示状态，关闭其他所有子菜单
+        let openstate = !item.opened;
+        // 关闭所有子菜单
+        this.#private.state.menus.forEach(menu => {
+            menu.opened && (menu.opened = false);
+            menu.menus && menu.menus.forEach(m => m.opened  && (m.opened = false));
+        });
+        item.opened = openstate;                                                    // 切换当前子菜单显示状态
+        parent && (parent.opened = true);                                           // 子菜单显示时父菜单也要保持显示状态
+
+        this.render();
+
+        let elMenu = $$('.side-sub-menu1')[0];
+        if (!elMenu) return false;                                                  // 没有显示中的子菜单
+
+        let offsetTop;
+        let maxHeight = document.body.clientHeight;
+        let popHeight = elMenu.clientHeight;
+
+        if (openstate && !parent) {
+            // 点击工具栏图标打开子菜单
+            offsetTop = this.getIconMenuOffsetTop(e.targetNode);                    // 图标竖向位置
+            elMenu._offsetTop = offsetTop;                                          // 存起来备用
+        }else{
+            // 其他情况直接使用原竖向位置
+            offsetTop = elMenu._offsetTop;
+        }
+
+        let top = offsetTop - 12;                                                   // 微调
+        if ( maxHeight < top + popHeight){
+            top = maxHeight - popHeight -18;                                        // 超出可视范围时再次调整
+            top < 0 && (top = 0);
+        }
+        elMenu.style.top = top + 'px';
+
+        return false;
+    }
+
+    // 点击叶菜单时，关闭所有子菜单
+    this.#private.state.menus.forEach(menu => {
+        menu.opened && (menu.opened = false);
+        menu.menus && menu.menus.forEach(m => m.opened  && (m.opened = false));
+    });
+    this.render();
+}
+
+getIconMenuOffsetTop(el) {
+    let offsetTop = el.offsetTop;                                                   // 元素 offsetTop
+    let node = el;
+    while (node = node.offsetParent) {
+        offsetTop += node.offsetTop;                                                // 父元素 offsetTop 累加
+    }
+    return offsetTop;
+}
+
+init(){
+    // 点击非菜单项，自动关闭菜单
+    let fnClick = e => {
+        setTimeout(()=>{
+            let el = e.target || e.srcElement;
+            let isMenuClick = false;
+            while ( (el = el.parentNode) && (el !== document) ) {                   // 逐级往上查找父节点
+                if ( el === this.getRootElement() ) {
+                    isMenuClick = true;
+                    break;
+                }
+            }
+            if (!isMenuClick){
+                // 点击菜单时不必处理，点击的不是菜单时关闭所有子菜单
+                let needRender = false;
+                this.#private.state.menus.forEach(menu => {
+                    menu.opened && (needRender = true) && (menu.opened = false);
+                    menu.menus && menu.menus.forEach(m => m.opened && (needRender = true)  && (m.opened = false));
+                });
+                needRender && this.render();
+            }
+        });
+    };
+    document.addEventListener ? document.addEventListener('click', fnClick, false) : document.attachEvent('onclick', fnClick);
+}
+
+[taglib]
+@line = @rpose/ui-line:ui-line
+
+[less]
+.iconbar-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: calc(100% - 50px);
+    box-sizing: border-box;
+    padding-top: 10px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    & > a {
+        min-height: 40px;
+
+        & > svg {
+            fill: #bbb;
+            width: 24px;
+            height: 24px;
+        }
+        & > svg:hover {
+            fill: #fff;
+            margin-top: 2px;
+            margin-left: -1px;
+            width: 30px;
+            height: 30px;
+        }
+    }
+}
+
+.side-menu {
+    list-style: none;
+    padding: 0;
+
+    & > li {
+        margin: 10px 0;
+
+        & > a {
+            display: flex;
+            justify-content: space-between;
+            text-decoration: none;
+            font-size: 16px;
+            color: #ddd;
+
+            & > span {
+                width: 100%;
+                padding-left: 10px;
+            }
+
+            & > svg {
+                fill: #ddd;
+            }
+        }
+        & > a:hover {
+            color: #fff;
+            & > svg {
+                fill: #fff;
+            }
+        }    
+    
+    }
+}
+
+.side-sub-menu1 {
+    padding: 0px 10px 0px 10px;
+    position: absolute;
+    left: 51px;
+    background: darkslategrey;
+    min-width: 180px;
+}
+
+.side-sub-menu2 {
+    margin-left : 25px;
+    margin-top : 12px;
+    margin-bottom : 12px;
+}

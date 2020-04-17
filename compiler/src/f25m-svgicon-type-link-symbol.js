@@ -34,7 +34,7 @@ const hash = require('@gotoeasy/hash');
         let pkg = bus.at('文件所在模块', srcFile);
         let filename = bus.at('外部SYMBOL文件名', srcFile);
 
-        if ( !oFiles[filename] ) {
+        if ( !oFiles[filename] ) {                                                                                          // TODO: FIXME  表达式外部文件，以工程文件优先
             let env = bus.at("编译环境");
             let file = (env.path.build_dist + '/' + env.path.build_dist_images + '/' + filename).replace(/\/\//g, '/');
             let text = bus.at('外部SYMBOL文件内容', srcFile);
@@ -67,7 +67,7 @@ const hash = require('@gotoeasy/hash');
         let href;
         if ( bus.at('是否表达式', fileOrExpr) ) {
             let expr = fileOrExpr.substring(1, fileOrExpr.length-1);
-            href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`;
+            href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`;                                        // TODO: FIXME  表达式外部文件，以工程文件优先
 
             !props.height && attrs.push(`height="${props.width || 16}"`);
             !attrs.width && attrs.push(`width="${props.height || 16}"`);

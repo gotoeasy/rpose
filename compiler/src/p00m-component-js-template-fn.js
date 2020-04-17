@@ -134,6 +134,7 @@ class <%= $data['COMPONENT_NAME'] %> {
                 $$(el).addClass($this.$COMPONENT_ID);
             } 
             $private.rendered = true;
+            Promise.resolve().then(async ()=>this.mounted && await this.mounted()); // 挂载完成后异步调用
             return el;
         }
 

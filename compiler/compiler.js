@@ -5223,6 +5223,7 @@ console.time("load");
                 let href;
                 if (bus.at("是否表达式", fileOrExpr)) {
                     let expr = fileOrExpr.substring(1, fileOrExpr.length - 1);
+                    hashcode = hash("/"); // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
                     href = `{'#${hashcode}_' + (${expr}) }`;
 
                     !props.height && attrs.push(`height="${props.width || 16}"`);
@@ -5318,6 +5319,7 @@ console.time("load");
             let filename = bus.at("外部SYMBOL文件名", srcFile);
 
             if (!oFiles[filename]) {
+                // TODO: FIXME  表达式外部文件，以工程文件优先
                 let env = bus.at("编译环境");
                 let file = (env.path.build_dist + "/" + env.path.build_dist_images + "/" + filename).replace(/\/\//g, "/");
                 let text = bus.at("外部SYMBOL文件内容", srcFile);
@@ -5348,7 +5350,7 @@ console.time("load");
             let href;
             if (bus.at("是否表达式", fileOrExpr)) {
                 let expr = fileOrExpr.substring(1, fileOrExpr.length - 1);
-                href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`;
+                href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`; // TODO: FIXME  表达式外部文件，以工程文件优先
 
                 !props.height && attrs.push(`height="${props.width || 16}"`);
                 !attrs.width && attrs.push(`width="${props.height || 16}"`);
@@ -8295,6 +8297,7 @@ class <%= $data['COMPONENT_NAME'] %> {
                 $$(el).addClass($this.$COMPONENT_ID);
             } 
             $private.rendered = true;
+            Promise.resolve().then(async ()=>this.mounted && await this.mounted()); // 挂载完成后异步调用
             return el;
         }
 

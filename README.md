@@ -205,6 +205,7 @@ body
 - [x] `[methods]`中支持自定义同名函数替代框架的默认实现
 - [x] `[methods]`中支持用`装饰器`的方式绑定事件处理，支持标签选择器语法
 - [x] `[methods]`中的变量在编译期做检查，有使用未定义变量则定位报错
+- [x] `[methods]`中支持定义`mounted`方法，有定义时在组件挂载完成后将被异步调用
 - [x] 自动哈希化js代码中样式选择器的类名
 - [x] 自动处理使this指向组件对象
 - [x] 友好化错误信息提示，编译错误时准确定位
@@ -229,6 +230,7 @@ body
 - [x] 同一节点支持多个事件声明，编译期按事件类型名自动合并
 - [x] 错误信息对比定位提示，同一文件则自动合并提示
 - [x] 配置文件`rpose.config.btf`中支持设定监视模式的端口，默认3700，设为random即随机
+- [x] 图标组件 `<svgicon>`在`inline-symbol`模式下，允许按名称动态使用当前工程下的SVG图标
 
 > `other`
 
@@ -247,6 +249,13 @@ body
 <br>
 
 ## `变更列表`
+<details>
+<summary><strong>Ver 0.8.*</strong></summary>
+
+- [x] 图标组件 `<svgicon>`在`inline-symbol`模式下，允许按名称动态使用当前工程下的SVG图标
+- [x] `[methods]`中支持定义`mounted`方法，有定义时在组件挂载完成后将被异步调用
+</details>
+
 <details>
 <summary><strong>Ver 0.7.*</strong></summary>
 

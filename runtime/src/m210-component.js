@@ -85,7 +85,8 @@ function createDom(vnode, $thisContext) {
         if (vnode.m) { // HTML标准标准定义的标签以外，都按组件看待。推荐自定义标签名用半角减号连接，如my-tag
 
             // 子组件渲染
-            let comp = new createComponentByVnode(vnode); // 属性作为配置选项直接全部传入(子虚拟节点也按属性$SLOT传入)
+            //let comp = new createComponentByVnode(vnode); // 属性作为配置选项直接全部传入(子虚拟节点也按属性$SLOT传入)
+            let comp = createComponentByVnode(vnode); // 属性作为配置选项直接全部传入(子虚拟节点也按属性$SLOT传入)
             vnode.o = comp; // 虚拟节点挂上组件实例
 
             el = comp.render(); // 渲染为DOM，初始配置已通过选项传入

@@ -573,7 +573,7 @@
         let el, $$el;
         if (vnode.t) {
             if (vnode.m) {
-                let comp = new createComponentByVnode(vnode);
+                let comp = createComponentByVnode(vnode);
                 vnode.o = comp;
                 el = comp.render();
                 let refs, cls;
