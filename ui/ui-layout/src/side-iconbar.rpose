@@ -88,6 +88,7 @@ clickMenu(e, item, parent){
         if (openstate && !parent) {
             // 点击工具栏图标打开子菜单
             offsetTop = this.getIconMenuOffsetTop(e.targetNode);                    // 图标竖向位置
+            offsetTop -= $$('.iconbar-link')[0].scrollTop;                          // 减去滚动高度后才是直观位置
             elMenu._offsetTop = offsetTop;                                          // 存起来备用
         }else{
             // 其他情况直接使用原竖向位置
@@ -97,7 +98,9 @@ clickMenu(e, item, parent){
         let top = offsetTop - 12;                                                   // 微调
         if ( maxHeight < top + popHeight){
             top = maxHeight - popHeight -18;                                        // 超出可视范围时再次调整
-            top < 0 && (top = 0);
+            top < 0 && (top = 0);                                                   // 再咋地也不能冒顶
+        }else{
+            top < 35 && (top = 35);                                                 // 能显示得下，就不要超过头部高度 (FIXME: 这个定值35有待改进，虽然影响很有限)
         }
         elMenu.style.top = top + 'px';
 
@@ -116,7 +119,7 @@ getIconMenuOffsetTop(el) {
     let offsetTop = el.offsetTop;                                                   // 元素 offsetTop
     let node = el;
     while (node = node.offsetParent) {
-        offsetTop += node.offsetTop;                                                // 父元素 offsetTop 累加
+        offsetTop += node.offsetTop;                               // 父元素 offsetTop 累加
     }
     return offsetTop;
 }
@@ -158,8 +161,16 @@ init(){
     height: calc(100% - 50px);
     box-sizing: border-box;
     padding-top: 10px;
+
     overflow-y: auto;
+    scrollbar-width: none;                  /* 火狐：菜单栏隐藏滚动条 */
+    overflow: -moz-scrollbars-none;         /* 旧版火狐：菜单栏隐藏滚动条 */
+    -ms-overflow-style: none;               /* IE 10+：菜单栏隐藏滚动条 */
     -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar{
+        display: none;                      /* 谷歌：菜单栏隐藏滚动条 */
+    }
 
     & > a {
         min-height: 40px;
@@ -225,8 +236,4 @@ init(){
     margin-left : 25px;
     margin-top : 12px;
     margin-bottom : 12px;
-}
-
-.iconbar-link::-webkit-scrollbar{
-    display: none;
 }

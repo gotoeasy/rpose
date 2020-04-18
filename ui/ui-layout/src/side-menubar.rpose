@@ -153,9 +153,15 @@ clickMenu(e, item){
     width:100%;
     box-sizing:border-box;
     padding:10px;
-    overflow-y:auto;
     line-height:1;
-}
-.menubar::-webkit-scrollbar{
-    display: none;
+
+    overflow-y: auto;
+    scrollbar-width: none;                  /* 火狐：菜单栏隐藏滚动条 */
+    overflow: -moz-scrollbars-none;         /* 旧版火狐：菜单栏隐藏滚动条 */
+    -ms-overflow-style: none;               /* IE 10+：菜单栏隐藏滚动条 */
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar{
+        display: none;                      /* 谷歌：菜单栏隐藏滚动条 */
+    }
 }
