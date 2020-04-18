@@ -1,0 +1,33 @@
+[view]
+<div @class="height-50px width-100% bg-#fff display-flex">
+    <nav class="nav-link">
+        <slot name="header"/>
+    </nav>
+    <div class="header-icon-div">
+        <slot name="corner"/>
+    </div>
+</div>
+
+[less]
+.nav-link {
+    display: flex;
+    width: calc(100% - 40px);
+    min-width: 350px;
+    height: 100%;
+    box-sizing: border-box;
+    padding-left: 35px;
+    align-items: center;
+}
+
+.header-icon-div {
+    min-width: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media screen and(max-width: 449px) {
+    .header-icon-div {
+        display: none;                                                  /* 隐藏右侧图标 */
+    }
+}

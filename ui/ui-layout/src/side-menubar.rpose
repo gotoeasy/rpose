@@ -13,20 +13,20 @@ statekeys = menus
                     <router-link @if={item1.title} path={item1.path} title={item1.title} click={e=>this.clickMenu(e, item1)}><!----------click item1----------->
                         <svgicon type="inline-symbol" name={item1.icon}/>
                         <span>{item1.title}</span>
-                        <svgicon type="inline-symbol" @if={item1.menus && item1.menus.length} name={item1.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
+                        <svgicon type="svg" @if={item1.menus && item1.menus.length} name={item1.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
                     </router-link>
                     <ul class="side-menu side-sub-menu" @if={item1.title && item1.opened}>
                         <for @for="item2 in item1.menus">
                             <li @if={item2.title}>
-                                <router-link @if={item2.title} path={item2.path} title={item2.title} click={e=>this.clickMenu(e, item2)}><!----------click item2----------->
+                                <router-link @if={item2.title} path={item2.path} title={item2.title} click={e=>this.clickMenu(e, item2, item1)}><!----------click item2----------->
                                     <svgicon type="inline-symbol" name={item2.icon}/>
                                     <span>{item2.title}</span>
-                                    <svgicon type="inline-symbol" @if={item2.menus} name={item2.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
+                                    <svgicon type="svg" @if={item2.menus} name={item2.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
                                 </router-link>
                                 <ul class="side-menu side-sub-menu" @if={item2.title && item2.opened}>
                                     <for @for="item3 in item2.menus">
                                         <li>
-                                            <router-link @if={item3.title} path={item3.path} title={item3.title}>
+                                            <router-link @if={item3.title} path={item3.path} title={item3.title} click={e=>this.clickMenu(e, item3, item2)}><!----------click item3----------->
                                                 <svgicon type="inline-symbol" name={item3.icon}/>
                                                 <span>{item3.title}</span>
                                             </router-link>
@@ -92,13 +92,16 @@ statekeys = menus
 }
 
 [methods]
-clickMenu(e, item){
-    if (item.disabled) return false;    // 禁用的菜单，不做响应处理
+clickMenu(e, item, parent){
+    if (item.disabled) return false;                                                // 禁用的菜单，不做响应处理
 
     if (item.menus) {
-        item.opened = !item.opened;
-        this.render();
-        return false;                   // 仅控制子菜单的显示，不做路由跳转
+        let openstate = !item.opened;                                               // 点击菜单组，切换子菜单显示状态
+        this.#private.state.menus.forEach(m => m.opened && (m.opened=false));       // 一级菜单组全部关闭
+        parent && (parent.opened = true);                                           // 所在的一级菜单组保持打开
+        item.opened = openstate;                                                    // 切换子菜单显示状态
+        this.render();                                                              // 刷新，效果是其他菜单组全收起，本菜单组切换显示状态
+        return false;                                                               // 仅控制子菜单的显示，不做路由跳转
     }
 
     rpose.at('menuitem.click');
