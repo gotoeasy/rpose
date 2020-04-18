@@ -100,6 +100,8 @@ clickMenu(e, item){
         this.render();
         return false;                   // 仅控制子菜单的显示，不做路由跳转
     }
+
+    rpose.at('menuitem.click');
 }
 
 [taglib]
@@ -119,6 +121,7 @@ clickMenu(e, item){
             text-decoration: none;
             font-size: 16px;
             color: #ddd;
+            user-select:none;
 
             & > span {
                 width: 100%;

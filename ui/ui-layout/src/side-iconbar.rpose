@@ -192,6 +192,7 @@ init(){
             text-decoration: none;
             font-size: 16px;
             color: #ddd;
+            user-select:none;
 
             & > span {
                 width: 100%;

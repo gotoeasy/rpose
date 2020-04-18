@@ -2,7 +2,7 @@
 @rpose/ui-layout
 
 [version] // 版本号 （必填）
-0.1.4
+0.1.5
 
 [main] // 入口文件
 

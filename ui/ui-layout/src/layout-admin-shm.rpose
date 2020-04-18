@@ -41,7 +41,7 @@ statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
         </main>
     </div>
 
-    <div class="layout mask" onclick="closeMobileMenu"/>
+    <div class="layout mask" @ref="mask" onclick="closeMobileMenu"/>
 </div>
 
 [state]
@@ -53,33 +53,39 @@ statekeys = menubar-width, iconbar-width, side-bgcolor, header-height
 }
 
 [methods]
+init(){
+    rpose.on('menuitem.click',()=>$$('.mode-mobile-toggle').removeClass('mode-mobile-toggle')); // 点击菜单项时，关闭菜单栏
+}
+
 pcToggle(e) {
     e.preventDefault();
-    $$('.layout').toggleClass('mode-pc-toggle').removeClass('mode-mobile-toggle');      // 电脑大屏时切换显示侧边栏，清除手机小屏切换模式
+    $$('.layout').toggleClass('mode-pc-toggle').removeClass('mode-mobile-toggle');              // 电脑大屏时切换显示侧边栏，清除手机小屏切换模式
 }
 
 mobileToggle(e) {
     e.preventDefault();
-    $$('.layout').toggleClass('mode-mobile-toggle').removeClass('mode-pc-toggle');      // 手机小屏时切换显示菜单栏，清除电脑大屏切换模式
+    $$('.layout').toggleClass('mode-mobile-toggle').removeClass('mode-pc-toggle');              // 手机小屏时切换显示菜单栏，清除电脑大屏切换模式
 }
 
 closeMobileMenu(e) {
     e.preventDefault();
-    $$('.mode-mobile-toggle').removeClass('mode-mobile-toggle');                        // 手机小屏打开菜单栏后，点击任意位置关闭菜单栏
+    if ( e.targetNode === this.getRefElement('mask')){
+        $$('.mode-mobile-toggle').removeClass('mode-mobile-toggle');                            // 点击遮罩时关闭菜单栏
+    }
 }
 
 [less]
-@z-index-mask               : 900;                                                          /* 遮罩层900 */
-@z-index-sidebar            : 990;                                                          /* 侧边栏990 */
-@z-index-icon               : 999;                                                          /* 侧边栏切换图标999 */
+@z-index-mask               : 900;                                                              /* 遮罩层900 */
+@z-index-sidebar            : 990;                                                              /* 侧边栏990 */
+@z-index-icon               : 999;                                                              /* 侧边栏切换图标999 */
 
-@margin-left-icon           : -11px;                                                        /* 侧边栏切换图标左偏移量 */
-@bgcolor-mask               : rgba(0, 0, 0, 0.3);                                           /* 遮罩黑色透明度0.3 */
+@margin-left-icon           : -11px;                                                            /* 侧边栏切换图标左偏移量 */
+@bgcolor-mask               : rgba(0, 0, 0, 0.3);                                               /* 遮罩黑色透明度0.3 */
 
-@width-screen-pc-min        : 961px;                                                        /* 电脑大屏，961 ~ MAX */
-@width-screen-pad-min       : 600px;                                                        /* 平板中屏，600 ~ 960 */
-@width-screen-pad-max       : 960px;                                                        /* 平板中屏，600 ~ 960 */
-@width-screen-mobile-max    : 599px;                                                        /* 手机小屏，MIN ~ 599 */
+@width-screen-pc-min        : 961px;                                                            /* 电脑大屏，961 ~ MAX */
+@width-screen-pad-min       : 600px;                                                            /* 平板中屏，600 ~ 960 */
+@width-screen-pad-max       : 960px;                                                            /* 平板中屏，600 ~ 960 */
+@width-screen-mobile-max    : 599px;                                                            /* 手机小屏，MIN ~ 599 */
 
 /* 满屏零边距 */
 html,body{
