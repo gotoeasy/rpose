@@ -226,3 +226,7 @@ init(){
     margin-top : 12px;
     margin-bottom : 12px;
 }
+
+.iconbar-link::-webkit-scrollbar{
+    display: none;
+}

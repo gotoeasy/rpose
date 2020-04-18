@@ -5,7 +5,7 @@ statekeys = menus
 <div @class="height-100% display-flex flex-direction-column color-#eee overflow-hidden">
     <div @class="height-50px display-flex justify-content-center align-items-center font-size-20px"><slot name="title"/></div>
     <@line @taglib="@rpose/ui-line:ui-line" margin="0" width="100%" color="#aaa"/>
-    <div @class="height--calc(100%_-_50px) width-100% box-sizing--border-box padding-10px overflow-y-auto line-height-1">
+    <div class="menubar">
 
         <ul class="side-menu">
             <for @for="(item1) in $state.menus">
@@ -13,7 +13,7 @@ statekeys = menus
                     <router-link @if={item1.title} path={item1.path} title={item1.title} click={e=>this.clickMenu(e, item1)}><!----------click item1----------->
                         <svgicon type="inline-symbol" name={item1.icon}/>
                         <span>{item1.title}</span>
-                        <svgicon type="inline-symbol" @if={item1.menus && item1.menus.length} name={item1.opened ? 'angle-down' : 'angle-right'} height="16" width="16"/>
+                        <svgicon type="inline-symbol" @if={item1.menus && item1.menus.length} name={item1.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
                     </router-link>
                     <ul class="side-menu side-sub-menu" @if={item1.title && item1.opened}>
                         <for @for="item2 in item1.menus">
@@ -21,7 +21,7 @@ statekeys = menus
                                 <router-link @if={item2.title} path={item2.path} title={item2.title} click={e=>this.clickMenu(e, item2)}><!----------click item2----------->
                                     <svgicon type="inline-symbol" name={item2.icon}/>
                                     <span>{item2.title}</span>
-                                    <svgicon type="inline-symbol" @if={item2.menus} name={item2.opened ? 'angle-down' : 'angle-right'} height="16" width="16"/>
+                                    <svgicon type="inline-symbol" @if={item2.menus} name={item2.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
                                 </router-link>
                                 <ul class="side-menu side-sub-menu" @if={item2.title && item2.opened}>
                                     <for @for="item3 in item2.menus">
@@ -146,4 +146,16 @@ clickMenu(e, item){
     margin-left : 25px;
     margin-top : 12px;
     margin-bottom : 12px;
+}
+
+.menubar{
+    height:calc(100% - 50px);
+    width:100%;
+    box-sizing:border-box;
+    padding:10px;
+    overflow-y:auto;
+    line-height:1;
+}
+.menubar::-webkit-scrollbar{
+    display: none;
 }
