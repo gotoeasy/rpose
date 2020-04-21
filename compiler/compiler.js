@@ -8573,7 +8573,7 @@ class <%= $data['COMPONENT_NAME'] %> {
                         });
                         ary.push(` ${comma} ${eventName}: ( e=>{ ${stmts.join("\n")} } )`);
                     } else {
-                        ary.push(` ${comma} ${eventName}: ${value} `);
+                        ary.push(` ${comma} ${eventName}: ${values[0]} `);
                     }
                     !comma && (comma = ",");
                 });
@@ -9245,7 +9245,7 @@ class <%= $data['COMPONENT_NAME'] %> {
                 let oAtCsslibs = (context.result.oAtCsslibs = context.result.oAtCsslibs || {}); // 组件@csslib配置的样式库 (asname：lib)
 
                 let script = context.script;
-                let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
+                let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|\.hasClass\s*\(|\.addClass\s*\(|\.removeClass\s*\(|\.classList)/;
 
                 let classnames = (script.classnames = script.classnames || []); // 脚本代码中用到的样式类，存起来后续继续处理
 
@@ -9319,7 +9319,7 @@ class <%= $data['COMPONENT_NAME'] %> {
                         path.replaceWith(types.stringLiteral(selector));
 
                         oSetPath.add(path); // 已处理的path
-                    } else if (fnName === "addClass" || fnName === "removeClass") {
+                    } else if (fnName === "addClass" || fnName === "hasClass" || fnName === "removeClass") {
                         // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
 
                         let rs = [],

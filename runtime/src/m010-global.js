@@ -22,7 +22,7 @@ autofocus
 autocomplete autoplay loop muted preload  required open translate
 */
 // 布尔型属性，不常用部分需要时再添加
-const BOOL_PROPS = ['autofocus', 'hidden', 'readonly', 'disabled', 'checked', 'selected', 'multiple', 'translate', 'draggable', 'noresize'];
+const BOOL_PROPS = ['autofocus', 'hidden', 'readOnly', 'disabled', 'checked', 'selected', 'multiple', 'translate', 'draggable', 'noresize'];
 
 // 一个特殊的state属性名，用于设定虚拟子节点数组
 const $SLOT = '$SLOT';

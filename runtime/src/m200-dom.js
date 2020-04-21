@@ -254,6 +254,22 @@ function Dom(queryResult){
 	}
 
 	// ---------------------------
+	// 切换class $$('.xxxx').hasClass('js-active')
+	this.hasClass = function (name){
+        let has = false;
+		name && els.forEach(el => {
+			if ( !el.classList ){
+                var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(' ');
+				var idx = ary.indexOf(name);
+                (idx >= 0) && (has = true);
+			}else{
+                el.classList.contains(name) && (has = true);
+			}
+		});
+		return has;
+	}
+
+	// ---------------------------
 	// 存取属性 $$('.xxxx').attr('name', 'value')
 	this.attr = function (name, value){
 		if ( !els.length ) {

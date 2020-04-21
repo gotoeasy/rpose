@@ -55,7 +55,7 @@ bus.on('astgen-node-events', function(){
                 });
                 ary.push( ` ${comma} ${eventName}: ( e=>{ ${stmts.join('\n')} } )` );
             }else{
-                ary.push( ` ${comma} ${eventName}: ${value} ` );
+                ary.push( ` ${comma} ${eventName}: ${values[0]} ` );
             }
             !comma && (comma = ',');
         });

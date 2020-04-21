@@ -1,4 +1,7 @@
 node_modules/
 package-lock.json
 .nyc_output/
-
+src/
+.eslintrc.js
+build.js
+package.btf

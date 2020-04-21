@@ -1,5 +1,5 @@
 (function(window, document) {
-    const BOOL_PROPS = [ "autofocus", "hidden", "readonly", "disabled", "checked", "selected", "multiple", "translate", "draggable", "noresize" ];
+    const BOOL_PROPS = [ "autofocus", "hidden", "readOnly", "disabled", "checked", "selected", "multiple", "translate", "draggable", "noresize" ];
     const $SLOT = "$SLOT";
     const _toString = obj => Object.prototype.toString.call(obj);
     const isFunction = obj => obj && (typeof obj === "function" || obj.constructor === Function);
@@ -416,6 +416,19 @@
                 }
             });
             return this;
+        };
+        this.hasClass = function(name) {
+            let has = false;
+            name && els.forEach(el => {
+                if (!el.classList) {
+                    var ary = (el.className.baseVal === undefined ? el.className : el.className.baseVal).split(" ");
+                    var idx = ary.indexOf(name);
+                    idx >= 0 && (has = true);
+                } else {
+                    el.classList.contains(name) && (has = true);
+                }
+            });
+            return has;
         };
         this.attr = function(name, value) {
             if (!els.length) {

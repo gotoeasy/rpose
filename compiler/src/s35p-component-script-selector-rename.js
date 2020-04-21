@@ -28,7 +28,7 @@ bus.on('编译插件', function(){
         let oAtCsslibs = context.result.oAtCsslibs = context.result.oAtCsslibs || {};                   // 组件@csslib配置的样式库 (asname：lib)
 
         let script = context.script;
-        let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|addClass\(|removeClass\(|classList)/;
+        let reg = /(\.getElementsByClassName\s*\(|\.toggleClass\s*\(|\.querySelector\s*\(|\.querySelectorAll\s*\(|\$\s*\(|\.hasClass\s*\(|\.addClass\s*\(|\.removeClass\s*\(|\.classList)/;
 
         let classnames = script.classnames = script.classnames || [];                                   // 脚本代码中用到的样式类，存起来后续继续处理
 
@@ -103,7 +103,7 @@ function transformJsSelector(oScript, srcFile, classnames, oAtCsslibs, oCsslibs,
                     path.replaceWith( types.stringLiteral(selector) );
 
                     oSetPath.add(path);                                                                                         // 已处理的path
-                }else if ( fnName === 'addClass' || fnName === 'removeClass' ) {                                                // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
+                }else if ( fnName === 'addClass' || fnName === 'hasClass' || fnName === 'removeClass' ) {                       // $$el.addClass('foo bar'), $$el.removeClass('foo bar')
 
                     let rs = [], ary = path.node.value.trim().split(/\s+/);
                     ary.forEach( cls => {
