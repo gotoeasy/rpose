@@ -1,0 +1,14 @@
+[api]
+optionkeys = type, onclick
+statekeys = value, checked, disabled
+
+[view]
+<label>
+    <input type="checkbox" class="{filled-in : /filled-in/i.test(type)}"
+    onclick={e=>onclick && onclick(e)}
+    checked={!!$state.checked} disabled={!!$state.disabled} value={value} />
+    <span><slot/></span>
+</label>
+
+[csslib]
+* = materialize-css

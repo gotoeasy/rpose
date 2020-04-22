@@ -1,0 +1,14 @@
+[api]
+optionkeys = type
+
+[view]
+<span class="badge {
+    new : /new/i.test(type),
+    blue : /blue/i.test(type),
+    yellow : /yellow/i.test(type),
+    red : /red/i.test(type),
+    green : /green/i.test(type),
+}" style="border-radius: 2px;"><slot/></span>
+
+[csslib]
+* = materialize-css

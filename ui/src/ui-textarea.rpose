@@ -1,0 +1,88 @@
+[api]
+optionkeys = placeholder, onchange, onfocusin, onfocusout, rows
+statekeys = label, value, readonly, disabled
+
+[view]
+<div class="input-field">
+    <textarea @ref="textarea" style="height:{$state.height}px; overflow-y: {$state.scrollY ? 'scroll' : 'hidden'};"
+    placeholder={placeholder || ''}
+    onchange={e=>onchange && onchange(e)}
+    onfocusin={e=>onfocusin && onfocusin(e)}
+    onfocusout={e=>onfocusout && onfocusout(e)}
+    readonly={readonly} disabled={disabled}
+    class="materialize-textarea">{value}</textarea>
+    <label @ref="label" @if={label} class="{active : placeholder || !!value}">{label}</label>
+</div>
+
+[state]
+{
+    scrollY : false,
+    rows : 2,
+    height : 66,  // 24 + (2 * 21) 
+    value : '',
+}
+
+[methods]
+init(){
+    let rows = this.#private.state.rows = this.#private.state.value.split('\n').length;
+    let maxRows = this.#private.options.rows || 5;
+
+    let height, scrollY;
+    if (rows > maxRows){
+        this.#private.state.scrollY = true;
+        this.#private.state.height = 25 + (maxRows * 21);
+    }else{
+        this.#private.state.scrollY = false;
+        rows < 2  && (rows = 2);
+        this.#private.state.height = 25 + (rows * 21);
+    }
+}
+
+@action('paste', 'textarea')
+@action('cut', 'textarea')
+@action('keyup', 'textarea')
+@action('change', 'textarea')
+change(e){
+    this.#private.state.value = e.targetNode.value;                                                 // 值变化时，自动绑定
+    let rows = this.#private.state.rows = this.#private.state.value.split('\n').length;
+    let maxRows = this.#private.options.rows || 5;
+
+    let height, scrollY;
+    if (rows > maxRows){
+        scrollY = true;
+        height = 25 + (maxRows * 21);
+    }else{
+        scrollY = false;
+        rows < 2  && (rows = 2);
+        height = 25 + (rows * 21);
+    }
+    if (this.#private.state.height !== height || this.#private.state.scrollY !== scrollY) {
+        this.#private.state.height = height;
+        this.#private.state.scrollY = scrollY;
+        this.render();
+    }
+}
+
+@action('focusin', 'textarea')
+focusin(e){
+    if (this.#private.options.placeholder) return;
+    !$$(this.getRefElement('label')).addClass('active');                                            // 得焦点时，无条件 active 状态
+}
+
+@action('focusout', 'textarea')
+focusout(e){
+    this.#private.state.scrollY && this.getRefElement('textarea').scrollTo(0,0);                    // 有滚动条时，滚动到顶
+
+    if (this.#private.options.placeholder) return;
+    !this.getRefElement('textarea').value && $$(this.getRefElement('label')).removeClass('active'); // 失焦点时，无值才删除 active 状态
+}
+
+@action('click', 'label')
+click(e){
+    if (this.#private.options.placeholder) return;
+    let el = this.getRefElement('textarea');
+    !el.value && el.focus();                                                                        // 无值时得焦点
+}
+
+[csslib]
+* = materialize-css

@@ -1,0 +1,16 @@
+[api]
+optionkeys = type, disabled, onclick
+
+[view]
+<button class="btn waves-effect waves-light {
+        blue : /^blue$/i.test(type) || !type,
+        yellow : /^yellow$/i.test(type),
+        red : /^red$/i.test(type),
+        green : /^green$/i.test(type),
+    }"
+  onclick={e=>onclick && onclick(e)}
+  disabled={!!disabled}
+  type="button"><slot/></button>
+
+[csslib]
+* = materialize-css

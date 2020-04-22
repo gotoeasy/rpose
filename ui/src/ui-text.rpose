@@ -1,0 +1,41 @@
+[api]
+optionkeys = placeholder, onchange, onfocusin, onfocusout, maxlength
+statekeys = label, value, readonly, disabled
+
+[view]
+<div class="input-field">
+    <input @ref="input" type="text" value={value} placeholder={placeholder || ''}
+    onchange={e=>onchange && onchange(e)}
+    onfocusin={e=>onfocusin && onfocusin(e)}
+    onfocusout={e=>onfocusout && onfocusout(e)}
+    readonly={readonly} disabled={disabled} maxlength={/^\d+$/i.test(maxlength) ? maxlength : '255'}>
+    <label @ref="label" @if={label} class="{active : placeholder || !!value}">{label}</label>
+</div>
+
+[methods]
+@action('change', 'input')
+change(e){
+    this.#private.state.value = e.targetNode.value;                                                 // 值变化时，自动绑定
+}
+
+@action('focusin', 'input')
+focusin(e){
+    if (this.#private.options.placeholder) return;
+    !$$(this.getRefElement('label')).addClass('active');                                            // 得焦点时，无条件 active 状态
+}
+
+@action('focusout', 'input')
+focusout(e){
+    if (this.#private.options.placeholder) return;
+    !this.getRefElement('input').value && $$(this.getRefElement('label')).removeClass('active');    // 失焦点时，无值才删除 active 状态
+}
+
+@action('click', 'label')
+click(e){
+    if (this.#private.options.placeholder) return;
+    let el = this.getRefElement('input');
+    !el.value && el.focus();                                                                        // 无值时得焦点
+}
+
+[csslib]
+* = materialize-css

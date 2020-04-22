@@ -1,0 +1,14 @@
+[api]
+optionkeys = name, onclick
+statekeys = value, checked, disabled
+
+[view]
+<label>
+    <input class="with-gap" name={name} type="radio"
+    onclick={e=>onclick && onclick(e)}
+    checked={!!$state.checked} disabled={!!$state.disabled} value={value} />
+    <span><slot/></span>
+</label>
+
+[csslib]
+* = materialize-css
