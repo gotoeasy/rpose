@@ -843,7 +843,9 @@
                 if (wv.vn.m) {
                     setComponentState(wv.wv1.vn[wv.vn.t].o, wv.vn);
                 } else {
-                    diffRenderChildern(component, wv.wv1.el, wv.vn);
+                    if (!wv.vn.a || wv.vn.a["@html"] === undefined && wv.vn.a["@text"] === undefined) {
+                        diffRenderChildern(component, wv.wv1.el, wv.vn);
+                    }
                 }
             }
         });

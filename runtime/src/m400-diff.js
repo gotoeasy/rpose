@@ -161,7 +161,10 @@ function diffRenderChildern(component, parent, parentVnode2){
             if ( wv.vn.m ) {
                 setComponentState(wv.wv1.vn[wv.vn.t].o, wv.vn);                         // 组件对象时让组件自己去差异更新
             }else{
-                diffRenderChildern(component, wv.wv1.el, wv.vn);
+                if ( !wv.vn.a || (wv.vn.a['@html'] === undefined && wv.vn.a['@text'] === undefined) ) {
+                    // 标准标签，不含@html和@text属性时，才需要继续差异比较子节点
+                    diffRenderChildern(component, wv.wv1.el, wv.vn);
+                }
             }
         }
     });
