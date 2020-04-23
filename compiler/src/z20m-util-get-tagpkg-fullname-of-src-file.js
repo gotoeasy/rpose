@@ -22,8 +22,8 @@ bus.on('标签全名', function(){
             tagpkg = File.name(file);                                               // aaa/bbb/xxxxxx/abc.rpose => abc      ui-btn => ui-btn
 
             // 内置标签
-            tagpkg === 'router' && (tagpkg = '@rpose/buildin:router');
-            tagpkg === 'router-link' && (tagpkg = '@rpose/buildin:router-link');
+            /^@?router$/i.test(tagpkg) && (tagpkg = '@rpose/buildin:router');
+            /^@?router-link$/i.test(tagpkg) && (tagpkg = '@rpose/buildin:router-link');
         }
 
         return tagpkg;

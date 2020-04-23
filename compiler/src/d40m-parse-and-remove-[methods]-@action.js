@@ -9,8 +9,9 @@ const oSetBuildIn = new Set(['$vnode', 'getRefElements', 'getRefElement', 'getRe
 
 bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input={}, PosOffset=0){
 
-    let js = "class C { #private={};       \n" + methodsCode + "\n}";                       // 前面加30位，后面添2位
-    PosOffset = PosOffset - 30;                                                             // 减去前面加的10位偏移量
+    let extCode = `\n #getState(){}\n#setState(){}\n}`;
+    let js = `class C { #private={};       \n${methodsCode}${extCode}`;                     // 前面加30位
+    PosOffset = PosOffset - 30;                                                             // 减去前面加的30位偏移量
 
     // ---------------------------------------------------------
     // 解析为语法树，支持装饰器写法
@@ -111,6 +112,11 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
         ClassPrivateMethod(path){
             let oItem = {};
             let oId = path.node.key.id;
+            if (/^getState|setState$/.test(oId.name)) {
+                path.remove();
+                return;
+            }
+
             oItem.Name = {value: '#'+oId.name, ...getPos(oId, PosOffset)};                                                  // 方法名
             oItem.Name.start = oItem.Name.start - 1;
 
@@ -152,7 +158,7 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
     // ---------------------------------------------------------
     // 生成删除装饰器后的代码
     let code = babel.transformFromAstSync(ast).code;
-    code = code.substring(30, code.length - 2);
+    code = code.substring(30, code.length - 1);
 
     return {Method: oClassMethod, bindfns, methods: code, ast};
 });

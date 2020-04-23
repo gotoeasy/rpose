@@ -28,10 +28,10 @@ bus.on('解析[taglib]', function(){
             oTaglib.pos = pos;                                                              // 顺便保存位置，备用  TODO 位置
 
             // 无效的taglib别名
-            if ( /\s+/.test(oTaglib.astag) ) {
-                throw new Err('invalid taglib alias (include space)', { file, start: pos.start, end: pos.endAlias });
-            }
-            if ( /^(if|for|svgicon|router|router-link)$/i.test(oTaglib.astag) ) {
+            //if ( /\s+/.test(oTaglib.astag) ) {
+            //    throw new Err('invalid taglib alias (include space)', { file, start: pos.start, end: pos.endAlias });
+            //}
+            if ( /^@?(if|for|svgicon|router|router-link)$/i.test(oTaglib.astag) ) {
                 throw new Err('can not use buildin tag name: ' + oTaglib.astag, { file, start: pos.start, end: pos.endAlias });
             }
 

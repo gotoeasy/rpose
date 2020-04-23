@@ -231,7 +231,7 @@ bus.on('SVG图标内容解析插件', function(){
 
             let nodes = [...node.parent.nodes];
             nodes.forEach(n => {
-                if ( (n.type === 'Tag' && !/^(svg|if|for|router|router-link)$/i.test(n.object.value))
+                if ( (n.type === 'Tag' && !/^@?(svg|if|for|router|router-link)$/i.test(n.object.value))
                     || n.type === 'HtmlComment' || n.type === 'Text' ) {
                     n.remove();
                 }

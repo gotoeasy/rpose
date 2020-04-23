@@ -34,7 +34,7 @@ bus.on('编译插件', function(){
                 // 属性 @taglib 不能重复
                 throw new Err('duplicate attribute of @taglib', { ...context.input, ...ary[1].object.Name.pos });
             }
-            if ( /^(if|for|svgicon|router|router-link)$/.test(object.value) ) {
+            if ( /^@?(if|for|svgicon|router|router-link)$/.test(object.value) ) {
                 throw new Err(`unsupport @taglib on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
             }
 

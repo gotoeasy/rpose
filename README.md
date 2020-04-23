@@ -182,6 +182,9 @@ body
 - [x] 内置标签组件 `<if>`
 - [x] 内置标签组件 `<for>`
 - [x] 内置图标组件 `<svgicon>`
+- [x] 内置组件写法 `<@svgicon>`等同 `<svgicon>`
+- [x] 内置组件写法 `<@router>`等同 `<router>`
+- [x] 内置组件写法 `<@router-link>`等同 `<router-link>`
 
 > `runtime`
 
@@ -231,6 +234,7 @@ body
 - [x] 错误信息对比定位提示，同一文件则自动合并提示
 - [x] 配置文件`rpose.config.btf`中支持设定监视模式的端口，默认3700，设为random即随机
 - [x] 图标组件 `<svgicon>`在`inline-symbol`模式下，允许按名称动态使用当前工程下的SVG图标
+- [x] 增加组件的私有方法`#getState`和`#setState`方法，无`[api]`接口限制，方便组件内部使用
 
 > `other`
 
@@ -241,10 +245,6 @@ body
 - [x] 监视模式下修改`<svgicon>`用到的图标文件，重新编译可能相关的组件及页面
 - [x] 监视模式下修改<img>用到的图片文件，重新编译相关的组件及页面
 - [x] 监视模式下修改本地样式库用到的css文件，重新编译相关的组件及页面
-- [ ] 完善文档
-- [ ] 测试及覆盖率
-- [ ] 性能继续优化
-- [ ] 新特性好姿势增强
 
 <br>
 
@@ -252,8 +252,12 @@ body
 <details>
 <summary><strong>Ver 0.8.*</strong></summary>
 
-- [x] 图标组件 `<svgicon>`在`inline-symbol`模式下，允许按名称动态使用当前工程下的SVG图标
+- [x] 内置图标组件 `<svgicon>`在`inline-symbol`模式下，允许按名称动态使用当前工程下的SVG图标
+- [x] 内置组件写法 `<@svgicon>`等同 `<svgicon>`
+- [x] 内置组件写法 `<@router>`等同 `<router>`
+- [x] 内置组件写法 `<@router-link>`等同 `<router-link>`
 - [x] `[methods]`中支持定义`mounted`方法，有定义时在组件挂载完成后将被异步调用
+- [x] 增加组件的私有方法`#getState`和`#setState`方法，无`[api]`接口限制，方便组件内部使用
 </details>
 
 <details>

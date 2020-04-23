@@ -120,10 +120,17 @@ class <%= $data['COMPONENT_NAME'] %> {
         this.render(state);                                                         // 再渲染视图
     }
 
-    
+    #getState(){
+        return this.#private.state;                                                 // 取得数据状态真本
+    }
+    #setState(state, render=true){
+        Object.assign(this.#private.state, state);                                  // 直接修改数据状态真本
+        render && this.render();                                                    // 再渲染视图
+    }
+
     <% if ( !($data['Method'] || {})['render'] ){ %>
     // 默认渲染方法
-    render (state){
+    render (){
         let el, $$el, vnode, $this = this, $private = this.#private;
 
         // 首次渲染

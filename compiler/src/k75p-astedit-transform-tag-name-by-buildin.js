@@ -9,10 +9,10 @@ bus.on('编译插件', function(){
         root.walk( 'Tag', (node, object) => {
             if ( object.standard ) return;
             
-            if ( /^router$/i.test(object.value) ){
+            if ( /^@?router$/i.test(object.value) ){
                 object.value = '@rpose/buildin:router';
             }
-            if ( /^router-link$/i.test(object.value) ){
+            if ( /^@?router-link$/i.test(object.value) ){
                 object.value = '@rpose/buildin:router-link';
             }
 

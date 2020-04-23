@@ -1786,10 +1786,10 @@ console.time("load");
                     oTaglib.pos = pos; // 顺便保存位置，备用  TODO 位置
 
                     // 无效的taglib别名
-                    if (/\s+/.test(oTaglib.astag)) {
-                        throw new Err("invalid taglib alias (include space)", { file, start: pos.start, end: pos.endAlias });
-                    }
-                    if (/^(if|for|svgicon|router|router-link)$/i.test(oTaglib.astag)) {
+                    //if ( /\s+/.test(oTaglib.astag) ) {
+                    //    throw new Err('invalid taglib alias (include space)', { file, start: pos.start, end: pos.endAlias });
+                    //}
+                    if (/^@?(if|for|svgicon|router|router-link)$/i.test(oTaglib.astag)) {
                         throw new Err("can not use buildin tag name: " + oTaglib.astag, { file, start: pos.start, end: pos.endAlias });
                     }
 
@@ -2877,8 +2877,9 @@ console.time("load");
     const oSetBuildIn = new Set(["$vnode", "getRefElements", "getRefElement", "getRefComponents", "getRefComponent", "getRootElement"]);
 
     bus.on("解析检查METHODS块并删除装饰器", function(methodsCode, input = {}, PosOffset = 0) {
-        let js = "class C { #private={};       \n" + methodsCode + "\n}"; // 前面加30位，后面添2位
-        PosOffset = PosOffset - 30; // 减去前面加的10位偏移量
+        let extCode = `\n #getState(){}\n#setState(){}\n}`;
+        let js = `class C { #private={};       \n${methodsCode}${extCode}`; // 前面加30位
+        PosOffset = PosOffset - 30; // 减去前面加的30位偏移量
 
         // ---------------------------------------------------------
         // 解析为语法树，支持装饰器写法
@@ -2979,6 +2980,11 @@ console.time("load");
             ClassPrivateMethod(path) {
                 let oItem = {};
                 let oId = path.node.key.id;
+                if (/^getState|setState$/.test(oId.name)) {
+                    path.remove();
+                    return;
+                }
+
                 oItem.Name = { value: "#" + oId.name, ...getPos(oId, PosOffset) }; // 方法名
                 oItem.Name.start = oItem.Name.start - 1;
 
@@ -3017,7 +3023,7 @@ console.time("load");
         // ---------------------------------------------------------
         // 生成删除装饰器后的代码
         let code = babel.transformFromAstSync(ast).code;
-        code = code.substring(30, code.length - 2);
+        code = code.substring(30, code.length - 1);
 
         return { Method: oClassMethod, bindfns, methods: code, ast };
     });
@@ -4818,7 +4824,7 @@ console.time("load");
                     let nodes = [...node.parent.nodes];
                     nodes.forEach(n => {
                         if (
-                            (n.type === "Tag" && !/^(svg|if|for|router|router-link)$/i.test(n.object.value)) ||
+                            (n.type === "Tag" && !/^@?(svg|if|for|router|router-link)$/i.test(n.object.value)) ||
                             n.type === "HtmlComment" ||
                             n.type === "Text"
                         ) {
@@ -5449,6 +5455,29 @@ console.time("load");
     // ------- f26m-svgicon-convert-to-symbol end
 })();
 
+/* ------- f31p-svgicon-astedit-transform-tag-@svgicon-to-svgicon ------- */
+(() => {
+    // ------- f31p-svgicon-astedit-transform-tag-@svgicon-to-svgicon start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+
+    bus.on(
+        "编译插件",
+        (function() {
+            // @svgicon -> svgicon
+            return postobject.plugin("f31p-svgicon-astedit-transform-tag-@svgicon-to-svgicon", function(root) {
+                root.walk("Tag", (node, object) => {
+                    if (/^@svgicon$/i.test(object.value)) {
+                        object.value = "svgicon";
+                    }
+                });
+            });
+        })()
+    );
+
+    // ------- f31p-svgicon-astedit-transform-tag-@svgicon-to-svgicon end
+})();
+
 /* ------- f35p-svgicon-astedit-transform-to-svg ------- */
 (() => {
     // ------- f35p-svgicon-astedit-transform-to-svg start
@@ -5954,7 +5983,7 @@ console.time("load");
                         throw new Err("duplicate attribute of @merge", { ...context.input, ...ary[1].object.Name.pos });
                     }
                     if (
-                        /^(if|for|svgicon|router|router-link)$/.test(object.value) ||
+                        /^@?(if|for|svgicon|router|router-link)$/.test(object.value) ||
                         (object.standard && !/(input|select|textarea)/i.test(object.value))
                     ) {
                         // 仅支持特定的几个标准标签，以及组件标签
@@ -6887,7 +6916,7 @@ console.time("load");
                         // 属性 @taglib 不能重复
                         throw new Err("duplicate attribute of @taglib", { ...context.input, ...ary[1].object.Name.pos });
                     }
-                    if (/^(if|for|svgicon|router|router-link)$/.test(object.value)) {
+                    if (/^@?(if|for|svgicon|router|router-link)$/.test(object.value)) {
                         throw new Err(`unsupport @taglib on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
                     }
 
@@ -7499,10 +7528,10 @@ console.time("load");
                     root.walk("Tag", (node, object) => {
                         if (object.standard) return;
 
-                        if (/^router$/i.test(object.value)) {
+                        if (/^@?router$/i.test(object.value)) {
                             object.value = "@rpose/buildin:router";
                         }
-                        if (/^router-link$/i.test(object.value)) {
+                        if (/^@?router-link$/i.test(object.value)) {
                             object.value = "@rpose/buildin:router-link";
                         }
                     });
@@ -8283,10 +8312,17 @@ class <%= $data['COMPONENT_NAME'] %> {
         this.render(state);                                                         // 再渲染视图
     }
 
-    
+    #getState(){
+        return this.#private.state;                                                 // 取得数据状态真本
+    }
+    #setState(state, render=true){
+        Object.assign(this.#private.state, state);                                  // 直接修改数据状态真本
+        render && this.render();                                                    // 再渲染视图
+    }
+
     <% if ( !($data['Method'] || {})['render'] ){ %>
     // 默认渲染方法
-    render (state){
+    render (){
         let el, $$el, vnode, $this = this, $private = this.#private;
 
         // 首次渲染
@@ -10347,8 +10383,8 @@ class <%= $data['COMPONENT_NAME'] %> {
                     tagpkg = File.name(file); // aaa/bbb/xxxxxx/abc.rpose => abc      ui-btn => ui-btn
 
                     // 内置标签
-                    tagpkg === "router" && (tagpkg = "@rpose/buildin:router");
-                    tagpkg === "router-link" && (tagpkg = "@rpose/buildin:router-link");
+                    /^@?router$/i.test(tagpkg) && (tagpkg = "@rpose/buildin:router");
+                    /^@?router-link$/i.test(tagpkg) && (tagpkg = "@rpose/buildin:router-link");
                 }
 
                 return tagpkg;

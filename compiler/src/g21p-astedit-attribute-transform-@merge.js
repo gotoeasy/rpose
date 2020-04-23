@@ -33,7 +33,7 @@ bus.on('编译插件', function(){
                 // 属性 @merge 不能重复
                 throw new Err('duplicate attribute of @merge', { ...context.input, ...ary[1].object.Name.pos });
             }
-            if ( /^(if|for|svgicon|router|router-link)$/.test(object.value) || (object.standard && !/(input|select|textarea)/i.test(object.value)) ) {
+            if ( /^@?(if|for|svgicon|router|router-link)$/.test(object.value) || (object.standard && !/(input|select|textarea)/i.test(object.value)) ) {
                 // 仅支持特定的几个标准标签，以及组件标签
                 throw new Err(`unsupport @merge on tag <${object.value}>`, { ...context.input, ...ary[0].object.Name.pos });
             }
