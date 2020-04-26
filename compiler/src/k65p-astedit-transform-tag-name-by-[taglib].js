@@ -17,7 +17,20 @@ bus.on('编译插件', function(){
             let taglib = oTaglibs[object.value] || oPrjTaglibs[object.value];
             if ( taglib ){
                 // 标签库中能找到的，按标签库更新为标签全名
-                let srcFile = bus.at('标签库源文件', taglib);                   // 从指定模块查找
+                let srcFile;
+                if ( taglib.pkg === '~' ) {
+                    if ( /^@/.test(taglib.tag) ) {
+                        if (taglib.astag === taglib.tag) {
+                            taglib.tag = taglib.tag.substring(1);
+                        }
+                        srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
+                    }else{
+                        srcFile = bus.at('标签项目源文件', taglib.tag);    // 指所在工程的组件
+                    }
+                }else{
+                    srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
+                }
+
                 if ( !srcFile ) {
                     throw new Err('component not found: ' + object.value, { ...context.input, ...object.pos });
                 }

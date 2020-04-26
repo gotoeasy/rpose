@@ -5,6 +5,8 @@ bus.on('自动安装', function(rs={}){
     
     return function autoinstall(pkg){
 
+        if (pkg === '~') return true;                                                   // 所在工程中的组件，不必安装
+
         pkg.indexOf(':') > 0 && (pkg = pkg.substring(0, pkg.indexOf(':')));             // @scope/pkg:component => @scope/pkg
         pkg.lastIndexOf('@') > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf('@')));     // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
 

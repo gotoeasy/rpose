@@ -39,7 +39,7 @@ const hash = require('@gotoeasy/hash');
             let file = (env.path.build_dist + '/' + env.path.build_dist_images + '/' + filename).replace(/\/\//g, '/');
             let text = bus.at('外部SYMBOL文件内容', srcFile);
 
-            if ( pkg === '/'  ) {
+            if ( pkg === '~'  ) {
                 // 当前工程时，如果内容相同，不重复写文件
                 let hashcode = hash(text);
                 if ( hashLinkSymbol !== hashcode ) {

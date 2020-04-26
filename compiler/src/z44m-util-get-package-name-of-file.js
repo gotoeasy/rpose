@@ -5,7 +5,7 @@ bus.on('文件所在模块', function(){
 
     return file => {
 
-        let pkg = '/', idx = file.lastIndexOf('/node_modules/');
+        let pkg = '~', idx = file.lastIndexOf('/node_modules/');
         if ( idx > 0 ) {
             let ary = file.substring(idx + 14).split('/');                     
             if ( ary[0].startsWith('@') ) {

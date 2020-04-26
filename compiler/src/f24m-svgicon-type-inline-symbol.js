@@ -50,7 +50,7 @@ bus.on('生成SVG引用内联SYMBOL', function (){
         let href;
         if ( bus.at('是否表达式', fileOrExpr) ) {
             let expr = fileOrExpr.substring(1, fileOrExpr.length-1);
-            hashcode = hash('/');                                                           // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
+            hashcode = hash('~');                                                           // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
             href = `{'#${hashcode}_' + (${expr}) }`;
 
             !props.height && attrs.push(`height="${props.width || 16}"`);

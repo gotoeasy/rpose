@@ -6,7 +6,7 @@ bus.on('组件目标临时JS文件名', function(){
 
         let env = bus.at('编译环境');
         let pkg = bus.at('文件所在模块', srcFile);
-        if ( pkg === '/' ) {
+        if ( pkg === '~' ) {
             let file = srcFile.substring(env.path.src.length, srcFile.length-6) + '.js';
             return `${env.path.build_temp}${file}`;
         }else{

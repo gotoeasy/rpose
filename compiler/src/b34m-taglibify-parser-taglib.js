@@ -3,7 +3,7 @@ const bus = require('@gotoeasy/bus');
 // 解析单个taglib定义，转换为对象形式方便读取
 bus.on('解析taglib', function(){
 
-    // file用于记录taglib所在文件，便于错误提示
+    // file用于记录taglib所在文件，便于错误提示，无file时是@taglib
     return function normalizeTaglib(taglib, file=''){
 
         let atastag, astag, pkg, tag, match;
@@ -26,6 +26,8 @@ bus.on('解析taglib', function(){
             // 无效的taglib格式
             return null;
         }
+
+        pkg.length < 2 && (pkg = '~');                                                      // 单个字符的包，按所在工程看待，统一成‘~’
 
         atastag = astag.startsWith('@') ? astag : ('@' + astag);                            // astag可能没有@前缀，atastag固定含@前缀
 

@@ -22,6 +22,17 @@ const File = require('@gotoeasy/file');
         stack.push(taglib);
 
         // 先按标签名查找源文件
+        if ( taglib.pkg === '~' ) {
+            if ( /^@/.test(taglib.tag) ) {
+                if (taglib.astag === taglib.tag) {
+                    taglib.tag = taglib.tag.substring(1);
+                }
+                return bus.at("标签库源文件", taglib); // 从指定模块查找
+            }else{
+                return bus.at('标签项目源文件', taglib.tag);    // 指所在工程的组件
+            }
+        }
+
         let oTagFile = getTagFileOfPkg(taglib.pkg);
         if ( oTagFile[taglib.tag] ) {
             return oTagFile[taglib.tag];
@@ -57,6 +68,7 @@ const File = require('@gotoeasy/file');
 
     // 查找指定包中的全部源文件，建立标签关系
     function getTagFileOfPkg(pkg){
+
         let oTagFile;
         if ( !(oTagFile = rs[pkg]) ) {
             bus.at('自动安装', pkg);

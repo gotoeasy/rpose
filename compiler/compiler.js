@@ -1699,6 +1699,17 @@ console.time("load");
             stack.push(taglib);
 
             // 先按标签名查找源文件
+            if (taglib.pkg === "~") {
+                if (/^@/.test(taglib.tag)) {
+                    if (taglib.astag === taglib.tag) {
+                        taglib.tag = taglib.tag.substring(1);
+                    }
+                    return bus.at("标签库源文件", taglib); // 从指定模块查找
+                } else {
+                    return bus.at("标签项目源文件", taglib.tag); // 指所在工程的组件
+                }
+            }
+
             let oTagFile = getTagFileOfPkg(taglib.pkg);
             if (oTagFile[taglib.tag]) {
                 return oTagFile[taglib.tag];
@@ -1840,7 +1851,7 @@ console.time("load");
     bus.on(
         "解析taglib",
         (function() {
-            // file用于记录taglib所在文件，便于错误提示
+            // file用于记录taglib所在文件，便于错误提示，无file时是@taglib
             return function normalizeTaglib(taglib, file = "") {
                 let atastag, astag, pkg, tag, match;
                 if ((match = taglib.match(/^\s*([\S]+)\s*=\s*([\S]+)\s*:\s*([\S]+)\s*$/))) {
@@ -1862,6 +1873,8 @@ console.time("load");
                     // 无效的taglib格式
                     return null;
                 }
+
+                pkg.length < 2 && (pkg = "~"); // 单个字符的包，按所在工程看待，统一成‘~’
 
                 atastag = astag.startsWith("@") ? astag : "@" + astag; // astag可能没有@前缀，atastag固定含@前缀
 
@@ -5229,7 +5242,7 @@ console.time("load");
                 let href;
                 if (bus.at("是否表达式", fileOrExpr)) {
                     let expr = fileOrExpr.substring(1, fileOrExpr.length - 1);
-                    hashcode = hash("/"); // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
+                    hashcode = hash("~"); // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
                     href = `{'#${hashcode}_' + (${expr}) }`;
 
                     !props.height && attrs.push(`height="${props.width || 16}"`);
@@ -5330,7 +5343,7 @@ console.time("load");
                 let file = (env.path.build_dist + "/" + env.path.build_dist_images + "/" + filename).replace(/\/\//g, "/");
                 let text = bus.at("外部SYMBOL文件内容", srcFile);
 
-                if (pkg === "/") {
+                if (pkg === "~") {
                     // 当前工程时，如果内容相同，不重复写文件
                     let hashcode = hash(text);
                     if (hashLinkSymbol !== hashcode) {
@@ -7495,7 +7508,20 @@ console.time("load");
                         let taglib = oTaglibs[object.value] || oPrjTaglibs[object.value];
                         if (taglib) {
                             // 标签库中能找到的，按标签库更新为标签全名
-                            let srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
+                            let srcFile;
+                            if (taglib.pkg === "~") {
+                                if (/^@/.test(taglib.tag)) {
+                                    if (taglib.astag === taglib.tag) {
+                                        taglib.tag = taglib.tag.substring(1);
+                                    }
+                                    srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
+                                } else {
+                                    srcFile = bus.at("标签项目源文件", taglib.tag); // 指所在工程的组件
+                                }
+                            } else {
+                                srcFile = bus.at("标签库源文件", taglib); // 从指定模块查找
+                            }
+
                             if (!srcFile) {
                                 throw new Err("component not found: " + object.value, { ...context.input, ...object.pos });
                             }
@@ -8408,10 +8434,18 @@ class <%= $data['COMPONENT_NAME'] %> {
                 root.walk(
                     "Tag",
                     (node, object) => {
-                        if (!object.standard && !/^(if|for)$/i.test(object.value)) {
+                        if (!object.standard && !/^@?(if|for)$/i.test(object.value)) {
                             let file = bus.at("标签源文件", object.value, context.result.oTaglibs);
                             if (!file) {
-                                throw new Err("file not found of tag: " + object.value, { ...context.input, start: object.pos.start });
+                                if (/^@/i.test(object.value)) {
+                                    // @tag可指所在工程同名组件，找找看
+                                    file = bus.at("标签项目源文件", object.value.substring(1));
+                                    file && (object.value = object.value.substring(1)); // 找到，暴力修改标签名。。。FIXME 优雅点
+                                }
+
+                                if (!file) {
+                                    throw new Err("file not found of tag: " + object.value, { ...context.input, start: object.pos.start });
+                                }
                             }
                             let tagpkg = bus.at("标签全名", file);
                             oSet.add(tagpkg);
@@ -10654,7 +10688,7 @@ class <%= $data['COMPONENT_NAME'] %> {
         "文件所在模块",
         (function() {
             return file => {
-                let pkg = "/",
+                let pkg = "~",
                     idx = file.lastIndexOf("/node_modules/");
                 if (idx > 0) {
                     let ary = file.substring(idx + 14).split("/");
@@ -10738,7 +10772,7 @@ class <%= $data['COMPONENT_NAME'] %> {
             return function(srcFile) {
                 let env = bus.at("编译环境");
                 let pkg = bus.at("文件所在模块", srcFile);
-                if (pkg === "/") {
+                if (pkg === "~") {
                     let file = srcFile.substring(env.path.src.length, srcFile.length - 6) + ".css";
                     return `${env.path.build_temp}${file}`;
                 } else {
@@ -10764,7 +10798,7 @@ class <%= $data['COMPONENT_NAME'] %> {
             return function(srcFile) {
                 let env = bus.at("编译环境");
                 let pkg = bus.at("文件所在模块", srcFile);
-                if (pkg === "/") {
+                if (pkg === "~") {
                     let file = srcFile.substring(env.path.src.length, srcFile.length - 6) + ".js";
                     return `${env.path.build_temp}${file}`;
                 } else {
@@ -10987,6 +11021,8 @@ class <%= $data['COMPONENT_NAME'] %> {
         "自动安装",
         (function(rs = {}) {
             return function autoinstall(pkg) {
+                if (pkg === "~") return true; // 所在工程中的组件，不必安装
+
                 pkg.indexOf(":") > 0 && (pkg = pkg.substring(0, pkg.indexOf(":"))); // @scope/pkg:component => @scope/pkg
                 pkg.lastIndexOf("@") > 0 && (pkg = pkg.substring(0, pkg.lastIndexOf("@"))); // 不该考虑版本，保险起见修理一下，@scope/pkg@x.y.z => @scope/pkg
 
