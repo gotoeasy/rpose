@@ -754,6 +754,7 @@
         }
         let diffAttrs = getDiffAttrs(vnode1, vnode2);
         if (diffAttrs) {
+            !vnode1.a && (vnode1.a = {});
             for (let k in diffAttrs) {
                 vnode1.a[k] = diffAttrs[k];
                 $$el.attr(k, diffAttrs[k]);

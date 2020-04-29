@@ -46,6 +46,7 @@ function diffRender(component, vnode2){
     // 属性差异比较更新
     let diffAttrs = getDiffAttrs(vnode1, vnode2);
     if ( diffAttrs ) {
+        !vnode1.a && (vnode1.a = {});
         for ( let k in diffAttrs ) {
             vnode1.a[k] = diffAttrs[k];                 // 属性保存到虚拟节点中
             $$el.attr(k, diffAttrs[k]);                 // 属性更新
