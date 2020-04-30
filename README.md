@@ -194,6 +194,7 @@ body
 - [x] 支持相对特殊的`<svg>`、`<script>`、`<link>`标签
 - [x] 使用代理事件，`event.targetNode`存放当前事件节点
 - [x] 差异渲染时支持事件更新
+- [x] 添加`rpose.zindex(num)`方法接口，以支持动态计算`z-index`
 
 > `compiler`
 
@@ -264,6 +265,7 @@ body
 - [x] [taglib]可使用`~`表示引用当前工程内的组件，如 `@my-tag = ~`
 - [x] 当前工程内的组件引用可使用`@`开头的默认别名，如 `<@my-tag>`等同`<my-tag>`<br>
       这有时会很方便，比如在开发期间`[taglib]`内可以不配置，需要更换为第三方组件时再配置即可
+- [x] 添加`rpose.zindex(num)`方法接口，以支持动态计算`z-index`
 </details>
 
 <details>
