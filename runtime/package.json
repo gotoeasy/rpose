@@ -1,6 +1,6 @@
 {
   "name": "@rpose/runtime",
-  "version": "0.2.11",
+  "version": "0.2.14",
   "devDependencies": {
     "@gotoeasy/file": "*",
     "@gotoeasy/csjs": "*",

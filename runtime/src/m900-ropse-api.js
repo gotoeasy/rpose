@@ -26,6 +26,8 @@ api.router = Router;
 
 api.diffRender = diffRender;
 
+api.zindex = zindex;
+
 // 仅支持浏览器
 window.rpose = api;
 

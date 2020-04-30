@@ -2,6 +2,7 @@ bin/
 node_modules/
 script/
 src/
+bin/
 ut-project/
 .eslintrc.js
 build.bat

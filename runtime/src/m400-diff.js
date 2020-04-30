@@ -132,6 +132,7 @@ function diffRenderChildern(component, parent, parentVnode2){
                 // 普通节点属性差异更新
                 let diffAttrs = getDiffAttrs(wv2.wv1.vn, wv2.vn);                   // 比较属性差异
                 if ( diffAttrs ) {
+                    wv2.wv1.vn.a = wv2.wv1.vn.a || {};
                     for ( let k in diffAttrs ) {
                         wv2.wv1.vn.a[k] = diffAttrs[k];                             // 属性保存到虚拟节点
                         $$(wv2.wv1.el).attr(k, diffAttrs[k]);                       // 更新属性

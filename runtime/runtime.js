@@ -818,6 +818,7 @@
                 } else {
                     let diffAttrs = getDiffAttrs(wv2.wv1.vn, wv2.vn);
                     if (diffAttrs) {
+                        wv2.wv1.vn.a = wv2.wv1.vn.a || {};
                         for (let k in diffAttrs) {
                             wv2.wv1.vn.a[k] = diffAttrs[k];
                             $$(wv2.wv1.el).attr(k, diffAttrs[k]);
@@ -1086,6 +1087,15 @@
         }
         return obj;
     }
+    function zindex(step) {
+        if (!window.$rpose_zindex$) {
+            window.$rpose_zindex$ = 3e3;
+        }
+        if (typeof step === "number") {
+            window.$rpose_zindex$ += step;
+        }
+        return window.$rpose_zindex$;
+    }
     var api = {};
     api.$$ = $$;
     api.registerComponents = registerComponents;
@@ -1101,5 +1111,6 @@
     api.at = BUS.at;
     api.router = Router;
     api.diffRender = diffRender;
+    api.zindex = zindex;
     window.rpose = api;
 })(window, document);
