@@ -7,7 +7,6 @@ ut-project/
 .eslintrc.js
 build.bat
 coverage.js
-default.rpose.config.btf
 index.js
 package.btf
 package-lock.json

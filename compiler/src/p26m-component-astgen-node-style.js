@@ -56,6 +56,8 @@ function parseExpression(ary, val){
     }
 
 
+    // TODO "size:12px;color:{`${color?color:'red'}`};height:100;" => ("size:12px;color:" + `${color?color:'red'}` + ";height:100;")
+
     if ( idxStart > 0 ) {
         ary.push('"' + lineString(val.substring(0, idxStart)) + '"');       // acb{def}ghi => "abc"
     }

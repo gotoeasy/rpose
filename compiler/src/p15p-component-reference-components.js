@@ -4,6 +4,8 @@ const Err = require('@gotoeasy/err');
 
 bus.on('编译插件', function(){
     
+    // FIXME: 第三方包组件别名，没有正确的在所属工程中找到源文件，新建【标签所属项目源文件】
+
     return postobject.plugin(/**/__filename/**/, function(root, context){
         
         let result = context.result;
