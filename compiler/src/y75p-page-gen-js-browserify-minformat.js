@@ -18,7 +18,8 @@ bus.on('编译插件', function(){
 
         context.result.browserifyJs = new Promise((resolve, reject) => {
 
-            csjs.browserify(context.result.babelJs, null).then( js => {
+            let pathProjectNode_modules = bus.at("文件所在项目根目录", bus.at("编译环境").path.src) + '/node_modules';  // 查找本地依赖包用
+            csjs.browserify(context.result.babelJs, null, [pathProjectNode_modules]).then( js => {
                 js = env.release ? csjs.miniJs(js) : csjs.formatJs(js);
                 oCache.set(cacheKey, js);
                 resolve(js);
