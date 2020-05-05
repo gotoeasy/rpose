@@ -6,6 +6,8 @@ const File = require('@gotoeasy/file');
     // 按taglib找源文件
     bus.on('标签库源文件', (taglib, stack=[]) => {
 
+        if (!taglib) return;
+
         // 循环引用时报异常
         let oSet = stack.oSet = stack.oSet || new Set();
         let refpkgtag = taglib.pkg + ':' + taglib.tag;

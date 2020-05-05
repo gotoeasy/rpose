@@ -1683,6 +1683,8 @@ console.time("load");
     (function(rs = {}) {
         // 按taglib找源文件
         bus.on("标签库源文件", (taglib, stack = []) => {
+            if (!taglib) return;
+
             // 循环引用时报异常
             let oSet = (stack.oSet = stack.oSet || new Set());
             let refpkgtag = taglib.pkg + ":" + taglib.tag;
@@ -8428,26 +8430,21 @@ class <%= $data['COMPONENT_NAME'] %> {
     bus.on(
         "编译插件",
         (function() {
+            // FIXME: 第三方包组件别名，没有正确的在所属工程中找到源文件，新建【标签所属项目源文件】
+
             return postobject.plugin("p15p-component-reference-components", function(root, context) {
                 let result = context.result;
                 let oSet = new Set();
                 root.walk(
                     "Tag",
                     (node, object) => {
-                        if (!object.standard && !/^@?(if|for)$/i.test(object.value)) {
-                            let file = bus.at("标签源文件", object.value, context.result.oTaglibs);
+                        if (!object.standard && !/^@?(if|for|svgicon|router|router-link)$/i.test(object.value)) {
+                            let file = bus.at("文件标签相应的源文件", object.value, context);
                             if (!file) {
-                                if (/^@/i.test(object.value)) {
-                                    // @tag可指所在工程同名组件，找找看
-                                    file = bus.at("标签项目源文件", object.value.substring(1));
-                                    file && (object.value = object.value.substring(1)); // 找到，暴力修改标签名。。。FIXME 优雅点
-                                }
-
-                                if (!file) {
-                                    throw new Err("file not found of tag: " + object.value, { ...context.input, start: object.pos.start });
-                                }
+                                throw new Err("file not found of tag: " + object.value, { ...context.input, start: object.pos.start });
                             }
                             let tagpkg = bus.at("标签全名", file);
+                            object.value = tagpkg; // 改成标签全名
                             oSet.add(tagpkg);
                         }
                     },
@@ -8835,6 +8832,8 @@ class <%= $data['COMPONENT_NAME'] %> {
             ary.push('"' + lineString(val) + '"'); // 无表达式
             return;
         }
+
+        // TODO "size:12px;color:{`${color?color:'red'}`};height:100;" => ("size:12px;color:" + `${color?color:'red'}` + ";height:100;")
 
         if (idxStart > 0) {
             ary.push('"' + lineString(val.substring(0, idxStart)) + '"'); // acb{def}ghi => "abc"
@@ -10433,6 +10432,73 @@ class <%= $data['COMPONENT_NAME'] %> {
 (() => {
     // ------- z22m-util-get-src-file-of-tag start
     const bus = require("@gotoeasy/bus");
+    const File = require("@gotoeasy/file");
+
+    bus.on(
+        "文件标签相应的源文件",
+        (function() {
+            // 【tag】
+            //   -- 源文件
+            //   -- nnn=@aaa/bbb:ui-xxx
+            //   -- @aaa/bbb:ui-xxx
+            //   -- bbb:ui-xxx
+            //   -- ui-xxx
+            //   -- @ui-xxx
+            // 【oTaglibs】
+            //   -- 标签所在组件的[taglib]配置
+            return (tag, context) => {
+                if (tag.endsWith(".rpose")) {
+                    return tag; // 已经是文件
+                }
+
+                if (tag.indexOf(":") > 0) {
+                    // @taglib指定的标签
+                    let taglib = bus.at("解析taglib", tag);
+
+                    let env = bus.at("编译环境");
+                    if (env.packageName === taglib.pkg) {
+                        // 当前项目的包名和标签库包名一样时，从当前项目查找源文件
+                        // 比如，第三方包引用当前包，当前包作为项目修改时，让第三方包引用当前项目源文件
+                        return bus.at("标签源文件", taglib.tag);
+                    }
+
+                    return bus.at("标签库源文件", taglib);
+                }
+
+                // 看看是当前项目还是第三方模块包，查找方式有差异
+                let pkg = bus.at("文件所在模块", context.input.file);
+
+                // 当前项目
+                if (pkg === "~") {
+                    let file = bus.at("标签源文件", tag, context.result.oTaglibs);
+                    if (!file && /^@/i.test(tag)) {
+                        file = bus.at("标签源文件", tag.substring(1), context.result.oTaglibs);
+                    }
+                    return file;
+                }
+
+                // 第三方模块包
+                let oPrjContext = bus.at("项目配置处理", context.input.file); // 项目配置解析结果
+                let oPrjTaglibs = oPrjContext.result.oTaglibs; // 项目[taglib]
+                let oTaglibs = context.result.oTaglibs || {}; // 组件[taglib]
+                let taglib = oPrjTaglibs[tag] || oTaglibs[tag];
+                if (taglib) {
+                    // 有相应标签库定义时，按标签库方式查找
+                    return bus.at("标签库源文件", taglib);
+                } else {
+                    let orgTag = /^@/i.test(tag) ? tag.substring(1) : tag; // 默认@别名时去@
+                    taglib = oPrjTaglibs[orgTag] || oTaglibs[orgTag];
+                    if (taglib) {
+                        return bus.at("标签库源文件", taglib); // 有相应标签库定义时，按标签库方式查找
+                    }
+
+                    // 标签库没找到时直接按文件名找
+                    let files = File.files(oPrjContext.path.src, `${orgTag}.rpose`, `**/${orgTag}.rpose`);
+                    return files.length ? files[0] : null;
+                }
+            };
+        })()
+    );
 
     bus.on(
         "标签源文件",
