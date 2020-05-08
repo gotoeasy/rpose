@@ -200,10 +200,9 @@ init(){
 .side-menu {
     list-style: none;
     padding: 0;
-    margin : 0;
 
     & > li {
-        margin: 10px 0;
+        margin: 10px;
 
         & > a {
             display: flex;
