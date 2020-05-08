@@ -1,5 +1,6 @@
 [api]
-optionkeys = path, params, title, click
+optionkeys = path, params, title
+statekeys = click
 
 [view]
 <a title={title} @class="cursor-pointer  display--inline-flex align-items-center text-decoration-none"><slot/></a>
@@ -9,16 +10,17 @@ optionkeys = path, params, title, click
 @action('click', 'a')
 clk(e) {
     let opts = this.#private.options;
+    let state = this.#private.state;
     if ( !/^(http[s]?:\/\/|\.+|\/+)/i.test(opts.path) ) {
         e.preventDefault();                                                         // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制
-        if (!opts.click || opts.click(e) !== false) {                               // 没有传入点击函数，或传入函数的执行结果不是false的话才继续
+        if (!state.click || state.click(e) !== false) {                               // 没有传入点击函数，或传入函数的执行结果不是false的话才继续
             opts.title && (document.title = opts.title);                            // 如果指定了title，顺便修改标题
             let path = opts.path || '';
             let state = opts.params;
             rpose.router.page({path, state});
         }
     }else{
-        if (!opts.click || opts.click(e) !== false) {                               // 没有传入点击函数，或传入函数的执行结果不是false的话才继续
+        if (!state.click || state.click(e) !== false) {                               // 没有传入点击函数，或传入函数的执行结果不是false的话才继续
             location.href = opts.path;
         }else{
             e.preventDefault();                                                     // 取消事件效果，避免自动触发路由变更事件，改由程序代码控制

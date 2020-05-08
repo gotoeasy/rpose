@@ -36,6 +36,8 @@ function nodesWithScriptJsify(nodes=[], context){
             // ignore
         }else if ( node.type === 'Class' || node.type === 'Style') {
             // ignore
+        }else if ( node.type === '@key') {
+            // ignore
         }else{
             throw new Err('unhandle node type: ' + node.type);              // 应该没有这种情况
         }
