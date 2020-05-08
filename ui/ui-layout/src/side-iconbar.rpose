@@ -18,7 +18,7 @@ statekeys = menus
                             <span>{item2.title}</span>
                             <svgicon type="svg" @if={item2.menus} name={item2.opened ? 'angle-up' : 'angle-down'} height="16" width="16"/>
                         </router-link>
-                        <ul class="side-menu side-sub-menu2" @if={item2.title && item2.opened}>
+                        <ul class="side-menu side-sub-menu2" @if={item2.opened}>
                             <for @for="item3 in item2.menus">
                                 <li>
                                     <router-link @if={item3.title} path={item3.path} title={item3.title} click={e=>this.clickMenu(e, item3, item2)}>
@@ -95,14 +95,21 @@ clickMenu(e, item, parent){
             offsetTop = elMenu._offsetTop;
         }
 
-        let top = offsetTop - 12;                                                   // 微调
+        elMenu.style.top = '';
+        elMenu.style.bottom = '';
+        let top = offsetTop + 5;                                                    // 微调
         if ( maxHeight < top + popHeight){
             top = maxHeight - popHeight -18;                                        // 超出可视范围时再次调整
             top < 0 && (top = 0);                                                   // 再咋地也不能冒顶
+            if (top){
+                elMenu.style.bottom = '1px';
+            }else{
+                elMenu.style.top = '0px';
+            }
         }else{
             top < 35 && (top = 35);                                                 // 能显示得下，就不要超过头部高度 (FIXME: 这个定值35有待改进，虽然影响很有限)
+            elMenu.style.top = top + 'px';
         }
-        elMenu.style.top = top + 'px';
 
         return false;
     }
@@ -193,6 +200,7 @@ init(){
 .side-menu {
     list-style: none;
     padding: 0;
+    margin : 0;
 
     & > li {
         margin: 10px 0;
