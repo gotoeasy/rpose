@@ -4685,6 +4685,7 @@ console.time("load");
             return postobject.plugin("svgicon-plugin-02", function(root, context) {
                 // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
                 const OPTS = bus.at("视图编译选项");
+                let fill;
                 root.walk(OPTS.TypeAttributeName, (node, object) => {
                     if (!node.parent) return;
 
@@ -4695,6 +4696,7 @@ console.time("load");
                         let Name = { pos: object.pos };
                         let Value = { pos: valNode.object.pos };
                         let pos = { start: object.pos.start, end: valNode.object.pos.end };
+                        /^fill$/i.test(object.value) && (fill = true);
 
                         let oAttr = { type: "Attribute", name: object.value, value: valNode.object.value, Name, Value, isExpression: false, pos };
                         let attrNode = this.createNode(oAttr);
@@ -4708,6 +4710,23 @@ console.time("load");
                         node.replaceWith(attrNode);
                     }
                 });
+
+                // 如果没有设定则添加默认属性 fill='currentColor'
+                if (!fill) {
+                    root.walk("Attribute", (node, object) => {
+                        let oAttr = {
+                            type: "Attribute",
+                            name: "fill",
+                            value: "currentColor",
+                            Name: { pos: object.pos },
+                            Value: { pos: object.pos },
+                            isExpression: false,
+                            pos: object.pos
+                        };
+                        node.after(this.createNode(oAttr));
+                        return false;
+                    });
+                }
             });
         })()
     );
@@ -5585,7 +5604,7 @@ console.time("load");
                             let nodeSvgTags = bus.at("SVG图标内容解析为AST节点数组", oFile.file, null, oAttrs, object.pos);
                             nodeSvgTags && node.replaceWith(...nodeSvgTags); // 替换为内联svg标签节点
                         }
-                    } else if (/^inline-symbol$/i.test(iconType)) {
+                    } else if (/inline/i.test(iconType)) {
                         // -------------------------------
                         // inline-symbol(内联symbol定义)
                         // 【特点】减少重复
@@ -5611,7 +5630,7 @@ console.time("load");
                         let strSvgUse = bus.at("生成SVG引用内联SYMBOL", symbolId, context.input.file, props); // 生成标签字符串，类似 <svg ...><use ...></use></svg>
                         let nodeSvgUse = bus.at("SVG图标引用解析为AST节点", strSvgUse); // 转成AST节点
                         node.replaceWith(nodeSvgUse);
-                    } else if (/^link-symbol$/i.test(iconType)) {
+                    } else if (/link/i.test(iconType)) {
                         // -------------------------------
                         // link-symbol(外部symbol定义)
                         // 【特点】能缓存
@@ -9097,6 +9116,8 @@ class <%= $data['COMPONENT_NAME'] %> {
             } else if (node.type === "Attributes" || node.type === "Events" || node.type === "ObjectExpressionAttributes") {
                 // ignore
             } else if (node.type === "Class" || node.type === "Style") {
+                // ignore
+            } else if (node.type === "@key") {
                 // ignore
             } else {
                 throw new Err("unhandle node type: " + node.type); // 应该没有这种情况

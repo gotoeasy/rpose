@@ -72,6 +72,7 @@ bus.on('SVG图标内容解析插件', function(){
 
         // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
         const OPTS = bus.at('视图编译选项');
+        let fill;
         root.walk( OPTS.TypeAttributeName, (node, object) => {
             if ( !node.parent ) return;
 
@@ -82,6 +83,7 @@ bus.on('SVG图标内容解析插件', function(){
                 let Name = {pos: object.pos};
                 let Value = {pos: valNode.object.pos};
                 let pos = {start: object.pos.start, end: valNode.object.pos.end };
+                /^fill$/i.test(object.value) && (fill = true); 
 
                 let oAttr = {type: 'Attribute', name: object.value, value: valNode.object.value, Name, Value, isExpression: false, pos};
                 let attrNode = this.createNode(oAttr);
@@ -96,6 +98,16 @@ bus.on('SVG图标内容解析插件', function(){
                 node.replaceWith(attrNode);
             }
         });
+
+        // 如果没有设定则添加默认属性 fill='currentColor'
+        if (!fill) {
+            root.walk( 'Attribute', (node, object) => {
+                let oAttr = {type: 'Attribute', name: 'fill', value: 'currentColor', Name:{pos: object.pos}, Value:{pos: object.pos}, isExpression: false, pos:object.pos};
+                node.after(this.createNode(oAttr));
+                return false;
+            });
+        }
+
 
     });
 }());

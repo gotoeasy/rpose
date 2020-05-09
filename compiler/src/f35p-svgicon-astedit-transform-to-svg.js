@@ -85,7 +85,7 @@ bus.on('编译插件', function(){
                 }
                 
 
-            }else if ( /^inline-symbol$/i.test(iconType) ) {
+            }else if ( /inline/i.test(iconType) ) {
                 // -------------------------------
                 // inline-symbol(内联symbol定义)
                 // 【特点】减少重复
@@ -112,7 +112,7 @@ bus.on('编译插件', function(){
                 let nodeSvgUse = bus.at('SVG图标引用解析为AST节点', strSvgUse);                                      // 转成AST节点
                 node.replaceWith(nodeSvgUse);
 
-            }else if ( /^link-symbol$/i.test(iconType) ) {
+            }else if ( /link/i.test(iconType) ) {
                 // -------------------------------
                 // link-symbol(外部symbol定义)
                 // 【特点】能缓存
