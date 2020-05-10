@@ -2,7 +2,7 @@
 @rpose/cli
 
 [version] // 版本号
-0.8.15
+0.8.16
 
 [main] // 入口文件
 index.js

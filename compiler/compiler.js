@@ -10496,7 +10496,7 @@ class <%= $data['COMPONENT_NAME'] %> {
 
     bus.on(
         "文件标签相应的源文件",
-        (function() {
+        (function(oPkgSrc = {}) {
             // 【tag】
             //   -- 源文件
             //   -- nnn=@aaa/bbb:ui-xxx
@@ -10552,9 +10552,17 @@ class <%= $data['COMPONENT_NAME'] %> {
                         return bus.at("标签库源文件", taglib); // 有相应标签库定义时，按标签库方式查找
                     }
 
-                    // 标签库没找到时直接按文件名找
-                    let files = File.files(oPrjContext.path.src, `${orgTag}.rpose`, `**/${orgTag}.rpose`);
-                    return files.length ? files[0] : null;
+                    // 标签库没找到时直接按标签名找源文件
+                    let oSrcFiles = oPkgSrc[oPrjContext.path.root]; // 缓存
+                    if (!oSrcFiles) {
+                        oSrcFiles = {};
+                        let srcFiles = File.files(oPrjContext.path.src, "**.rpose");
+                        srcFiles.forEach(f => {
+                            oSrcFiles[File.name(f).toLowerCase()] = f;
+                        });
+                        oPkgSrc[oPrjContext.path.root] = oSrcFiles;
+                    }
+                    return oSrcFiles[orgTag];
                 }
             };
         })()
@@ -10679,11 +10687,7 @@ class <%= $data['COMPONENT_NAME'] %> {
                     .map(s => s.substring(0, 1).toUpperCase() + s.substring(1))
                     .join(""); // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
 
-                if (/^(date|object|function)$/i.test(tagpkg)) {
-                    tagpkg = tagpkg + "_"; // 特殊类名转换一下避免冲突
-                }
-
-                return tagpkg;
+                return tagpkg + "_";
             };
         })()
     );

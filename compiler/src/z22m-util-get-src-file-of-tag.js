@@ -1,7 +1,7 @@
 const bus = require('@gotoeasy/bus');
 const File = require('@gotoeasy/file');
 
-bus.on('文件标签相应的源文件', function(){
+bus.on('文件标签相应的源文件', function(oPkgSrc={}){
 
     // 【tag】
     //   -- 源文件
@@ -55,12 +55,20 @@ bus.on('文件标签相应的源文件', function(){
             let orgTag = /^@/i.test(tag) ? tag.substring(1) : tag;          // 默认@别名时去@
             taglib = oPrjTaglibs[orgTag] || oTaglibs[orgTag];
             if (taglib) {
-                return bus.at('标签库源文件', taglib);                   // 有相应标签库定义时，按标签库方式查找
+                return bus.at('标签库源文件', taglib);                      // 有相应标签库定义时，按标签库方式查找
             }
 
-            // 标签库没找到时直接按文件名找
-            let files = File.files(oPrjContext.path.src, `${orgTag}.rpose`, `**/${orgTag}.rpose`);
-            return files.length ? files[0] : null;
+            // 标签库没找到时直接按标签名找源文件
+            let oSrcFiles = oPkgSrc[oPrjContext.path.root];                 // 缓存
+            if (!oSrcFiles) {
+                oSrcFiles = {};
+                let srcFiles = File.files(oPrjContext.path.src, '**.rpose');
+                srcFiles.forEach(f => {
+                    oSrcFiles[File.name(f).toLowerCase()] = f;
+                });
+                oPkgSrc[oPrjContext.path.root] = oSrcFiles;
+            }
+            return oSrcFiles[orgTag];
         }
 
     };
