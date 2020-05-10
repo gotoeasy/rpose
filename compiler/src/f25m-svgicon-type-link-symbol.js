@@ -69,15 +69,15 @@ const hash = require('@gotoeasy/hash');
             let expr = fileOrExpr.substring(1, fileOrExpr.length-1);
             href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`;                                        // TODO: FIXME  表达式外部文件，以工程文件优先
 
-            !props.height && attrs.push(`height="${props.width || 16}"`);
-            !attrs.width && attrs.push(`width="${props.height || 16}"`);
+            !props.height && attrs.push(`height="${props.width || '1em'}"`);
+            !attrs.width && attrs.push(`width="${props.height || '1em'}"`);
         }else{
             let symbolId = File.name(fileOrExpr);                                                           // 使用文件名作为id （TODO 冲突）
             href = `{'%svgsymbolpath%${symbolFile}#${symbolId}'}`;
 
-            // TODO 自动按比例调整宽度
-            !props.height && attrs.push(`height="${props.width || 16}"`);
-            !attrs.width && attrs.push(`width="${props.height || 16}"`);
+            // 自动按比例调整宽度
+            !props.height && attrs.push(`height="${props.width || '1em'}"`);
+            !attrs.width && attrs.push(`width="${props.height || '1em'}"`);
         }
 
         return `<svg ${attrs.join(' ')}><use xlink:href=${href}></use></svg>`;

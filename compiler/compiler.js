@@ -4685,7 +4685,6 @@ console.time("load");
             return postobject.plugin("svgicon-plugin-02", function(root, context) {
                 // 键=值的三个节点，以及单一键节点，统一转换为一个属性节点
                 const OPTS = bus.at("视图编译选项");
-                let fill;
                 root.walk(OPTS.TypeAttributeName, (node, object) => {
                     if (!node.parent) return;
 
@@ -4696,7 +4695,6 @@ console.time("load");
                         let Name = { pos: object.pos };
                         let Value = { pos: valNode.object.pos };
                         let pos = { start: object.pos.start, end: valNode.object.pos.end };
-                        /^fill$/i.test(object.value) && (fill = true);
 
                         let oAttr = { type: "Attribute", name: object.value, value: valNode.object.value, Name, Value, isExpression: false, pos };
                         let attrNode = this.createNode(oAttr);
@@ -4710,23 +4708,6 @@ console.time("load");
                         node.replaceWith(attrNode);
                     }
                 });
-
-                // 如果没有设定则添加默认属性 fill='currentColor'
-                if (!fill) {
-                    root.walk("Attribute", (node, object) => {
-                        let oAttr = {
-                            type: "Attribute",
-                            name: "fill",
-                            value: "currentColor",
-                            Name: { pos: object.pos },
-                            Value: { pos: object.pos },
-                            isExpression: false,
-                            pos: object.pos
-                        };
-                        node.after(this.createNode(oAttr));
-                        return false;
-                    });
-                }
             });
         })()
     );
@@ -4918,7 +4899,7 @@ console.time("load");
                     // 用svgicon属性覆盖svg属性
                     let oAttrs = Object.assign(svgAttrs, context.input.attrs);
                     if (!context.input.attrs.width && !context.input.attrs.height) {
-                        oAttrs["height"] = { type: "Attribute", name: "height", value: "16" }; // 在<svgicon>中没有指定高宽时，默认指定为16px高度，宽度不设定让它自动调整，相当于指定默认图标大小为16px
+                        oAttrs["height"] = { type: "Attribute", name: "height", value: "1em" }; // 在<svgicon>中没有指定高宽时，默认指定为1em高度，宽度不设定让它自动调整，相当于指定默认图标大小为1em
                     }
 
                     // 插入更新后的属性节点
@@ -5266,15 +5247,15 @@ console.time("load");
                     hashcode = hash("~"); // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
                     href = `{'#${hashcode}_' + (${expr}) }`;
 
-                    !props.height && attrs.push(`height="${props.width || 16}"`);
-                    !attrs.width && attrs.push(`width="${props.height || 16}"`);
+                    !props.height && attrs.push(`height="${props.width || "1em"}"`);
+                    !attrs.width && attrs.push(`width="${props.height || "1em"}"`);
                 } else {
                     let name = File.name(fileOrExpr); // 使用文件名作为id （TODO 冲突）
                     href = `{'#${hashcode}_${name}'}`;
 
-                    // TODO 自动按比例调整宽度
-                    !props.height && attrs.push(`height="${props.width || 16}"`);
-                    !attrs.width && attrs.push(`width="${props.height || 16}"`);
+                    // 自动按比例调整宽度
+                    !props.height && attrs.push(`height="${props.width || "1em"}"`);
+                    !attrs.width && attrs.push(`width="${props.height || "1em"}"`);
                 }
 
                 return `<svg ${attrs.join(" ")}><use xlink:href=${href}></use></svg>`;
@@ -5392,15 +5373,15 @@ console.time("load");
                 let expr = fileOrExpr.substring(1, fileOrExpr.length - 1);
                 href = `{'%svgsymbolpath%${symbolFile}#' + (${expr}) }`; // TODO: FIXME  表达式外部文件，以工程文件优先
 
-                !props.height && attrs.push(`height="${props.width || 16}"`);
-                !attrs.width && attrs.push(`width="${props.height || 16}"`);
+                !props.height && attrs.push(`height="${props.width || "1em"}"`);
+                !attrs.width && attrs.push(`width="${props.height || "1em"}"`);
             } else {
                 let symbolId = File.name(fileOrExpr); // 使用文件名作为id （TODO 冲突）
                 href = `{'%svgsymbolpath%${symbolFile}#${symbolId}'}`;
 
-                // TODO 自动按比例调整宽度
-                !props.height && attrs.push(`height="${props.width || 16}"`);
-                !attrs.width && attrs.push(`width="${props.height || 16}"`);
+                // 自动按比例调整宽度
+                !props.height && attrs.push(`height="${props.width || "1em"}"`);
+                !attrs.width && attrs.push(`width="${props.height || "1em"}"`);
             }
 
             return `<svg ${attrs.join(" ")}><use xlink:href=${href}></use></svg>`;
@@ -5510,6 +5491,63 @@ console.time("load");
     );
 
     // ------- f31p-svgicon-astedit-transform-tag-@svgicon-to-svgicon end
+})();
+
+/* ------- f33p-svgicon-astedit-set-default-attr-fill ------- */
+(() => {
+    // ------- f33p-svgicon-astedit-set-default-attr-fill start
+    const bus = require("@gotoeasy/bus");
+    const postobject = require("@gotoeasy/postobject");
+
+    bus.on(
+        "编译插件",
+        (function() {
+            // 添加默认属性 fill='currentColor'
+            return postobject.plugin("f33p-svgicon-astedit-set-default-attr-fill", function(root) {
+                root.walk("Tag", (node, object) => {
+                    if (!/^svgicon$/i.test(object.value)) return;
+
+                    // 查找Attributes，起码得有名称属性，不会找不到
+                    let attrsNode;
+                    if (node.nodes) {
+                        for (let i = 0, nd; (nd = node.nodes[i++]); ) {
+                            if (nd.type === "Attributes") {
+                                attrsNode = nd;
+                                break;
+                            }
+                        }
+                    }
+                    if (!attrsNode) {
+                        attrsNode = this.createNode({ type: "Attributes" });
+                        node.addChild(attrsNode);
+                    }
+
+                    // 查找是否存在指定属性，没有就默认加上
+                    let fill;
+                    for (let i = 0, nd; (nd = attrsNode.nodes[i++]); ) {
+                        if (/^fill$/i.test(nd.object.name)) {
+                            fill = true;
+                            break;
+                        }
+                    }
+                    if (!fill) {
+                        let oAttr = {
+                            type: "Attribute",
+                            name: "fill",
+                            value: "currentColor",
+                            Name: { pos: object.pos },
+                            Value: { pos: object.pos },
+                            isExpression: false,
+                            pos: object.pos
+                        };
+                        attrsNode.addChild(this.createNode(oAttr));
+                    }
+                });
+            });
+        })()
+    );
+
+    // ------- f33p-svgicon-astedit-set-default-attr-fill end
 })();
 
 /* ------- f35p-svgicon-astedit-transform-to-svg ------- */
@@ -5658,7 +5696,7 @@ console.time("load");
                         node.replaceWith(nodeSvgUse);
                     } else {
                         // 错误类型，提示修改
-                        throw new Err(`support type (${iconType}), possible values for type: svg | inline-symbol | link-symbol`, {
+                        throw new Err(`support type (${iconType}), possible values for type: svg | inline | link`, {
                             ...context.input,
                             ...nodeType.object.Value.pos
                         });
@@ -10640,6 +10678,11 @@ class <%= $data['COMPONENT_NAME'] %> {
                     .split("-")
                     .map(s => s.substring(0, 1).toUpperCase() + s.substring(1))
                     .join(""); // @aaa/bbb:ui-abc => $aaa$bbb$-ui-abc => $aaa$bbb$UiAbc
+
+                if (/^(date|object|function)$/i.test(tagpkg)) {
+                    tagpkg = tagpkg + "_"; // 特殊类名转换一下避免冲突
+                }
+
                 return tagpkg;
             };
         })()

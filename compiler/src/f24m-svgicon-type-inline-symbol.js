@@ -53,15 +53,15 @@ bus.on('生成SVG引用内联SYMBOL', function (){
             hashcode = hash('~');                                                           // FIX: 动态图标名的时候，只使用当前工程的图标 TODO
             href = `{'#${hashcode}_' + (${expr}) }`;
 
-            !props.height && attrs.push(`height="${props.width || 16}"`);
-            !attrs.width && attrs.push(`width="${props.height || 16}"`);
+            !props.height && attrs.push(`height="${props.width || '1em'}"`);
+            !attrs.width && attrs.push(`width="${props.height || '1em'}"`);
         }else{
             let name = File.name(fileOrExpr);                                               // 使用文件名作为id （TODO 冲突）
             href = `{'#${hashcode}_${name}'}`;
 
-            // TODO 自动按比例调整宽度
-            !props.height && attrs.push(`height="${props.width || 16}"`);
-            !attrs.width && attrs.push(`width="${props.height || 16}"`);
+            // 自动按比例调整宽度
+            !props.height && attrs.push(`height="${props.width || '1em'}"`);
+            !attrs.width && attrs.push(`width="${props.height || '1em'}"`);
         }
 
 

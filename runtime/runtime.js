@@ -455,7 +455,11 @@
             return this;
         };
         this.remove = function() {
-            els.forEach(el => el.parentNode.removeChild(el));
+            els.forEach(el => {
+                try {
+                    el.parentNode.removeChild(el);
+                } catch (e) {}
+            });
             return this;
         };
         return this;
