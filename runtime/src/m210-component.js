@@ -174,62 +174,38 @@ function createDom(vnode, $thisContext) {
     return el;
 }
 
-/*
-function assignOptions(...objs) {
-    if (objs.length == 1) {
-        return objs[0];
-    }
-
-    let rs = objs[0];
-    for (let i = 1; i < objs.length; i++) {
-        for (let k in objs[i]) {
-            if (k == "ref") {
-                continue; // ref属性仅组件内部使用，不能被外部覆盖
-            }
-            if (k == "class") {
-                if ( isString(objs[i][k]) ) {
-                    let ary = objs[i][k].split(/\s/);
-                    let objCls = {};
-                    ary.forEach(v => v.trim() && (objCls[v] = 1));
-                    rs[k] = objCls;
-                } else {
-                    rs[k] = objs[i][k]; // Plain Object
-                }
-            } else {
-                rs[k] = objs[i][k];
-            }
-        }
-    }
-    return rs;
-}
-*/
-
-function loadScript(attr){
-    let ary = loadScript.s || (loadScript.s = []);
+function loadScript(attr={}, callback){
     // 仅支持含src属性的<script>标签，否则忽略。相同src只建一次
-    if ( !attr || !attr.src || ary.includes(attr.src)) {
+    let url = (attr.src || '').toLowerCase().trim();
+    if ( !url || loadScript[url] ) {
         return;
     }
-    ary.push(attr.src);
+    loadScript[url] = 1;
 
     let el = document.createElement('script');
+    attr.defer && (el.defer = true);
     el.src = attr.src;
     el.type = attr.type || 'text/javascript';
+
+    callback && (el.onload = (()=> callback()));
 
     document.head.appendChild(el);
 }
 
-function loadLink(attr){
-    let ary = loadLink.s || (loadLink.s = []);
+function loadLink(attr, callback){
     // 仅支持含href属性的<link>标签，否则忽略。相同href只建一次
-    if ( !attr || !attr.href || ary.includes(attr.href)) {
+    let url = (attr.href || '').toLowerCase().trim();
+    if ( !url || loadLink[url] ) {
         return;
     }
-    ary.push(attr.href);
+    loadLink[url] = 1;
 
     let el = document.createElement('link');
     el.href = attr.href;
     el.rel = attr.rel || 'stylesheet';
+    attr.as && (el.as = attr.as);           // <link href="nnn.js" rel="preload" as="script">
+
+    callback && (el.onload = (()=> callback()));
 
     document.head.appendChild(el);
 }

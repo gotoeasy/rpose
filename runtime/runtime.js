@@ -648,26 +648,30 @@
         el && domVnode(el, vnode);
         return el;
     }
-    function loadScript(attr) {
-        let ary = loadScript.s || (loadScript.s = []);
-        if (!attr || !attr.src || ary.includes(attr.src)) {
+    function loadScript(attr = {}, callback) {
+        let url = (attr.src || "").toLowerCase().trim();
+        if (!url || loadScript[url]) {
             return;
         }
-        ary.push(attr.src);
+        loadScript[url] = 1;
         let el = document.createElement("script");
+        attr.defer && (el.defer = true);
         el.src = attr.src;
         el.type = attr.type || "text/javascript";
+        callback && (el.onload = (() => callback()));
         document.head.appendChild(el);
     }
-    function loadLink(attr) {
-        let ary = loadLink.s || (loadLink.s = []);
-        if (!attr || !attr.href || ary.includes(attr.href)) {
+    function loadLink(attr, callback) {
+        let url = (attr.href || "").toLowerCase().trim();
+        if (!url || loadLink[url]) {
             return;
         }
-        ary.push(attr.href);
+        loadLink[url] = 1;
         let el = document.createElement("link");
         el.href = attr.href;
         el.rel = attr.rel || "stylesheet";
+        attr.as && (el.as = attr.as);
+        callback && (el.onload = (() => callback()));
         document.head.appendChild(el);
     }
     function enhance(Component, ...args) {

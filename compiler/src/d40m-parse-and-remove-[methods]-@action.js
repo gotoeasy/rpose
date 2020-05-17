@@ -147,7 +147,19 @@ bus.on('解析检查METHODS块并删除装饰器', function (methodsCode, input=
             bindfns.push(oMethod.Name.value);
             parseDecorators(path, oMethod, input, PosOffset);                                                               // 解析装饰器
 
-        }
+        },
+
+        // -----------------------------------
+        // 自动安装require的第三方包
+        CallExpression(path) {
+            if (path.node.callee.name !== 'require' || path.node.arguments.length !== 1) return;                    // 仅针对 require(nnn)
+
+            let pkg = path.node.arguments[0].value;
+            let install = bus.at('自动安装', pkg);
+            if ( !install ) {
+                throw new Err('package install failed: ' + pkg, { ...input, ...getPos(path.node.arguments[0], PosOffset) });
+            }
+        },
     });
 
 
