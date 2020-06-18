@@ -2,7 +2,7 @@
 @rpose/compiler
 
 [version] // 版本号 （必填）
-0.9.1
+0.9.2
 
 [main]
 compiler.js

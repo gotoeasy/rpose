@@ -11088,6 +11088,8 @@ class <%= $data['COMPONENT_NAME'] %> {
         "$$",
         "rpose",
         "$SLOT",
+        "Buffer",
+        "Blob",
         "require",
         "XMLHttpRequest",
         "window",

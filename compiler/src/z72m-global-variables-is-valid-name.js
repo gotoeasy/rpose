@@ -2,6 +2,7 @@ const bus = require('@gotoeasy/bus');
 
 const oSetVarNames = new Set([
     '$$', 'rpose', '$SLOT',
+    'Buffer', 'Blob',
     'require',
     'XMLHttpRequest',
     'window', 'document', 'sessionStorage', 'localStorage', 'location', 'console', 'alert', 'escape', 'unescape',
